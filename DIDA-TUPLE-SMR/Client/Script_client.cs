@@ -20,7 +20,7 @@ namespace Client
                 string line;
                 while((line = reader.ReadLine()) != null)
                 {
-                    string[] items = line.Split(' ');
+                    string[] items = line.Split(' ', 2);
                     switch (items[0])
                     {
                         case "add":
