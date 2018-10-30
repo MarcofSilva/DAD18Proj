@@ -14,7 +14,7 @@ namespace Client
         {
             StreamReader reader;
 
-            foreach (string filename in args)
+            foreach  (string filename in args)
             {
                 reader = File.OpenText(filename);
                 string line;
