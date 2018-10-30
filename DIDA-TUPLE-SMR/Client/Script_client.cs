@@ -24,7 +24,7 @@ namespace Client
 
                 while ((line = reader.ReadLine()) != null)
                 {
-                    string[] items = line.Split(' ', 2);
+                    string[] items = line.Split(' ');
                     switch (items[0])
                     {
                         case "add":

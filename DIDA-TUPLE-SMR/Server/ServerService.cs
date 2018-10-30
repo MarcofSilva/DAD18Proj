@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RemoteServicesLibrary;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,10 +7,8 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    class Program
+    class ServerService : MarshalByRefObject, IServerService
     {
-        static void Main(string[] args)
-        {
-        }
+        //TODO
     }
 }

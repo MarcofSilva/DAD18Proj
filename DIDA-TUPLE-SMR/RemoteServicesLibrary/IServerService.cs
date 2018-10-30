@@ -8,6 +8,6 @@ namespace RemoteServicesLibrary
 {
     public interface IServerService
     {
-        void something();
+        //TODO
     }
 }

@@ -14,25 +14,11 @@ namespace ClientLibrary
     public class TupleSpaceAPI
     {
         public TupleSpaceAPI()
-        {
-            TcpChannel _channel = new TcpChannel(); //Port can't be 10000 (PCS) neither 10001 (Puppet Master)
+        {   //TODO connect to all available servers that it should connect
+            TcpChannel _channel = new TcpChannel(); //TODO Port can't be 10000 (PCS) neither 10001 (Puppet Master)
             ChannelServices.RegisterChannel(_channel, false);
-
-            IServerService _servRemoteObject = (IServerService)Activator.GetObject(typeof(IServerService), "tcp://" + serverIPAddress + ":8086/ServService");
-
-            _nickname = txtBox_Nickname.Text;
-            try
-            {
-                _servRemoteObject.register(_nickname, "tcp://" + myIPAddress + ":" + txtBox_Port.Text + "/" + myRemoteObjectName);
-            }
-            catch (SocketException)
-            {
-                MessageBox.Show("Could not locate server");
-            }
+            IServerService _servRemoteObject = (IServerService)Activator.GetObject(typeof(IServerService), "tcp://localhost:8086/ServService"); //TODO IP Address and port of servers
         }
-
-        
-
             
         void Write(ArrayList Tuple)
         {
