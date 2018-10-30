@@ -18,23 +18,70 @@ namespace Client
             {
                 reader = File.OpenText(filename);
                 string line;
-                while((line = reader.ReadLine()) != null)
+                bool repeat = false;
+                int times = 0;
+                ArrayList accumulator = new ArrayList();
+
+                while ((line = reader.ReadLine()) != null)
                 {
                     string[] items = line.Split(' ', 2);
                     switch (items[0])
                     {
                         case "add":
+                            if (repeat)
+                            {
+                                throw new NotImplementedException();
+                            }
+                            else
+                            {
+                                accumulator.Add(line);
+                            }
                             throw new NotImplementedException();
+
                         case "read":
+                            if (repeat)
+                            {
+                                throw new NotImplementedException();
+                            }
+                            else
+                            {
+                                accumulator.Add(items[0] + items[1]);
+                            }
                             throw new NotImplementedException();
+
                         case "take":
+                            if (repeat)
+                            {
+                                throw new NotImplementedException();
+                            }
+                            else
+                            {
+                                accumulator.Add(items[0] + items[1]);
+                            }
                             throw new NotImplementedException();
+
                         case "wait":
-                            //Sleep(items[1]);
+                            if (repeat)
+                            {
+                                throw new NotImplementedException();
+                            }
+                            else
+                            {
+                                accumulator.Add(items[0] + items[1]);
+                            }
                             throw new NotImplementedException();
                         case "begin-repeat":
+                            repeat = true;
+                            times = Int32.Parse(items[1]);
                             throw new NotImplementedException();
+
                         case "end-repeat":
+                            repeat = false;
+                            while (times > 0)
+                            {
+                                //switch vai para funcao
+                                //chama a funcao com cada coisa
+                            }
                             throw new NotImplementedException();
                         default:
                             throw new NotImplementedException();
