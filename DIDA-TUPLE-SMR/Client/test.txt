@@ -1,0 +1,12 @@
+add <1>
+add <"ola">
+add <Objecto()>
+add <Objecto(1,"ola")>
+add <1,"ola",Objecto(1,"ola")>
+read <1>
+take <1>
+wait 100
+begin-repeat 2
+add <"hey">
+read <"hey">
+end-repeat
