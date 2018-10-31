@@ -20,19 +20,37 @@ namespace ClientLibrary
             IServerService _servRemoteObject = (IServerService)Activator.GetObject(typeof(IServerService), "tcp://localhost:8086/ServService"); //TODO IP Address and port of servers
         }
             
-        public void Write(ArrayList Tuple)
+        public void Write(ArrayList tuple)
         {
-
+            //TODO
+            //prints para debbug
+            Console.Write("write: ");
+            foreach (var item in tuple)
+            {
+                Console.WriteLine(item.ToString());
+            }
         }
 
-        public void Read(ArrayList Tuple)
+        public void Read(ArrayList tuple)
         {
-
+            //TODO
+            //prints para debbug
+            Console.Write("read: ");
+            foreach (var item in tuple)
+            {
+                Console.WriteLine(item.ToString());
+            }
         }
 
-        public void Take(ArrayList Tuple)
+        public void Take(ArrayList tuple)
         {
-
+            //TODO
+            //prints para debbug
+            Console.Write("take: ");
+            foreach (var item in tuple)
+            {
+                Console.WriteLine(item.ToString());
+            }
         }
     }
 }

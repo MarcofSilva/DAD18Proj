@@ -31,7 +31,7 @@ namespace Client
             return aux;
         }
         private int ConstructInt(string textToParse, ref int index)
-        {   
+        {
             string aux = "";
             for(; !(textToParse[index] == ',' || textToParse[index] == '>'); index++)
             {
@@ -41,6 +41,7 @@ namespace Client
         }
         private string ConstructObject(string textToParse, ref int index)
         {
+            //TODO falta poder aceitar nome de um data type e null
             string aux = "";
             
             for (; !(textToParse[index-1] == ')' && (textToParse[index] == ',' || textToParse[index] == '>')); index++)
@@ -56,7 +57,7 @@ namespace Client
             ArrayList res = new ArrayList();
             Regex numbers = new Regex(@"[0-9]");
             //se for preciso adicionar o espaco
-            Regex noproblem = new Regex(@">,");
+            Regex noproblem = new Regex(@"[<>,]");
             for (int i = 0; i < textToParse.Length; i++)
             {
                 if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
@@ -101,6 +102,7 @@ namespace Client
                     break;
 
                 case "wait":
+                    Console.WriteLine("wait" + commandItems[1]);
                     System.Threading.Thread.Sleep(int.Parse(commandItems[1]));
                     break;
             }
@@ -152,6 +154,9 @@ namespace Client
             {
                 client.executeScript(filename);
             }
+
+            Console.WriteLine("Enter to stop...");
+            Console.ReadLine();
         }
     }
 }
