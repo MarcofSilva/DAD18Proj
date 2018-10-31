@@ -21,10 +21,9 @@ namespace Client
         private string ConstructString(string textToParse, ref int index)
         {
             string aux = "";
-            index++;//TODO MARTELO AQUI PARA IGNORAR AS ASPAS
+            index++;//TODO incrementing index to ignore first quote
 
-            //condicao do " esta aqui no caso de existirem aspas no meio, nao sei se e possivel
-            for (; !(textToParse[index] == '"' && (textToParse[index + 1] == ',' || textToParse[index + 1] == '>')) ; index++)
+            for (; !(textToParse[index+1] == ',' || textToParse[index+1] == '>') ; index++)
             {
                 aux += textToParse[index].ToString();
             }
@@ -42,15 +41,14 @@ namespace Client
         }
         private string ConstructObject(string textToParse, ref int index)
         {
-            //existem ) la dentro?
             string aux = "";
             
-            for (; !(textToParse[index] == ')' && (textToParse[index + 1] == ',' || textToParse[index + 1] == '>')); index++)
+            for (; !(textToParse[index-1] == ')' && (textToParse[index] == ',' || textToParse[index] == '>')); index++)
             {
                 aux += textToParse[index].ToString();
             }
 
-            return aux + ")"; //TODO MARTELO
+            return aux;
         }
 
         private ArrayList getTuple(string textToParse)
@@ -61,10 +59,7 @@ namespace Client
             Regex noproblem = new Regex(@">,");
             for (int i = 0; i < textToParse.Length; i++)
             {
-                //esta aqui a , por causa das condicoes de paragem e indices
-                //TODO NAO ESTOU A VER QUANDO A LETRA CONSUMIDA FOI UM <, LOGO PODE DAR INDEX OUT OF RANGE
                 if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
-                if (textToParse[i] == '>') { break; }
                 if (textToParse[i] == '"')
                 {
                     res.Add(ConstructString(textToParse, ref i ));
