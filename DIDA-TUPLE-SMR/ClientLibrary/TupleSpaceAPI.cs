@@ -20,17 +20,17 @@ namespace ClientLibrary
             IServerService _servRemoteObject = (IServerService)Activator.GetObject(typeof(IServerService), "tcp://localhost:8086/ServService"); //TODO IP Address and port of servers
         }
             
-        void Write(ArrayList Tuple)
+        public void Write(ArrayList Tuple)
         {
 
         }
 
-        void Read(ArrayList Tuple)
+        public void Read(ArrayList Tuple)
         {
 
         }
 
-        void Take(ArrayList Tuple)
+        public void Take(ArrayList Tuple)
         {
 
         }
