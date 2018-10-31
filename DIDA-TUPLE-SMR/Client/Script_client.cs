@@ -24,7 +24,7 @@ namespace Client
             index++;//TODO MARTELO AQUI PARA IGNORAR AS ASPAS
 
             //condicao do " esta aqui no caso de existirem aspas no meio, nao sei se e possivel
-            for (; textToParse[index] == '"' && (textToParse[index + 1] == ',' || textToParse[index + 1] == '>') ; index++)
+            for (; !(textToParse[index] == '"' && (textToParse[index + 1] == ',' || textToParse[index + 1] == '>')) ; index++)
             {
                 aux += textToParse[index].ToString();
             }
@@ -34,7 +34,7 @@ namespace Client
         private int ConstructInt(string textToParse, ref int index)
         {   
             string aux = "";
-            for(; textToParse[index] == ',' || textToParse[index] == '>'; index++)
+            for(; !(textToParse[index] == ',' || textToParse[index] == '>'); index++)
             {
                 aux += textToParse[index].ToString();
             }
@@ -45,7 +45,7 @@ namespace Client
             //existem ) la dentro?
             string aux = "";
             
-            for (; textToParse[index] == ')' && (textToParse[index + 1] == ',' || textToParse[index + 1] == '>'); index++)
+            for (; !(textToParse[index] == ')' && (textToParse[index + 1] == ',' || textToParse[index + 1] == '>')); index++)
             {
                 aux += textToParse[index].ToString();
             }
@@ -67,7 +67,7 @@ namespace Client
                 if (textToParse[i] == '>') { break; }
                 if (textToParse[i] == '"')
                 {
-                    res.Add(ConstructString(textToParse, ref i));
+                    res.Add(ConstructString(textToParse, ref i ));
                     continue;
                 }
                 if (numbers.IsMatch(textToParse[i].ToString()))
