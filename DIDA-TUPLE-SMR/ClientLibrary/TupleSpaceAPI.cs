@@ -27,7 +27,14 @@ namespace ClientLibrary
             Console.Write("write: ");
             foreach (var item in tuple)
             {
-                Console.WriteLine(item.ToString());
+                if (item != null)
+                {
+                    Console.WriteLine(item.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("null");
+                }
             }
         }
 
@@ -35,10 +42,17 @@ namespace ClientLibrary
         {
             //TODO
             //prints para debbug
-            Console.Write("read: ");
+            Console.WriteLine("read: ");
             foreach (var item in tuple)
             {
-                Console.WriteLine(item.ToString());
+                if (item != null)
+                {
+                    Console.WriteLine(item.ToString());
+                }
+                else
+                {
+                    Console.WriteLine("null");
+                }
             }
         }
 
