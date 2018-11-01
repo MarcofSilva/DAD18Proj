@@ -85,7 +85,6 @@ namespace Client
                 case "Boolean":
                     res = Activator.CreateInstance(typeof(System.Boolean));
                     break;
-
             }
             return res;
         }
