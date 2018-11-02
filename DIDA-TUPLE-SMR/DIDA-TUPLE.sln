@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientLibrary", "ClientLibr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteServicesLibrary", "RemoteServicesLibrary\RemoteServicesLibrary.csproj", "{030F6FDA-942A-47C7-B400-6AD5811EE505}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuppetMaster", "ConsoleApp1\PuppetMaster.csproj", "{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{030F6FDA-942A-47C7-B400-6AD5811EE505}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{030F6FDA-942A-47C7-B400-6AD5811EE505}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{030F6FDA-942A-47C7-B400-6AD5811EE505}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
