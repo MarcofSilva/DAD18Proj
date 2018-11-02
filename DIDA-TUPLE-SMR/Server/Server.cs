@@ -18,21 +18,21 @@ namespace Server{
             tupleContainer = new List<ArrayList>();
             TcpChannel channel = new TcpChannel(8086); //TODO port
             ChannelServices.RegisterChannel(channel, false);
-            ServerService myRemoteObject = new ServerService();//construtor tem de receber this
+            ServerService myRemoteObject = new ServerService(this);
             RemotingServices.Marshal(myRemoteObject, "ServService", typeof(ServerService)); //TODO remote object name
             Console.WriteLine("<enter> to stop...");
             Console.ReadLine();
         }
 
         //void? devolve algo??
-        public void Write( ArrayList tuple){
+        public void write( ArrayList tuple){
             tupleContainer.Add(tuple);
             return;
         }
 
                 //devolve arraylist vazia/1 elemento ou varios
-        public List<ArrayList> Take(ArrayList tuple){
-            List<ArrayList> res = Read(tuple);
+        public List<ArrayList> take(ArrayList tuple){
+            List<ArrayList> res = read(tuple);
             //elementos da lista sao referencia ou e a lista mesmo?
             //podemos simplesmente remover ou temos de ir procurar o indice?
             //TODO
@@ -40,7 +40,7 @@ namespace Server{
             return res; 
         }
 
-        public List<ArrayList> Read(ArrayList tuple){
+        public List<ArrayList> read(ArrayList tuple){
             List<ArrayList> res = new List<ArrayList>();
             Regex capital = new Regex(@"[A-Z]");
             //el = cada elemento dentro da array list
