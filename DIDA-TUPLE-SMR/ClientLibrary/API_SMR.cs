@@ -30,15 +30,15 @@ namespace ClientLibrary
 
         public override void Write(ArrayList tuple)
         {
-            /*try {
+            try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Write(tuple, null);
+                    remoteObject.Write(tuple, "url");
                 }
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
-            }*/
+            }
         }
 
         public override void Read(ArrayList tuple)

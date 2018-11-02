@@ -16,19 +16,16 @@ namespace Server
             _server = server;
         }
 
-        public void Read(ArrayList tuple, string clientUrl)
-        {
+        public void Write(ArrayList tuple, string clientURL) {
+            _server.write(tuple);
+        }
+
+        public void Read(ArrayList tuple, string clientURL) {
             _server.read(tuple);
         }
 
-        public void Take(ArrayList tuple, string clientUrl)
-        {
+        public void Take(ArrayList tuple, string clientURL) {
             _server.take(tuple);
-        }
-
-        public void Write(ArrayList tuple, string clientUrl)
-        {
-            _server.write(tuple);
         }
     }
 }

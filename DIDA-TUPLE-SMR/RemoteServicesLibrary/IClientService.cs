@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RemoteServicesLibrary {
     public interface IClientService {
-
+        //TODO check methods missing or to correct
         void Acknowledge(ArrayList tuple);
 
         void ReadResponse(ArrayList tuple);
