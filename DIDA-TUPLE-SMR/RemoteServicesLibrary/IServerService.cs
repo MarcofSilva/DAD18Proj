@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,10 @@ namespace RemoteServicesLibrary
 {
     public interface IServerService
     {
-        //TODO
+        void Read(ArrayList tuple, string clientUrl);
+
+        void Take(ArrayList tuple, string clientUrl);
+
+        void Write(ArrayList tuple, string clientUrl);
     }
 }
