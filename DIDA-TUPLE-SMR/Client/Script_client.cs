@@ -11,11 +11,11 @@ namespace Client
 {
     class Script_Client
     {
-        private TupleSpaceAPI _tupleSpaceAPI;
+        private API_SMR _tupleSpaceAPI;
 
         public Script_Client()
         {
-            _tupleSpaceAPI = new TupleSpaceAPI();
+            _tupleSpaceAPI = new API_SMR();
         }
 
         private string ConstructString(string textToParse, ref int index)
