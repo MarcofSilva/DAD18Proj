@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClientService.cs" />
     <Compile Include="Script_client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -53,6 +54,10 @@
     <ProjectReference Include="..\ClientLibrary\ClientLibrary.csproj">
       <Project>{3050e6fd-3630-4b12-8f40-df8836237e7e}</Project>
       <Name>ClientLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RemoteServicesLibrary\RemoteServicesLibrary.csproj">
+      <Project>{030f6fda-942a-47c7-b400-6ad5811ee505}</Project>
+      <Name>RemoteServicesLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
