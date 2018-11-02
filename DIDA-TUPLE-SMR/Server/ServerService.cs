@@ -1,5 +1,6 @@
 ﻿using RemoteServicesLibrary;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,25 @@ namespace Server
 {
     class ServerService : MarshalByRefObject, IServerService
     {
-        //TODO
+        private Server _server;
+
+        public ServerService(Server server) {
+            _server = server;
+        }
+
+        public void Read(ArrayList tuple)
+        {
+            _server.read(tuple);
+        }
+
+        public void Take(ArrayList tuple)
+        {
+            _server.take(tuple);
+        }
+
+        public void Write(ArrayList tuple)
+        {
+            _server.write(tuple);
+        }
     }
 }
