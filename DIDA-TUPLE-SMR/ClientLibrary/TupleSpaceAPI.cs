@@ -24,16 +24,16 @@ namespace ClientLibrary
         {
             //TODO
             //prints para debbug
-            Console.Write("write: ");
+            Console.Write("\nwrite: ");
             foreach (var item in tuple)
             {
                 if (item != null)
                 {
-                    Console.WriteLine(item.ToString());
+                    Console.Write(item.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("null");
+                    Console.Write("null");
                 }
             }
         }
@@ -42,16 +42,16 @@ namespace ClientLibrary
         {
             //TODO
             //prints para debbug
-            Console.WriteLine("read: ");
+            Console.Write("\nread: ");
             foreach (var item in tuple)
             {
                 if (item != null)
                 {
-                    Console.WriteLine(item.ToString());
+                    Console.Write(item.ToString());
                 }
                 else
                 {
-                    Console.WriteLine("null");
+                    Console.Write("null");
                 }
             }
         }
@@ -60,7 +60,7 @@ namespace ClientLibrary
         {
             //TODO
             //prints para debbug
-            Console.Write("take: ");
+            Console.Write("\ntake: ");
             foreach (var item in tuple)
             {
                 Console.WriteLine(item.ToString());

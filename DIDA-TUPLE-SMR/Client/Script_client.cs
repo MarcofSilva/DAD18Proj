@@ -39,12 +39,13 @@ namespace Client
             }
             return Int32.Parse(aux);
         }
-        private string ConstructObject(string textToParse, ref int index, ref bool isObject)
+        private Object ConstructObject(string textToParse, ref int index)
         {
             //TODO falta poder aceitar nome de um data type e null
             string aux = "";
             int starting_index = index;
-            
+            bool isObject = false;
+
             for (; !(textToParse[index-1] == ')' && textToParse[index] == ',' || textToParse[index] == '>'); index++)
             {
                 if (textToParse[index] == '(')
@@ -57,36 +58,25 @@ namespace Client
                 }
                 aux += textToParse[index].ToString();
             }
-            if (aux == "null")
-            {
-                aux = null;
-            }
             if (!isObject)
             {
-                index = starting_index;
+                return ConstructType(aux);
             }
             return aux;
         }
 
-        private Object ConstructType(string textToParse, ref int index)
+        private Type ConstructType(string textToParse)
         {
-            string aux = "";
-            Object res = null;
-            for (; !(textToParse[index] == ',' || textToParse[index] == '>'); index++)
-            {
-                aux += textToParse[index].ToString();
-            }
-            switch (aux)
+            switch (textToParse)
             {
                 //TODO adicionar todos os outros tipos possíveis
                 case "Integer":
-                    res = Activator.CreateInstance(typeof(System.Int32));
-                    break;
-                case "Boolean":
-                    res = Activator.CreateInstance(typeof(System.Boolean));
-                    break;
+                    return typeof(System.Int32);
+                case "String":
+                    return typeof(System.String); 
             }
-            return res;
+            //Careful default is null, existe mais alguma coisa para alem de Int e String?
+            return null;
         }
 
         private ArrayList getTuple(string textToParse)
@@ -95,7 +85,6 @@ namespace Client
             Regex numbers = new Regex(@"[0-9]");
             //se for preciso adicionar o espaco
             Regex noproblem = new Regex(@"[<>,]");
-            bool isObject = false;
             for (int i = 0; i < textToParse.Length; i++)
             {
                 if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
@@ -111,16 +100,7 @@ namespace Client
                 }
                 else
                 {
-                    string aux = ConstructObject(textToParse, ref i, ref isObject);
-                    if (!isObject)
-                    {
-                        res.Add(ConstructType(textToParse, ref i));
-                    }
-                    else
-                    {
-                        res.Add(aux);
-                    }
-                    continue;
+                    res.Add(ConstructObject(textToParse, ref i));
                 }
             }
             return res;
@@ -148,7 +128,7 @@ namespace Client
                     break;
 
                 case "wait":
-                    Console.WriteLine("wait" + commandItems[1]);
+                    Console.Write("wait" + commandItems[1]);
                     System.Threading.Thread.Sleep(int.Parse(commandItems[1]));
                     break;
             }
