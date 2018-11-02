@@ -11,60 +11,23 @@ using System.Threading.Tasks;
 
 namespace ClientLibrary
 {
-    public class TupleSpaceAPI
-    {
-        public TupleSpaceAPI()
-        {   //TODO connect to all available servers that it should connect
-            TcpChannel _channel = new TcpChannel(); //TODO Port can't be 10000 (PCS) neither 10001 (Puppet Master)
-            ChannelServices.RegisterChannel(_channel, false);
-            IServerService _servRemoteObject = (IServerService)Activator.GetObject(typeof(IServerService), "tcp://localhost:8086/ServService"); //TODO IP Address and port of servers
-        }
-            
-        public void Write(ArrayList tuple)
-        {
-            //TODO
-            //prints para debbug
-            Console.Write("write: ");
-            foreach (var item in tuple)
-            {
-                if (item != null)
-                {
-                    Console.WriteLine(item.ToString());
-                }
-                else
-                {
-                    Console.WriteLine("null");
-                }
-            }
-        }
+    public abstract class TupleSpaceAPI
+    { 
+        public abstract void Write(ArrayList tuple);
 
-        public void Read(ArrayList tuple)
-        {
-            //TODO
-            //prints para debbug
-            Console.WriteLine("read: ");
-            foreach (var item in tuple)
-            {
-                if (item != null)
-                {
-                    Console.WriteLine(item.ToString());
-                }
-                else
-                {
-                    Console.WriteLine("null");
-                }
-            }
-        }
+        public abstract void Read(ArrayList tuple);
 
-        public void Take(ArrayList tuple)
-        {
-            //TODO
-            //prints para debbug
-            Console.Write("take: ");
-            foreach (var item in tuple)
-            {
-                Console.WriteLine(item.ToString());
+        public abstract void Take(ArrayList tuple);
+
+        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, ArrayList serverURLs) {
+            channel = new TcpChannel(); //TODO Port can't be 10000 (PCS) neither 10001 (Puppet Master)
+            ChannelServices.RegisterChannel(channel, false);
+
+            List<IServerService> serverRemoteObjects = new List<IServerService>();
+            foreach (string url in serverURLs) {
+                serverRemoteObjects.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
             }
+            return serverRemoteObjects;
         }
     }
 }
