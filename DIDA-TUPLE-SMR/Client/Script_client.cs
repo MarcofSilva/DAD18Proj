@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ClientLibrary;
+using ClassLibrary;
 
 namespace Client
 {
@@ -13,13 +14,11 @@ namespace Client
     {
         private API_SMR _tupleSpaceAPI;
 
-        public Script_Client()
-        {
+        public Script_Client(){
             _tupleSpaceAPI = new API_SMR();
         }
 
-        private string ConstructString(string textToParse, ref int index)
-        {
+        private string ConstructString(string textToParse, ref int index){
             string aux = "";
             index++;//TODO incrementing index to ignore first quote
 
@@ -27,79 +26,91 @@ namespace Client
             {
                 aux += textToParse[index].ToString();
             }
-
-            return aux;
-        }
-        private int ConstructInt(string textToParse, ref int index)
-        {
-            string aux = "";
-            for(; !(textToParse[index] == ',' || textToParse[index] == '>'); index++)
-            {
-                aux += textToParse[index].ToString();
-            }
-            return Int32.Parse(aux);
-        }
-        private Object ConstructObject(string textToParse, ref int index)
-        {
-            //TODO falta poder aceitar nome de um data type e null
-            string aux = "";
-            int starting_index = index;
-            bool isObject = false;
-
-            for (; !(textToParse[index-1] == ')' && textToParse[index] == ',' || textToParse[index] == '>'); index++)
-            {
-                if (textToParse[index] == '(')
-                {
-                    isObject = true;
-                }
-                if (textToParse[index] == ',' && !isObject)
-                {
-                    break;
-                }
-                aux += textToParse[index].ToString();
-            }
-            if (!isObject)
-            {
-                return ConstructType(aux);
-            }
             return aux;
         }
 
-        private Type ConstructType(string textToParse)
-        {
-            switch (textToParse)
-            {
+        private Type ConstructType(string textToParse) {
+            switch (textToParse) {
                 //TODO adicionar todos os outros tipos possíveis
-                case "Integer":
-                    return typeof(System.Int32);
-                case "String":
-                    return typeof(System.String); 
+                case "DADTestA":
+                    return typeof(DADTestA);
+                case "DADTestB":
+                    return typeof(DADTestB);
+                case "DADTestC":
+                    return typeof(DADTestC);
             }
             //Careful default is null, existe mais alguma coisa para alem de Int e String?
             return null;
         }
 
-        private ArrayList getTuple(string textToParse)
-        {
+        private Object ConstructObject(string textToParse, ref int index){
+            //TODO falta poder aceitar nome de um data type e null
+            Regex ints = new Regex(@"^[0-9]+");
+            Regex parenthesis = new Regex(@"[(]");
+            string aux = "";
+            string name = "";
+            ArrayList arguments = new ArrayList();
+            int auxint = index;
+            string auxstr = "";
+            for (; !(textToParse[auxint] == ',' || textToParse[auxint] == '>'); auxint++) {
+                auxstr += textToParse[auxint].ToString();
+            }
+            //TODO MARTELOZAO
+            if (!parenthesis.IsMatch(auxstr)) {
+                index = auxint;
+                return ConstructType(auxstr);
+            }
+
+            for (; !( textToParse[index-1] == ')' && (textToParse[index] == ',' || textToParse[index] == '>') ); index++){
+                
+                if (textToParse[index] == '('){
+                    name = aux;
+                    aux = "";
+                    continue;
+                }
+                if ( (textToParse[index] == ',' || textToParse[index] == ')') && aux.Length > 0) {
+                    if (ints.IsMatch(aux)) {
+                        int a;
+                        if (Int32.TryParse(aux, out a)) {
+                            arguments.Add(a);
+                        }
+                    }
+                    else {
+                        arguments.Add(aux);
+                    }
+                    aux = "";
+                    continue;
+                }
+                aux += textToParse[index].ToString();
+            }
+            switch (name) {
+                case "DADTestA":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString());
+                    return new DADTestA((int)arguments[0], (string)arguments[1]);
+                case "DADTestB":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString() + " " + ((int)arguments[2]).ToString());
+                    return new DADTestB((int)arguments[0], (string)arguments[1], (int)arguments[2]);
+                case "DADTestC":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString() + " " + ((string)arguments[2]).ToString());
+                    return new DADTestC((int)arguments[0], (string)arguments[1], (string)arguments[2]);
+            }
+            //Console.WriteLine(name);
+            //Activator.CreateInstance(name, arguments);
+            return null;
+        }
+
+        private ArrayList getTuple(string textToParse){
             ArrayList res = new ArrayList();
-            Regex numbers = new Regex(@"[0-9]");
             //se for preciso adicionar o espaco
             Regex noproblem = new Regex(@"[<>,]");
             for (int i = 0; i < textToParse.Length; i++)
             {
                 if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
-                if (textToParse[i] == '"')
-                {
+                if (textToParse[i] == '"'){
                     res.Add(ConstructString(textToParse, ref i ));
                     continue;
                 }
-                if (numbers.IsMatch(textToParse[i].ToString()))
-                {
-                    res.Add(ConstructInt(textToParse, ref i));
-                    continue;
-                }
-                else
-                {
+                else{
                     res.Add(ConstructObject(textToParse, ref i));
                 }
             }
@@ -176,7 +187,6 @@ namespace Client
         static void Main(string[] args)
         {
             Script_Client client = new Script_Client();
-
             foreach (string filename in args)
             {
                 client.executeScript(filename);

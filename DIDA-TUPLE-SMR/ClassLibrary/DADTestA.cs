@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ClassLibrary
-{
+namespace ClassLibrary {
+    [Serializable]
     public class DADTestA {
         public int i1;
         public string s1;
