@@ -35,14 +35,13 @@ namespace Server{
             List<ArrayList> res = read(tuple);
             //elementos da lista sao referencia ou e a lista mesmo?
             //podemos simplesmente remover ou temos de ir procurar o indice?
-            //TODO
+            //TODO remover primeiro indice de res
             tupleContainer.Remove(tuple);
             return res; 
         }
 
         public List<ArrayList> read(ArrayList tuple){
             List<ArrayList> res = new List<ArrayList>();
-            Regex capital = new Regex(@"[A-Z]");
             //el = cada elemento dentro da array list
             foreach (ArrayList el in tupleContainer){
                 if(el.Count != tuple.Count){
@@ -51,7 +50,6 @@ namespace Server{
                 //sao do mesmo tamanho, vamos percorrer elemento a elemento nos 2
                 for(int i = 0; i < tuple.Count; i++ ){
                     //TODO nao considera objetos e null se for possivel escrever integer no tuplo, isto nao esta a fazer
-
                     //tuple = pedido
                     //el = tuplo do container que estamos a ver
                     //wc = wild card
@@ -62,6 +60,7 @@ namespace Server{
                            (el[i].GetType() == tuple[i].GetType()) // os 2 ints, 2 strings, 2 do mesmo objecto
                         )){
                         //se entrar aqui os tipos sao diferentes e o pedido nao e wildcard
+                        //este break esta mal acho
                         break;
                     }
                     if (el[i].GetType() == typeof(System.Int32) && tuple[i].GetType() != null) {
@@ -69,24 +68,17 @@ namespace Server{
                             break;
                         }
                     }
+                    //TODO falta o type of a serio
+                    if(el[i].GetType() == typeof(TupleObject)){ // o que estou a ver e um objecto
+                        if (!matchObjs(el[i], tuple[i])) {
+                                break;
+                            }
+                    }
+                    //cheguei aqui e uma string
                     else {
-                        if (!capital.IsMatch(el[i].ToString()) && //o que estou a ver nao e um objeto
-                            !capital.IsMatch(tuple[i].ToString()) && //o pedido nao e um objeto
-                            el[i] != null && //o  a ver nao e null
-                            tuple[i] != null && //o pedido nao e null
-                            el[i].GetType() == typeof(System.String) && //o que estou a ver e uma string
-                            //o pedido e uma string                             ou um type string
-                            (tuple[i].GetType() == typeof(System.String) || tuple[i].GetType() == typeof(System.String).GetType())
-                            ){
-                            if (!matchStrs(el[i], tuple[i])) {
+                        if (!matchStrs(el[i], tuple[i])) {
                                 break;
                             }
-                        }
-                        else {
-                            if (!matchObjs(el[i], tuple[i])) {
-                                break;
-                            }
-                        }
                     }
                 }
                 res.Add(el);
@@ -109,6 +101,8 @@ namespace Server{
             return false;
         }
         //tratar as wildcards
+        //objetos agora sao diferentes de strings por isso nao e necessario tanta cena
+        //TODO
         private bool matchStrs(object local, object request)
         {
             if (request.GetType() == typeof(System.String).GetType()) {
@@ -158,13 +152,13 @@ namespace Server{
         //o resto dos elementos sao elementos que o construtor recebe
         //ver se os argumentos dos construtores sao iguais
         //ver se o pedido e null
-        private bool matchObjs(object local, object request)
-        {
-            if (request == null) {
+        private bool matchObjs(object local, object request){
+            //teem de ser instancias de TupleObject
+            if(request == null){
                 return true;
             }
-            //ver construtores iguais
-            return false;
+
+            return request.equals(local);
         }
         static void Main(string[] args){
             Server server = new Server();
