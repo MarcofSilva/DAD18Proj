@@ -42,6 +42,7 @@ namespace Server{
 
         public List<ArrayList> read(ArrayList tuple){
             List<ArrayList> res = new List<ArrayList>();
+            Regex capital = new Regex(@"[A-Z]");
             //el = cada elemento dentro da array list
             foreach (ArrayList el in tupleContainer){
                 if(el.Count != tuple.Count){
@@ -51,19 +52,25 @@ namespace Server{
                 for(int i = 0; i < tuple.Count; i++ ){
 
                     if (!((tuple[i].GetType() == null) || //pedido null devolve qualquer objecto
-                          (el[i].GetType() == tuple[i].GetType()) // os 2 ints, 2 strings, 2 do mesmo objecto
+                          (tuple[i].GetType() == typeof(System.String)) ||
+                          (el[i].GetType() == tuple[i].GetType())
                         )){
                         //se entrar aqui os tipos sao diferentes e o pedido nao e wildcard
                         //este break esta mal acho
                         break;
                     }
-                    if(el[i].GetType() == typeof(System.String)){ 
-                        if (!matchStrs(el[i], tuple[i])) {
+                    if(el[i].GetType() == typeof(System.String)) {
+                        if (tuple[i] != null && capital.IsMatch(tuple[i].ToString())){ }//request is a object and we are seeing string
+                        else if (!matchStrs(el[i], tuple[i])) {
                                 break;
-                            }
+                        }
                     }
                     else {
                         if (tuple[i] == null) {}//here to keep null requests out of next if
+                        //se for uma string sabemos que 
+                        if (tuple[i].GetType() == typeof(System.String) && el[i].GetType().ToString() != tuple[i].ToString()) {
+                            break;
+                        }
                         else if (tuple[i].Equals(el[i])) {
                             break;
                         }
