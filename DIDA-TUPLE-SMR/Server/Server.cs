@@ -28,11 +28,12 @@ namespace Server{
 
         //void? devolve algo??
         public void write( ArrayList tuple){
+            //Console.WriteLine(tuple[0].GetType().ToString());
             tupleContainer.Add(tuple);
             return;
         }
 
-                //devolve arraylist vazia/1 elemento ou varios
+        //devolve arraylist vazia/1 elemento ou varios
         public List<ArrayList> take(ArrayList tuple){
             List<ArrayList> res = read(tuple);
             //elementos da lista sao referencia ou e a lista mesmo?
