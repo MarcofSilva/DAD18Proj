@@ -83,7 +83,19 @@ namespace Client
                 }
                 aux += textToParse[index].ToString();
             }
-           
+            switch (name) {
+                case "DADTestA":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString());
+                    return new DADTestA((int)arguments[0], (string)arguments[1]);
+                case "DADTestB":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString() + " " + ((int)arguments[2]).ToString());
+                    return new DADTestB((int)arguments[0], (string)arguments[1], (int)arguments[2]);
+                case "DADTestC":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString() + " " + ((string)arguments[2]).ToString());
+                    return new DADTestC((int)arguments[0], (string)arguments[1], (string)arguments[2]);
+            }
+            //Console.WriteLine(name);
+            //Activator.CreateInstance(name, arguments);
             return null;
         }
 
@@ -94,13 +106,11 @@ namespace Client
             for (int i = 0; i < textToParse.Length; i++)
             {
                 if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
-                if (textToParse[i] == '"')
-                {
+                if (textToParse[i] == '"'){
                     res.Add(ConstructString(textToParse, ref i ));
                     continue;
                 }
-                else
-                {
+                else{
                     res.Add(ConstructObject(textToParse, ref i));
                 }
             }
@@ -176,12 +186,10 @@ namespace Client
         static void Main(string[] args)
         {
             Script_Client client = new Script_Client();
-
             foreach (string filename in args)
             {
                 client.executeScript(filename);
             }
-
             Console.WriteLine("Enter to stop...");
             Console.ReadLine();
         }

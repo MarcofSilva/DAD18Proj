@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ClassLibrary {
+    [Serializable]
     public class DADTestB {
         public int i1;
         public string s1;
