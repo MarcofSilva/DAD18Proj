@@ -49,12 +49,12 @@ namespace ConsoleApp1 {
 
 
         static void Main(string[] args) {
-            Console.WriteLine("quit to stop...");
+            Console.WriteLine("Quit to stop...");
             PuppetMaster pMaster = new PuppetMaster();
 
             while (true) {
                 string line = Console.ReadLine();
-                if (line == "quit") {
+                if (line.Equals("Quit") || line.Equals("quit")) {
                     break;
                 }
                 foreach (string key in ConfigurationManager.AppSettings.AllKeys) {
@@ -62,6 +62,7 @@ namespace ConsoleApp1 {
                 }
                 pMaster.executeCommand(line);
             }
+            Console.WriteLine("GoodBye...");
         }
     }
 }

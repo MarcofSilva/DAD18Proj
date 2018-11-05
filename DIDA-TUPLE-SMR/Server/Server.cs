@@ -13,12 +13,14 @@ using System.Threading.Tasks;
 namespace Server{
     class Server{
         private List<ArrayList> tupleContainer;
+        TcpChannel channel;
+        ServerService myRemoteObject;
 
         public Server(){
             tupleContainer = new List<ArrayList>();
-            TcpChannel channel = new TcpChannel(8086); //TODO port
+            channel = new TcpChannel(8086); //TODO port
             ChannelServices.RegisterChannel(channel, false);
-            ServerService myRemoteObject = new ServerService(this);
+            myRemoteObject = new ServerService(this);
             RemotingServices.Marshal(myRemoteObject, "ServService", typeof(ServerService)); //TODO remote object name
             Console.WriteLine("<enter> to stop...");
             Console.ReadLine();

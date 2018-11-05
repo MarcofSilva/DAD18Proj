@@ -6,7 +6,13 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ProcessCreationService {
-    class PCS_Service : I_PCS_Service {
+    class PCS_Service : MarshalByRefObject, I_PCS_Service {
+        private PCS _pcs;
+
+        public PCS_Service(PCS pcs) {
+            _pcs = pcs;
+        }
+
         public void Crash(string processname) {
             throw new NotImplementedException();
         }
