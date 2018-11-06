@@ -51,10 +51,7 @@ namespace Server
             else {//request duplicated
                 ack.Add(false);
             }
-            IClientService o;
-            if (_remoteStorage.TryGetValue(clientURL, out o)) {
-                o.WriteResponse(ack);
-            }
+            _remoteStorage[clientURL].WriteResponse(ack);
         }
 
         public void Read(ArrayList tuple, string clientURL, long nonce) {
@@ -68,10 +65,7 @@ namespace Server
             else {//request duplicated
                 ack.Add(false);
             }
-            IClientService o;
-            if (_remoteStorage.TryGetValue(clientURL, out o)) {
-                o.ReadResponse(ack, res);
-            }
+            _remoteStorage[clientURL].ReadResponse(ack, res);
         }
 
         public void Take(ArrayList tuple, string clientURL, long nonce) {
@@ -85,10 +79,7 @@ namespace Server
             else {//request duplicated
                 ack.Add(false);
             }
-            IClientService o;
-            if (_remoteStorage.TryGetValue(clientURL, out o)) {
-                o.TakeResponse(ack, res);
-            }
+            _remoteStorage[clientURL].TakeResponse(ack, res);
         }
     }
 }

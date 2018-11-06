@@ -65,6 +65,7 @@ namespace Client {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
                     remoteObject.Take(tuple, url, nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO

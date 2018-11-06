@@ -9,16 +9,16 @@ using RemoteServicesLibrary;
 
 namespace Client {
     public class ClientService : MarshalByRefObject, IClientService {
-        public void Acknowledge(ArrayList tuple) {
-            throw new NotImplementedException();
+        public void WriteResponse(ArrayList ack) {
+            Console.WriteLine("sucessfull? " + ack[0]);
         }
 
         public void ReadResponse(ArrayList ack, List<ArrayList> tuple) {
-            throw new NotImplementedException();
+            Console.WriteLine("sucessfull? " + ack[0]);
         }
 
         public void TakeResponse(ArrayList ack, List<ArrayList> tuple) {
-            throw new NotImplementedException();
+            Console.WriteLine("sucessfull? " + ack[0]);
         }
     }
 }
