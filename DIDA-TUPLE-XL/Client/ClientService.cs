@@ -10,15 +10,15 @@ using RemoteServicesLibrary;
 namespace Client {
     class ClientService : MarshalByRefObject, IClientService {
         public void WriteResponse(ArrayList ack) {
-            throw new NotImplementedException();
+            Console.WriteLine("sucessfull? " + ack[0]);
         }
 
         public void ReadResponse(ArrayList ack, List<ArrayList> tuple) {
-            throw new NotImplementedException();
+            Console.WriteLine("sucessfull? " + ack[0]);
         }
 
         public void TakeResponse(ArrayList ack, List<ArrayList> tuple) {
-            throw new NotImplementedException();
+            Console.WriteLine("sucessfull? " + ack[0]);
         }
     }
 }
