@@ -22,15 +22,15 @@ namespace ProcessCreationService {
         }
 
         public void CreateServer(string id, string URL, int min_delay, int max_delay) {
-            throw new NotImplementedException();
+            Console.WriteLine(id);
         }
 
         public void Freeze(string processname) {
-            throw new NotImplementedException();
+            Console.WriteLine("Freeze!");
         }
 
         public void PrintStatus() {
-            throw new NotImplementedException();
+            Console.WriteLine("hey");
         }
 
         public void Unfreeze(string processname) {

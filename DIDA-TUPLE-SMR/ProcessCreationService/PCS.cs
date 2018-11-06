@@ -21,6 +21,12 @@ namespace ProcessCreationService {
 
         static void Main(string[] args) {
             PCS _pcs = new PCS();
+            while (true) {
+                string line = Console.ReadLine();
+                if (line.Equals("quit")) {
+                    break;
+                }
+            }
         }
     }
 }

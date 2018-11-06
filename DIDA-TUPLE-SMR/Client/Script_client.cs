@@ -126,9 +126,11 @@ namespace Client
             return res;
         }
 
-        private void executeOperation(string[] commandItems)
+        private void executeOperation(string commandLine)
         {
             ArrayList tuple;
+
+            string[] commandItems = commandLine.Split(new char[] { ' ' }, 2);
 
             switch (commandItems[0])
             {
@@ -178,15 +180,14 @@ namespace Client
                     {
                         foreach (string commandLine in commandsInRepeat)
                         {
-                            string[] commandItems = commandLine.Split(new char[] { ' ' }, 2);
-                            executeOperation(commandItems);
+                            executeOperation(commandLine);
                         }
                         repeatIterations--;
                     }
                 }
                 else
                 {
-                    executeOperation(items);
+                    executeOperation(line);
                 }
             }
             reader.Close();
@@ -199,8 +200,19 @@ namespace Client
             {
                 client.executeScript(filename);
             }
-            Console.WriteLine("Enter to stop...");
-            Console.ReadLine();
+
+            while (true) {
+                Console.WriteLine("Enter new Command (Quit to stop)...");
+
+                string command = Console.ReadLine();
+
+                if(command.Equals("Quit") || command.Equals("quit")) {
+                    break;
+                }
+                else {
+                    client.executeOperation(command);
+                }
+            }
         }
     }
 }
