@@ -47,8 +47,9 @@ namespace Client {
             }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Read(tuple, "url");
+                    remoteObject.Read(tuple, "tcp://localhost:8085/ClientService", nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO
@@ -65,8 +66,9 @@ namespace Client {
             }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Take(tuple, "url");
+                    remoteObject.Take(tuple, "tcp://localhost:8085/ClientService", nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO

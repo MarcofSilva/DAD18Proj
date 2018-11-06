@@ -8,7 +8,7 @@ using RemoteServicesLibrary;
 
 
 namespace Client {
-    class ClientService : MarshalByRefObject, IClientService {
+    public class ClientService : MarshalByRefObject, IClientService {
         public void WriteResponse(ArrayList ack) {
             Console.WriteLine("sucessfull? " + ack[0]);
         }

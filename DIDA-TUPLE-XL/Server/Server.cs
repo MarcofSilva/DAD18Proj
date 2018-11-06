@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using ClassLibrary;
 
 namespace Server{
-    class Server{
+    public class Server{
         private List<ArrayList> tupleContainer;
         TcpChannel channel;
         ServerService myRemoteObject;
