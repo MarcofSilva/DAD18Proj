@@ -13,11 +13,11 @@ namespace Client {
             throw new NotImplementedException();
         }
 
-        public void ReadResponse(ArrayList tuple) {
+        public void ReadResponse(ArrayList ack, List<ArrayList> tuple) {
             throw new NotImplementedException();
         }
 
-        public void TakeResponse(ArrayList tuple) {
+        public void TakeResponse(ArrayList ack, List<ArrayList> tuple) {
             throw new NotImplementedException();
         }
     }
