@@ -8,7 +8,7 @@ using RemoteServicesLibrary;
 
 
 namespace Client {
-    class ClientService : MarshalByRefObject, IClientService {
+    public class ClientService : MarshalByRefObject, IClientService {
         public void Acknowledge(ArrayList tuple) {
             throw new NotImplementedException();
         }

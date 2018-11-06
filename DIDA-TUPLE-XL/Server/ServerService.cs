@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    class ServerService : MarshalByRefObject, IServerService
+    public class ServerService : MarshalByRefObject, IServerService
     {
         private Server _server;
 
