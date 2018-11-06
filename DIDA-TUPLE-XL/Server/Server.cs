@@ -22,7 +22,7 @@ namespace Server{
             channel = new TcpChannel(8086); //TODO port
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
-            RemotingServices.Marshal(myRemoteObject, "ServService", typeof(ServerService)); //TODO remote object name
+            RemotingServices.Marshal(myRemoteObject, "ServerService", typeof(ServerService)); //TODO remote object name
             Console.WriteLine("<enter> to stop...");
             Console.ReadLine();
         }

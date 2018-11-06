@@ -10,25 +10,22 @@ using System.Threading.Tasks;
 
 namespace Client {
     public class API_XL : TupleSpaceAPI {
-        //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
-        private ArrayList serverURLs;
 
         private TcpChannel channel;
-        List<IServerService> serverRemoteObjects;
+        private ClientService _myRemoteObject;
+        private List<IServerService> serverRemoteObjects;
 
         public API_XL() {
-            //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
-            serverURLs = new ArrayList();
-            serverURLs.Add("tcp://localhost:8086/ServService");
-
-            serverRemoteObjects = prepareForRemoting(ref channel, serverURLs);
+            _myRemoteObject = new ClientService();
+            serverRemoteObjects = prepareForRemoting(ref channel, _myRemoteObject);
         }
 
         public override void Write(ArrayList tuple) {
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Write(tuple, "url");
+                    remoteObject.Write(tuple, "tcp://localhost:8085/ClientService", nonce); //TODO make url dinamic
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO
