@@ -15,15 +15,23 @@ namespace Client {
         private ClientService _myRemoteObject;
         private List<IServerService> serverRemoteObjects;
 
+        private string url;
+
         public API_XL() {
             _myRemoteObject = new ClientService();
             serverRemoteObjects = prepareForRemoting(ref channel, _myRemoteObject);
+
+            url = "tcp://localhost:8085/ClientService";  //TODO make url dinamic
         }
+
+        public delegate void writeDelegate(ArrayList tuple);
+        public delegate void readDelegate(ArrayList tuple);
+        public delegate void takeDelegate(ArrayList tuple);
 
         public override void Write(ArrayList tuple) {
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Write(tuple, "tcp://localhost:8085/ClientService", nonce); //TODO make url dinamic
+                    remoteObject.Write(tuple, url, nonce);
                 }
                 nonce += 1;
             }
@@ -34,21 +42,11 @@ namespace Client {
         }
 
         public override void Read(ArrayList tuple) {
-            //TODO
-            //prints para debbug
-            //Console.WriteLine("read in API_SMR: ");
-            foreach (var item in tuple) {
-                if (item != null) {
-                    //Console.WriteLine(item.ToString());
-                }
-                else {
-                    Console.WriteLine("null");
-                }
-            }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Read(tuple, "url");
+                    remoteObject.Read(tuple, url, nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO
@@ -65,7 +63,7 @@ namespace Client {
             }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Take(tuple, "url");
+                    remoteObject.Take(tuple, url, nonce);
                 }
             }
             catch (SocketException) {
