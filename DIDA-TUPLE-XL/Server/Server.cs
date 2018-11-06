@@ -30,7 +30,6 @@ namespace Server{
         //void? devolve algo??
         public void write( ArrayList tuple){
             tupleContainer.Add(tuple);
-            Console.WriteLine("write request");
             //Console.WriteLine(tupleContainer.Count);
             return;
         }
@@ -43,7 +42,6 @@ namespace Server{
                 return res;
             }
             tupleContainer.Remove(res[0]);
-            Console.WriteLine("take container " + tupleContainer.Count);
             return res; 
         }
 
@@ -111,7 +109,6 @@ namespace Server{
                     res.Add(el);
                 }
             }
-            Console.WriteLine("read container " + tupleContainer.Count + " read res " + res.Count);
             return res;
         }
 
