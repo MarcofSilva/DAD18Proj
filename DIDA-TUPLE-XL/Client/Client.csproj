@@ -44,7 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="API_SMR.cs" />
+    <Compile Include="API_XL.cs" />
     <Compile Include="ClientService.cs" />
     <Compile Include="Script_client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
