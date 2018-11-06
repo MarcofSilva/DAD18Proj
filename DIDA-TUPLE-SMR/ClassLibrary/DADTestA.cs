@@ -19,7 +19,7 @@ namespace ClassLibrary {
                 return false;
             }
             else {
-                return ((this.i1 == o.i1) && (this.s1.Equals(o.s1)));
+                return (this.i1 == o.i1) && (this.s1.Equals(o.s1));
             }
         }
     }

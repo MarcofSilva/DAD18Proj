@@ -20,10 +20,14 @@ namespace Client
 
         private string ConstructString(string textToParse, ref int index){
             string aux = "";
-            index++;//TODO incrementing index to ignore first quote
+            if (textToParse[index] == '*') {
+                aux += textToParse[index].ToString();
+            }
+            else{
+                index++;
+            }
 
-            for (; !(textToParse[index+1] == ',' || textToParse[index+1] == '>') ; index++)
-            {
+            for (; !(textToParse[index+1] == ',' || textToParse[index+1] == '>') ; index++){
                 aux += textToParse[index].ToString();
             }
             return aux;
@@ -58,6 +62,9 @@ namespace Client
             //TODO MARTELOZAO
             if (!parenthesis.IsMatch(auxstr)) {
                 index = auxint;
+                if (auxstr == "null") {
+                    return null;
+                }
                 return ConstructType(auxstr);
             }
 
@@ -81,7 +88,9 @@ namespace Client
                     aux = "";
                     continue;
                 }
-                aux += textToParse[index].ToString();
+                if (textToParse[index].ToString() != "\"") {
+                    aux += textToParse[index].ToString();
+                }
             }
             switch (name) {
                 case "DADTestA":
@@ -106,7 +115,7 @@ namespace Client
             for (int i = 0; i < textToParse.Length; i++)
             {
                 if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
-                if (textToParse[i] == '"'){
+                if (textToParse[i] == '"'|| textToParse[i] == '*') {
                     res.Add(ConstructString(textToParse, ref i ));
                     continue;
                 }
