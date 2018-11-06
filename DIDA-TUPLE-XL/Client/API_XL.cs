@@ -39,23 +39,41 @@ namespace Client {
         public override void Read(ArrayList tuple) {
             //TODO
             //prints para debbug
-            Console.WriteLine("read: ");
+            //Console.WriteLine("read in API_SMR: ");
             foreach (var item in tuple) {
                 if (item != null) {
-                    Console.WriteLine(item.ToString());
+                    //Console.WriteLine(item.ToString());
                 }
                 else {
                     Console.WriteLine("null");
                 }
+            }
+            try {
+                foreach (IServerService remoteObject in serverRemoteObjects) {
+                    remoteObject.Read(tuple, "url");
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
             }
         }
 
         public override void Take(ArrayList tuple) {
             //TODO
             //prints para debbug
-            Console.Write("take: ");
+            //Console.Write("take in API_SMR: ");
             foreach (var item in tuple) {
-                Console.WriteLine(item.ToString());
+                //Console.WriteLine(item.ToString());
+            }
+            try {
+                foreach (IServerService remoteObject in serverRemoteObjects) {
+                    remoteObject.Take(tuple, "url");
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
             }
         }
     }
