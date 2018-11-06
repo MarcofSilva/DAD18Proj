@@ -30,13 +30,13 @@ namespace Server{
         //void? devolve algo??
         public void write( ArrayList tuple){
             tupleContainer.Add(tuple);
+            Console.WriteLine("write request");
             //Console.WriteLine(tupleContainer.Count);
             return;
         }
 
         //devolve arraylist vazia/1 elemento ou varios
         public List<ArrayList> take(ArrayList tuple) {
-            Console.WriteLine("hii");
             List<ArrayList> res = read(tuple);
             if (res.Count == 0) {
                 Console.WriteLine("impossible to remove, no tuple in tuple space");
@@ -111,8 +111,7 @@ namespace Server{
                     res.Add(el);
                 }
             }
-            Console.WriteLine("read container " + tupleContainer.Count);
-            Console.WriteLine("read res " + res.Count);
+            Console.WriteLine("read container " + tupleContainer.Count + " read res " + res.Count);
             return res;
         }
 

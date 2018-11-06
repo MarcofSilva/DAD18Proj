@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 namespace RemoteServicesLibrary {
     public interface IClientService {
         //TODO check methods missing or to correct
-        void Acknowledge(ArrayList tuple);
+        void WriteResponse(ArrayList ack);
 
-        void ReadResponse(ArrayList tuple);
+        void ReadResponse(ArrayList ack, List<ArrayList> tuple);
 
-        void TakeResponse(ArrayList tuple);
+        void TakeResponse(ArrayList ack, List<ArrayList> tuple);
     }
 }

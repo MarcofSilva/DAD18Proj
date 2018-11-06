@@ -9,15 +9,15 @@ using RemoteServicesLibrary;
 
 namespace Client {
     class ClientService : MarshalByRefObject, IClientService {
-        public void Acknowledge(ArrayList tuple) {
+        public void WriteResponse(ArrayList ack) {
             throw new NotImplementedException();
         }
 
-        public void ReadResponse(ArrayList tuple) {
+        public void ReadResponse(ArrayList ack, List<ArrayList> tuple) {
             throw new NotImplementedException();
         }
 
-        public void TakeResponse(ArrayList tuple) {
+        public void TakeResponse(ArrayList ack, List<ArrayList> tuple) {
             throw new NotImplementedException();
         }
     }

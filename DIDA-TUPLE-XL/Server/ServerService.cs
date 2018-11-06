@@ -12,7 +12,8 @@ namespace Server
     {
         private Server _server;
         //tem de se fazer lock disto
-        private Dictionary<string, long> _nocestorage = new Dictionary<string, long>();
+        private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
+        private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
 
         public ServerService(Server server) {
             _server = server;
@@ -20,16 +21,17 @@ namespace Server
 
         private bool validRequest(string clientURL, long nonce) {
             //se nunca apareceu vai ser adicionado
-            if (!_nocestorage.ContainsKey(clientURL)) {
-                _nocestorage.Add(clientURL, nonce);
+            if (!_nonceStorage.ContainsKey(clientURL)) {
+                _nonceStorage.Add(clientURL, nonce);
+                _remoteStorage.Add(clientURL, (IClientService)Activator.GetObject(typeof(IClientService), clientURL));
                 return true;
             }
             else {//ja apareceu
-                long a;
-                if (_nocestorage.TryGetValue(clientURL, out a)) {
-                    if (nonce > a) {
-                        _nocestorage.Remove(clientURL);
-                        _nocestorage.Add(clientURL, nonce);
+                long o;
+                if (_nonceStorage.TryGetValue(clientURL, out o)) {
+                    if (nonce > o) {
+                        _nonceStorage.Remove(clientURL);
+                        _nonceStorage.Add(clientURL, nonce);
                         return true;
                     }
                     return false;
@@ -40,29 +42,52 @@ namespace Server
         }
 
         public void Write(ArrayList tuple, string clientURL, long nonce) {
+            ArrayList ack = new ArrayList();
             if (validRequest(clientURL,nonce)) {//sucess
                 _server.write(tuple);
+                ack.Add(true);
+                ack.Add(nonce);
             }
             else {//request duplicated
-
+                ack.Add(false);
+            }
+            IClientService o;
+            if (_remoteStorage.TryGetValue(clientURL, out o)) {
+                o.WriteResponse(ack);
             }
         }
 
         public void Read(ArrayList tuple, string clientURL, long nonce) {
+            ArrayList ack = new ArrayList();
+            List<ArrayList> res = new List<ArrayList>();
             if (validRequest(clientURL, nonce)) {//sucess
-                _server.take(tuple);
+                ack.Add(true);
+                ack.Add(nonce);
+                res = _server.read(tuple);
             }
             else {//request duplicated
-
+                ack.Add(false);
+            }
+            IClientService o;
+            if (_remoteStorage.TryGetValue(clientURL, out o)) {
+                o.ReadResponse(ack, res);
             }
         }
 
         public void Take(ArrayList tuple, string clientURL, long nonce) {
+            ArrayList ack = new ArrayList();
+            List<ArrayList> res = new List<ArrayList>();
             if (validRequest(clientURL, nonce)) {//sucess
-                _server.take(tuple);
+                ack.Add(true);
+                ack.Add(nonce);
+                res = _server.take(tuple);
             }
             else {//request duplicated
-
+                ack.Add(false);
+            }
+            IClientService o;
+            if (_remoteStorage.TryGetValue(clientURL, out o)) {
+                o.TakeResponse(ack, res);
             }
         }
     }
