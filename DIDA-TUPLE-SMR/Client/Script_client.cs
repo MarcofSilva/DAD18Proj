@@ -13,8 +13,8 @@ namespace Client
     {
         private API_SMR _tupleSpaceAPI;
 
-        public Script_Client(){
-            _tupleSpaceAPI = new API_SMR();
+        public Script_Client(int port){
+            _tupleSpaceAPI = new API_SMR(port);
         }
 
         private string ConstructString(string textToParse, ref int index){

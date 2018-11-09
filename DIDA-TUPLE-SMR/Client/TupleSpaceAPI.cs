@@ -17,8 +17,11 @@ namespace Client {
 
         public abstract void Take(ArrayList tuple);
 
-        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, ArrayList serverURLs) {
-            channel = new TcpChannel(); //TODO Port can't be 10000 (PCS) neither 10001 (Puppet Master)
+        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, ArrayList serverURLs, int port) {
+            System.Collections.IDictionary dict = new System.Collections.Hashtable();
+            dict["port"] = port;
+            dict["name"] = port.ToString();
+            channel = new TcpChannel(dict, null, null); //TODO Port can't be 10000 (PCS) neither 10001 (Puppet Master)
             ChannelServices.RegisterChannel(channel, false);
 
             List<IServerService> serverRemoteObjects = new List<IServerService>();
