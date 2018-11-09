@@ -10,25 +10,30 @@ using System.Threading.Tasks;
 
 namespace Client {
     public class API_XL : TupleSpaceAPI {
-        //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
-        private ArrayList serverURLs;
 
         private TcpChannel channel;
-        List<IServerService> serverRemoteObjects;
+        private ClientService _myRemoteObject;
+        private List<IServerService> serverRemoteObjects;
+
+        private string url;
 
         public API_XL() {
-            //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
-            serverURLs = new ArrayList();
-            serverURLs.Add("tcp://localhost:8086/ServService");
+            _myRemoteObject = new ClientService();
+            serverRemoteObjects = prepareForRemoting(ref channel, _myRemoteObject);
 
-            serverRemoteObjects = prepareForRemoting(ref channel, serverURLs);
+            url = "tcp://localhost:8085/ClientService";  //TODO make url dinamic
         }
+
+        public delegate void writeDelegate(ArrayList tuple);
+        public delegate void readDelegate(ArrayList tuple);
+        public delegate void takeDelegate(ArrayList tuple);
 
         public override void Write(ArrayList tuple) {
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Write(tuple, "url");
+                    remoteObject.Write(tuple, url, nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO
@@ -37,21 +42,11 @@ namespace Client {
         }
 
         public override void Read(ArrayList tuple) {
-            //TODO
-            //prints para debbug
-            //Console.WriteLine("read in API_SMR: ");
-            foreach (var item in tuple) {
-                if (item != null) {
-                    //Console.WriteLine(item.ToString());
-                }
-                else {
-                    Console.WriteLine("null");
-                }
-            }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Read(tuple, "url");
+                    remoteObject.Read(tuple, url, nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO
@@ -68,8 +63,9 @@ namespace Client {
             }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Take(tuple, "url");
+                    remoteObject.Take(tuple, url, nonce);
                 }
+                nonce += 1;
             }
             catch (SocketException) {
                 //TODO

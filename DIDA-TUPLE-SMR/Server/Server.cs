@@ -38,14 +38,13 @@ namespace Server{
 
         //devolve arraylist vazia/1 elemento ou varios
         public List<ArrayList> take(ArrayList tuple) {
-            Console.WriteLine("hii");
             List<ArrayList> res = read(tuple);
             if (res.Count == 0) {
                 Console.WriteLine("impossible to remove, no tuple in tuple space");
                 return res;
             }
             tupleContainer.Remove(res[0]);
-            Console.WriteLine("take container " + tupleContainer.Count);
+            Console.WriteLine("take called " + tupleContainer.Count);
             return res; 
         }
 
@@ -113,8 +112,7 @@ namespace Server{
                     res.Add(el);
                 }
             }
-            Console.WriteLine("read container " + tupleContainer.Count);
-            Console.WriteLine("read res " + res.Count);
+            Console.WriteLine("read container: " + tupleContainer.Count + " res count: " + res.Count);
             return res;
         }
 

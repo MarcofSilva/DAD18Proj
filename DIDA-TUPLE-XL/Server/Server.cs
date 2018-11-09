@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using ClassLibrary;
 
 namespace Server{
-    class Server{
+    public class Server{
         private List<ArrayList> tupleContainer;
         TcpChannel channel;
         ServerService myRemoteObject;
@@ -22,7 +22,7 @@ namespace Server{
             channel = new TcpChannel(8086); //TODO port
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
-            RemotingServices.Marshal(myRemoteObject, "ServService", typeof(ServerService)); //TODO remote object name
+            RemotingServices.Marshal(myRemoteObject, "ServerService", typeof(ServerService)); //TODO remote object name
             Console.WriteLine("<enter> to stop...");
             Console.ReadLine();
         }
@@ -36,14 +36,12 @@ namespace Server{
 
         //devolve arraylist vazia/1 elemento ou varios
         public List<ArrayList> take(ArrayList tuple) {
-            Console.WriteLine("hii");
             List<ArrayList> res = read(tuple);
             if (res.Count == 0) {
                 Console.WriteLine("impossible to remove, no tuple in tuple space");
                 return res;
             }
             tupleContainer.Remove(res[0]);
-            Console.WriteLine("take container " + tupleContainer.Count);
             return res; 
         }
 
@@ -111,8 +109,6 @@ namespace Server{
                     res.Add(el);
                 }
             }
-            Console.WriteLine("read container " + tupleContainer.Count);
-            Console.WriteLine("read res " + res.Count);
             return res;
         }
 
