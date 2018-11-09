@@ -12,19 +12,21 @@ using System.Threading.Tasks;
 using ClassLibrary;
 
 namespace Server{
-    class Server{
+    public class Server{
         private List<ArrayList> tupleContainer;
         TcpChannel channel;
         ServerService myRemoteObject;
 
-        public Server(){
+        public Server(int port){
+            Console.WriteLine("3");
+            System.Collections.IDictionary dict = new System.Collections.Hashtable();
+            dict["port"] = port;
+            dict["name"] = port.ToString();
             tupleContainer = new List<ArrayList>();
-            channel = new TcpChannel(8086); //TODO port
+            channel = new TcpChannel(dict, null, null);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
-            RemotingServices.Marshal(myRemoteObject, "ServService", typeof(ServerService)); //TODO remote object name
-            Console.WriteLine("<enter> to stop...");
-            Console.ReadLine();
+            RemotingServices.Marshal(myRemoteObject, "ServerService" + port.ToString(), typeof(ServerService)); //TODO remote object name
         }
 
         //void? devolve algo??
@@ -147,7 +149,9 @@ namespace Server{
         }
 
         static void Main(string[] args){
-            Server server = new Server();
+            int port;
+            Int32.TryParse(args[0], out port);
+            //Server server = new Server(port);
         }
     }
 }

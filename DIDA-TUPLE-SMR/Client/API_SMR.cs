@@ -21,7 +21,7 @@ namespace Client {
         public API_SMR() {
             //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
             serverURLs = new ArrayList();
-            serverURLs.Add("tcp://localhost:8086/ServService");
+            serverURLs.Add("tcp://localhost:8087/ServService");
 
             serverRemoteObjects = prepareForRemoting(ref channel, serverURLs);
         }

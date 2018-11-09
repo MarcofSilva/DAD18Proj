@@ -9,7 +9,7 @@ using ClassLibrary;
 
 namespace Client
 {
-    class Script_Client
+    public class Script_Client
     {
         private API_SMR _tupleSpaceAPI;
 
@@ -125,6 +125,7 @@ namespace Client
             return res;
         }
 
+        //public?
         private void executeOperation(string commandLine)
         {
             ArrayList tuple;
@@ -155,7 +156,7 @@ namespace Client
             }
         }
 
-        private void executeScript(string scriptName)
+        public void executeScript(string scriptName)
         {
             StreamReader reader = File.OpenText(scriptName);
             string line;

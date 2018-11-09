@@ -38,7 +38,10 @@ namespace PuppetMaster {
                     Int32.TryParse(items[4], out n4);
                     string[] urlServer = items[2].Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
                     idToPcs.Add(items[1], pcsList[urlServer[1]]);
+                    Console.WriteLine("1");
                     pcsList[urlServer[1]].CreateServer(items[1], items[2], n3, n4);
+                    Console.WriteLine("-");
+
                     break;
                 case "Client":
                     string[] urlClient = items[2].Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);

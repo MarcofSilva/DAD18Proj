@@ -51,6 +51,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Client\Client.csproj">
+      <Project>{4c23d98c-481f-47be-966c-791e902265f9}</Project>
+      <Name>Client</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CreationServiceLibrary\CreationServiceLibrary.csproj">
       <Project>{d4c20c4e-29ca-41a6-9e7e-889f540114a7}</Project>
       <Name>CreationServiceLibrary</Name>
