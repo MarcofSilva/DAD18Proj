@@ -5,35 +5,54 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Client {
     public class API_XL : TupleSpaceAPI {
 
+        private const int defaultPort = 8085;
         private TcpChannel channel;
-        private ClientService _myRemoteObject;
         private List<IServerService> serverRemoteObjects;
+        private int numServers;
 
         private string url;
 
         public API_XL() {
-            _myRemoteObject = new ClientService();
-            serverRemoteObjects = prepareForRemoting(ref channel, _myRemoteObject);
+            serverRemoteObjects = prepareForRemoting(ref channel, defaultPort);
+            numServers = serverRemoteObjects.Count;
 
-            url = "tcp://localhost:8085/ClientService";  //TODO make url dinamic
+            url = "tcp://localhost:" + defaultPort.ToString() + "/ClientService";  //TODO make url dinamic
         }
 
-        public delegate void writeDelegate(ArrayList tuple);
-        public delegate void readDelegate(ArrayList tuple);
-        public delegate void takeDelegate(ArrayList tuple);
+        public API_XL(int port) {
+            serverRemoteObjects = prepareForRemoting(ref channel, port);
+            numServers = serverRemoteObjects.Count;
+
+            url = "tcp://localhost:" + port.ToString() + "/ClientService";  //TODO make url dinamic
+        }
+
+        public delegate void writeDelegate(ArrayList tuple, string url, long nonce);
+        public delegate ArrayList readDelegate(ArrayList tuple, string url, long nonce);
+        public delegate void takeDelegate(ArrayList tuple, string url, long nonce);
 
         public override void Write(ArrayList tuple) {
+            WaitHandle[] handles = new WaitHandle[numServers];
             try {
-                foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Write(tuple, url, nonce);
+                for (int i = 0; i < numServers; i++) {
+                    IServerService remoteObject = serverRemoteObjects[i];
+                    writeDelegate writeDel = new writeDelegate(remoteObject.Write);
+                    IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
+                    handles[i] = ar.AsyncWaitHandle;
                 }
-                nonce += 1;
+                if (!WaitHandle.WaitAll(handles, 1000)) {
+                    Write(tuple);
+                }
+                else {
+                    nonce += 1;
+                }
             }
             catch (SocketException) {
                 //TODO
@@ -41,12 +60,28 @@ namespace Client {
             }
         }
 
-        public override void Read(ArrayList tuple) {
+        public override ArrayList Read(ArrayList tuple) {
+            WaitHandle[] handles = new WaitHandle[numServers];
+            IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
-                foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Read(tuple, url, nonce);
+                for (int i = 0; i < numServers; i++) {
+                    IServerService remoteObject = serverRemoteObjects[i];
+                    readDelegate writeDel = new readDelegate(remoteObject.Read);
+                    IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
+                    asyncResults[i] = ar;
+                    handles[i] = ar.AsyncWaitHandle;
                 }
-                nonce += 1;
+                int indxAsync = WaitHandle.WaitAny(handles, 3000); //Wait for the first answer from the servers
+                if (indxAsync == WaitHandle.WaitTimeout) { //if we have a timeout, due to no answer received with repeat the multicast TODO sera que querem isto
+                    return Read(tuple);
+                }
+                else {
+                    IAsyncResult asyncResult = asyncResults[indxAsync];
+                    readDelegate readDel = (readDelegate)((AsyncResult) asyncResult).AsyncDelegate;
+                    ArrayList resTuple = readDel.EndInvoke(asyncResult);
+                    nonce += 1;
+                    return resTuple;
+                }
             }
             catch (SocketException) {
                 //TODO
@@ -54,7 +89,7 @@ namespace Client {
             }
         }
 
-        public override void Take(ArrayList tuple) {
+        public override ArrayList Take(ArrayList tuple) {
             //TODO
             //prints para debbug
             //Console.Write("take in API_SMR: ");
@@ -63,7 +98,7 @@ namespace Client {
             }
             try {
                 foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Take(tuple, url, nonce);
+                    remoteObject.TakeRead(tuple, url, nonce);
                 }
                 nonce += 1;
             }
@@ -71,6 +106,7 @@ namespace Client {
                 //TODO
                 throw new NotImplementedException();
             }
+            return null;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         }
     }
 }

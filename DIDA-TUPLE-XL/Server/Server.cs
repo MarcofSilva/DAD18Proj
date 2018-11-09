@@ -13,44 +13,56 @@ using ClassLibrary;
 
 namespace Server{
     public class Server{
-        private List<ArrayList> tupleContainer;
-        TcpChannel channel;
-        ServerService myRemoteObject;
+        private List<ArrayList> tupleSpace;
+        private TcpChannel channel;
+        private ServerService myRemoteObject;
+        private const int defaultPort = 8086;
+        
 
         public Server(){
-            tupleContainer = new List<ArrayList>();
-            channel = new TcpChannel(8086); //TODO port
+            prepareRemoting(defaultPort);
+        }
+
+        public Server(int port) {
+            prepareRemoting(port);
+        }
+
+        private void prepareRemoting(int port) {
+            tupleSpace = new List<ArrayList>();
+            channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
             RemotingServices.Marshal(myRemoteObject, "ServerService", typeof(ServerService)); //TODO remote object name
-            Console.WriteLine("<enter> to stop...");
-            Console.ReadLine();
         }
 
-        //void? devolve algo??
-        public void write( ArrayList tuple){
-            tupleContainer.Add(tuple);
-            //Console.WriteLine(tupleContainer.Count);
-            return;
+        public void write(ArrayList tuple){
+            //Console.WriteLine("Operation: " + tupleToString(tuple)); TODO tupleToString
+            tupleSpace.Add(tuple);
+            Console.WriteLine("Write done!");
         }
 
         //devolve arraylist vazia/1 elemento ou varios
-        public List<ArrayList> take(ArrayList tuple) {
-            List<ArrayList> res = read(tuple);
+        public List<ArrayList> takeRead(ArrayList tuple) {
+            /*List<ArrayList> res = read(tuple);
             if (res.Count == 0) {
                 Console.WriteLine("impossible to remove, no tuple in tuple space");
                 return res;
             }
-            tupleContainer.Remove(res[0]);
-            return res; 
+            tupleSpace.Remove(res[0]);
+            return res;*/
+            return null;
         }
 
-        public List<ArrayList> read(ArrayList tuple){
+        public void takeRemove() {
+            //TODO
+        }
+
+        public ArrayList read(ArrayList tuple){
             List<ArrayList> res = new List<ArrayList>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
-            foreach (ArrayList el in tupleContainer){
-                bool add = true;
+            foreach (ArrayList el in tupleSpace){
+                bool isMatch = true;
                 if (el.Count != tuple.Count){
                     continue;
                 }
@@ -61,7 +73,7 @@ namespace Server{
                     }
 
                     if (tuple[i] != null && !( (tuple[i].GetType() == typeof(System.String)) || (el[i].GetType() == tuple[i].GetType())) ){
-                        add = false;
+                        isMatch = false;
                         break;
                     }
                     if (el[i].GetType() == typeof(System.String)) { // estamos a ver uma string
@@ -73,14 +85,14 @@ namespace Server{
                     }
                     if (el[i].GetType() != typeof(System.String)) {
                         if (tuple[i].GetType() == typeof(System.String) && el[i].GetType().Name == tuple[i].ToString()) {
-                            add = true;
+                            isMatch = true;
                             break;
                         }
                         else if (tuple[i].GetType() == typeof(DADTestA)) {
                             DADTestA tuplei = (DADTestA)tuple[i];
                             DADTestA eli = (DADTestA)el[i];
                             if (!tuplei.Equals(eli)) {
-                                add = false;
+                                isMatch = false;
                             }
                             break;
                         }
@@ -88,7 +100,7 @@ namespace Server{
                             DADTestB tuplei = (DADTestB)tuple[i];
                             DADTestB eli = (DADTestB)el[i];
                             if (!tuplei.Equals(eli)) {
-                                add = false;
+                                isMatch = false;
                                 break;
                             }
                             break;
@@ -97,19 +109,21 @@ namespace Server{
                             DADTestC tuplei = (DADTestC)tuple[i];
                             DADTestC eli = (DADTestC)el[i];
                             if (!tuplei.Equals(eli)) {
-                                add = false;
+                                isMatch = false;
                                 break;
                             }
                             break;
                         }
                     }
-                    add = false;
+                    isMatch = false;
                 }
-                if (add) {
-                    res.Add(el);
+                if (isMatch) {
+                    Console.WriteLine("Read: " + el); //TODO tupleToString(el)
+                    return el;
                 }
             }
-            return res;
+            Console.WriteLine("Read: No match found!");
+            return null; //no match
         }
 
         private bool matchStrs(object local, object request){
@@ -143,7 +157,16 @@ namespace Server{
         }
 
         static void Main(string[] args){
-            Server server = new Server();
+            Server server;
+            if(args.Length == 0) {
+                server = new Server();
+            }
+            else {
+                server = new Server(int.Parse(args[0]));
+            }
+
+            Console.WriteLine("<enter> to stop...");
+            Console.ReadLine();
         }
     }
 }

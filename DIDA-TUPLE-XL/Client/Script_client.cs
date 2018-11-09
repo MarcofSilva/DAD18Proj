@@ -17,6 +17,10 @@ namespace Client
             _tupleSpaceAPI = new API_XL();
         }
 
+        public Script_Client(int port) {
+            _tupleSpaceAPI = new API_XL(port);
+        }
+
         private string ConstructString(string textToParse, ref int index){
             string aux = "";
             if (textToParse[index] == '*') {
@@ -128,6 +132,7 @@ namespace Client
         private void executeOperation(string commandLine)
         {
             ArrayList tuple;
+            ArrayList response;
 
             string[] commandItems = commandLine.Split(new char[] { ' ' }, 2);
 
@@ -135,29 +140,59 @@ namespace Client
             {
                 case "add":
                     tuple = getTuple(commandItems[1]);
+                    Console.WriteLine("Operation: " + commandLine + "\n");
                     _tupleSpaceAPI.Write(tuple);
                     break;
 
                 case "read":
                     tuple = getTuple(commandItems[1]);
-                    _tupleSpaceAPI.Read(tuple);
+                    Console.WriteLine("Operation: " + commandLine);
+
+                    response = _tupleSpaceAPI.Read(tuple);
+                    Console.Write("Response: ");
+                    if (response == null) {
+                        Console.WriteLine("No match found\n");
+                    }
+                    else {
+                        Console.WriteLine(response + "\n");
+                    }
+
                     break;
 
                 case "take":
                     tuple = getTuple(commandItems[1]);
-                    _tupleSpaceAPI.Take(tuple);
+                    Console.WriteLine("Operation: " + commandLine);
+
+                    response = _tupleSpaceAPI.Take(tuple);
+                    Console.Write("Response: ");
+                    if (response == null) {
+                        Console.WriteLine("No match found\n");
+                    }
+                    else {
+                        Console.WriteLine(response + "\n");
+                    }
                     break;
 
                 case "wait":
                     Console.Write("wait" + commandItems[1]);
                     System.Threading.Thread.Sleep(int.Parse(commandItems[1]));
+                    Console.WriteLine("Operation: " + commandLine + "\n");
                     break;
             }
         }
 
         private void executeScript(string scriptName)
         {
-            StreamReader reader = File.OpenText(scriptName);
+            StreamReader reader = null;
+
+            try {
+                reader = File.OpenText(scriptName);
+            }
+            catch (FileNotFoundException) {
+                Console.WriteLine("File not found!");
+                return;
+            }
+
             string line;
 
             //Repeat auxs
@@ -194,22 +229,26 @@ namespace Client
 
         static void Main(string[] args)
         {
-            Script_Client client = new Script_Client();
-            foreach (string filename in args)
-            {
-                client.executeScript(filename);
+            Script_Client client;
+            if (args.Length == 0) {
+                client = new Script_Client();
+            }
+            else {
+                client = new Script_Client(int.Parse(args[0]));
             }
 
             while (true) {
-                Console.WriteLine("Enter new Command (Quit to stop)...");
+                Console.WriteLine("Enter script(s) (Quit to stop)...");
 
-                string command = Console.ReadLine();
+                string line = Console.ReadLine();
+                string[] commands = line.Split();
 
-                if(command.Equals("Quit") || command.Equals("quit")) {
+                if (commands[0].Equals("Quit") || commands[0].Equals("quit")) {
                     break;
                 }
-                else {
-                    client.executeOperation(command);
+
+                foreach (string filename in commands) {
+                    client.executeScript(filename);
                 }
             }
         }
