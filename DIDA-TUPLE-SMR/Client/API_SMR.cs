@@ -18,12 +18,12 @@ namespace Client {
         private TcpChannel channel;
         List<IServerService> serverRemoteObjects;
 
-        public API_SMR(int port) {
+        public API_SMR(string URL) {
             //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
             serverURLs = new ArrayList();
-            serverURLs.Add("tcp://localhost:8087/ServService");
+            serverURLs.Add("tcp://localhost:8086/S");
 
-            serverRemoteObjects = prepareForRemoting(ref channel, serverURLs, port);
+            serverRemoteObjects = prepareForRemoting(ref channel, serverURLs, URL);
         }
 
         public override void Write(ArrayList tuple) {

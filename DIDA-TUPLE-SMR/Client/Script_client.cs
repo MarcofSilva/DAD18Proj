@@ -12,9 +12,14 @@ namespace Client
     public class Script_Client
     {
         private API_SMR _tupleSpaceAPI;
+        private string defaultURL = "tcp://4.5.6.7:60001/C";
 
-        public Script_Client(int port){
-            _tupleSpaceAPI = new API_SMR(port);
+        public Script_Client() {
+            _tupleSpaceAPI = new API_SMR(defaultURL);
+        }
+
+        public Script_Client(string URL){
+            _tupleSpaceAPI = new API_SMR(URL);
         }
 
         private string ConstructString(string textToParse, ref int index){
@@ -158,7 +163,14 @@ namespace Client
 
         public void executeScript(string scriptName)
         {
-            StreamReader reader = File.OpenText(scriptName);
+            StreamReader reader;
+            try {
+                reader = File.OpenText(scriptName);
+            }
+            catch (FileNotFoundException) {
+                Console.WriteLine("File not found!");
+                return;
+            }
             string line;
 
             //Repeat auxs
@@ -195,22 +207,27 @@ namespace Client
 
         static void Main(string[] args)
         {
-            Script_Client client = new Script_Client(8083);
-            foreach (string filename in args)
-            {
-                client.executeScript(filename);
+            Script_Client client;
+            if (args.Length == 0) {
+                client = new Script_Client();
+            }
+            else {
+                client = new Script_Client(args[0]);
+                //client.executeScript(args[1]);
             }
 
             while (true) {
-                Console.WriteLine("Enter new Command (Quit to stop)...");
+                Console.WriteLine("Enter script(s) (Quit to stop)...");
 
-                string command = Console.ReadLine();
+                string line = Console.ReadLine();
+                string[] commands = line.Split();
 
-                if(command.Equals("Quit") || command.Equals("quit")) {
+                if (commands[0].Equals("Quit") || commands[0].Equals("quit")) {
                     break;
                 }
-                else {
-                    client.executeOperation(command);
+
+                foreach (string filename in commands) {
+                    client.executeScript(filename);
                 }
             }
         }
