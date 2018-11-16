@@ -13,7 +13,6 @@ namespace PuppetMaster {
     class PuppetMaster {
 
         private TcpChannel _channel;
-        private I_PCS_Service pcs;
         private Dictionary<string, I_PCS_Service> pcsList = new Dictionary<string, I_PCS_Service>(); //<ip:object>
         private Dictionary<string, I_PCS_Service> idToPcs = new Dictionary<string, I_PCS_Service>(); //<processid:object>
 

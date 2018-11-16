@@ -1,6 +1,4 @@
 ﻿using CreationServiceLibrary;
-using Client;
-using Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +20,7 @@ namespace ProcessCreationService {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             Console.WriteLine("Creating client at port " + urlSplit[2]);
             Process proc = new Process();
-            proc.StartInfo.FileName = "Client";
+            proc.StartInfo.FileName = "..\\..\\..\\Client\\bin\\Debug\\Client";
             proc.StartInfo.Arguments = URL + " " + script_file;
             Console.WriteLine(proc.StartInfo.Arguments);
             proc.Start();
@@ -33,7 +31,7 @@ namespace ProcessCreationService {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             Console.WriteLine("Creating server at port " + urlSplit[2]);
             Process proc = new Process();
-            proc.StartInfo.FileName = "Server";
+            proc.StartInfo.FileName = "..\\..\\..\\Server\\bin\\Debug\\Server";
             proc.StartInfo.Arguments = URL;
             Console.WriteLine(proc.StartInfo.Arguments);
             proc.Start();

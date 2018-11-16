@@ -167,8 +167,9 @@ namespace Client
             try {
                 reader = File.OpenText(scriptName);
             }
-            catch (FileNotFoundException) {
+            catch (FileNotFoundException f) {
                 Console.WriteLine("File not found!");
+                Console.WriteLine(f.ToString());
                 return;
             }
             string line;
@@ -213,7 +214,8 @@ namespace Client
             }
             else {
                 client = new Script_Client(args[0]);
-                //client.executeScript(args[1]);
+                client.executeScript(args[1]);
+                Console.WriteLine(args[1]);
             }
 
             while (true) {
