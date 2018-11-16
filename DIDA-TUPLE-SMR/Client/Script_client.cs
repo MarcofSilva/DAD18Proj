@@ -195,7 +195,7 @@ namespace Client
 
         static void Main(string[] args)
         {
-            Script_Client client = new Script_Client();
+            Script_Client client = new Script_Client(8083);
             foreach (string filename in args)
             {
                 client.executeScript(filename);

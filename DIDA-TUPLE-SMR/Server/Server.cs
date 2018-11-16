@@ -10,27 +10,41 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
 using ClassLibrary;
+using System.Runtime.InteropServices;
 
-namespace Server{
-    public class Server{
+namespace Server {
+    public class Server {
         private List<ArrayList> tupleContainer;
         TcpChannel channel;
         ServerService myRemoteObject;
+        private const int defaultPort = 8086;
 
-        public Server(int port){
+
+        public Server() {
+            prepareRemoting(defaultPort, defaultPort.ToString());
+        }
+
+        public Server(string URL) {
             Console.WriteLine("3");
-            System.Collections.IDictionary dict = new System.Collections.Hashtable();
-            dict["port"] = port;
-            dict["name"] = port.ToString();
+            string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
+            int port;
+            Int32.TryParse(urlSplit[2], out port);
+
+            prepareRemoting(port, urlSplit[3]);
+            Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
+            
+        }
+
+        private void prepareRemoting(int port, string name) {
             tupleContainer = new List<ArrayList>();
-            channel = new TcpChannel(dict, null, null);
+            channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
-            RemotingServices.Marshal(myRemoteObject, "ServerService" + port.ToString(), typeof(ServerService)); //TODO remote object name
+            RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
         //void? devolve algo??
-        public void write( ArrayList tuple){
+        public void write(ArrayList tuple) {
             tupleContainer.Add(tuple);
             //Console.WriteLine(tupleContainer.Count);
             return;
@@ -45,25 +59,25 @@ namespace Server{
             }
             tupleContainer.Remove(res[0]);
             Console.WriteLine("take called " + tupleContainer.Count);
-            return res; 
+            return res;
         }
 
-        public List<ArrayList> read(ArrayList tuple){
+        public List<ArrayList> read(ArrayList tuple) {
             List<ArrayList> res = new List<ArrayList>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
-            foreach (ArrayList el in tupleContainer){
+            foreach (ArrayList el in tupleContainer) {
                 bool add = true;
-                if (el.Count != tuple.Count){
+                if (el.Count != tuple.Count) {
                     continue;
                 }
                 //sao do mesmo tamanho, vamos percorrer elemento a elemento nos 2
-                for(int i = 0; i < tuple.Count; i++ ){
+                for (int i = 0; i < tuple.Count; i++) {
                     if (tuple[i] == null && el[i].GetType() != typeof(System.String)) {
                         break;
                     }
 
-                    if (tuple[i] != null && !( (tuple[i].GetType() == typeof(System.String)) || (el[i].GetType() == tuple[i].GetType())) ){
+                    if (tuple[i] != null && !((tuple[i].GetType() == typeof(System.String)) || (el[i].GetType() == tuple[i].GetType()))) {
                         add = false;
                         break;
                     }
@@ -96,7 +110,7 @@ namespace Server{
                             }
                             break;
                         }
-                        else if(tuple[i].GetType() == typeof(DADTestC)) {
+                        else if (tuple[i].GetType() == typeof(DADTestC)) {
                             DADTestC tuplei = (DADTestC)tuple[i];
                             DADTestC eli = (DADTestC)el[i];
                             if (!tuplei.Equals(eli)) {
@@ -116,7 +130,7 @@ namespace Server{
             return res;
         }
 
-        private bool matchStrs(object local, object request){
+        private bool matchStrs(object local, object request) {
             string requeststr = (string)request;
             string localstr = (string)local;
             if (requeststr == "*") {
@@ -126,16 +140,16 @@ namespace Server{
             }
             if (requeststr.Contains("*")) {
                 string regex = "";
-                if(requeststr[0].ToString() == "*") {
+                if (requeststr[0].ToString() == "*") {
                     //quero o resto da string menos o primeiro elemento
                     regex = ".*" + requeststr.Substring(1) + "$";
                 }
                 else {
                     //quero o resto da string menos o *
-                    regex = "^" + requeststr.Substring(0, (requeststr.Length -1)) + ".*";
+                    regex = "^" + requeststr.Substring(0, (requeststr.Length - 1)) + ".*";
                 }
                 Regex wildcard = new Regex(regex);
-                if (wildcard.IsMatch(localstr)){
+                if (wildcard.IsMatch(localstr)) {
                     return true;
                 }
             }
@@ -145,11 +159,26 @@ namespace Server{
             }
             return false;
         }
+        [DllImport("kernel32.dll")]
+        static extern void RaiseException(uint dwExceptionCode, uint dwExceptionFlags, uint nNumberOfArguments, IntPtr lpArguments);
 
-        static void Main(string[] args){
-            int port;
-            Int32.TryParse(args[0], out port);
-            //Server server = new Server(port);
+        public void crash() {
+            Environment.Exit(1);
+
+        }
+
+        static void Main(string[] args) {
+            Server server;
+            if (args.Length == 0) {
+                Console.WriteLine("no URL found!");
+                server = new Server();
+            }
+            else {
+                server = new Server(args[0]);
+            }
+
+            Console.WriteLine("<enter> to stop...");
+            Console.ReadLine();
         }
     }
 }
