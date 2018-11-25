@@ -22,6 +22,32 @@ namespace Client
             _tupleSpaceAPI = new API_XL(URL);
         }
 
+        private String printTuple(ArrayList tuple) {
+            string acc = "<";
+            for (int i = 0; i < tuple.Count; i++) {
+                if (i != 0) {
+                    acc += ",";
+                }
+                if (tuple[i].GetType() == typeof(System.String)) {
+                    acc += "\"" + tuple[i].ToString() + "\"";
+                }
+                else if (tuple[i] == typeof(DADTestA)) {
+                    acc += "DADTestA";
+                }
+                else if (tuple[i] == typeof(DADTestB)) {
+                    acc += "DADTestB";
+                }
+                else if (tuple[i] == typeof(DADTestC)) {
+                    acc += "DADTestC";
+                }
+                else {
+                    acc += tuple[i].ToString();
+                }
+            }
+            acc += ">";
+            return acc;
+        }
+
         private string ConstructString(string textToParse, ref int index){
             string aux = "";
             if (textToParse[index] == '*') {
@@ -143,6 +169,7 @@ namespace Client
                     tuple = getTuple(commandItems[1]);
                     Console.WriteLine("Operation: " + commandLine + "\n");
                     _tupleSpaceAPI.Write(tuple);
+
                     break;
 
                 case "read":
@@ -155,7 +182,7 @@ namespace Client
                         Console.WriteLine("No match found\n");
                     }
                     else {
-                        Console.WriteLine(response + "\n");
+                        Console.WriteLine(printTuple(response) + "\n");
                     }
 
                     break;
@@ -170,7 +197,7 @@ namespace Client
                         Console.WriteLine("No match found\n");
                     }
                     else {
-                        Console.WriteLine(response + "\n");
+                        Console.WriteLine(printTuple(response) + "\n");
                     }
                     break;
 

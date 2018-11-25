@@ -28,8 +28,9 @@ namespace Client {
         }
 
         public delegate void writeDelegate(ArrayList tuple, string url, long nonce);
-        public delegate ArrayList readDelegate(ArrayList tuple, string url, long nonce);
-        public delegate void takeDelegate(ArrayList tuple, string url, long nonce);
+        public delegate List<ArrayList> readDelegate(ArrayList tuple, string url, long nonce);
+        public delegate List<ArrayList> takeReadDelegate(ArrayList tuple, string url, long nonce);
+        public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
         public override void Write(ArrayList tuple) {
             WaitHandle[] handles = new WaitHandle[numServers];
@@ -59,8 +60,8 @@ namespace Client {
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
-                    readDelegate writeDel = new readDelegate(remoteObject.Read);
-                    IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
+                    readDelegate readDel = new readDelegate(remoteObject.Read);
+                    IAsyncResult ar = readDel.BeginInvoke(tuple, url, nonce, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
@@ -71,9 +72,9 @@ namespace Client {
                 else {
                     IAsyncResult asyncResult = asyncResults[indxAsync];
                     readDelegate readDel = (readDelegate)((AsyncResult) asyncResult).AsyncDelegate;
-                    ArrayList resTuple = readDel.EndInvoke(asyncResult);
+                    List<ArrayList> resTuple = readDel.EndInvoke(asyncResult);
                     nonce += 1;
-                    return resTuple;
+                    return resTuple[0];
                 }
             }
             catch (SocketException) {
@@ -83,17 +84,46 @@ namespace Client {
         }
 
         public override ArrayList Take(ArrayList tuple) {
-            //TODO
-            //prints para debbug
             //Console.Write("take in API_SMR: ");
-            foreach (var item in tuple) {
-                //Console.WriteLine(item.ToString());
-            }
+            WaitHandle[] handles = new WaitHandle[numServers];
+            IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             try {
-                foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.TakeRead(tuple, url, nonce);
+                for (int i = 0; i < numServers; i++) {
+                    IServerService remoteObject = serverRemoteObjects[i];
+                    takeReadDelegate takereadDel = new takeReadDelegate(remoteObject.TakeRead);
+                    IAsyncResult ar = takereadDel.BeginInvoke(tuple, url, nonce, null, null);
+                    asyncResults[i] = ar;
+                    handles[i] = ar.AsyncWaitHandle;
+                }
+                bool allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
+                List<ArrayList> res = new List<ArrayList>();
+                if (!allcompleted) {
+                    return Take(tuple);
+                }
+                else{ //all have to completed
+                    for(int i = 0; i < numServers; i++) {
+                        IAsyncResult asyncResult = asyncResults[i];
+                        readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                        List<ArrayList> resTuple = readDel.EndInvoke(asyncResult);
+                        res = res.Union(resTuple).ToList();
+                    }
+                }
+                //chose first commun to all?
+                ArrayList tupletoDelete = res[0];
+                for (int i = 0; i < numServers; i++) {
+                    IServerService remoteObject = serverRemoteObjects[i];
+                    takeRemoveDelegate takeremDel = new takeRemoveDelegate(remoteObject.TakeRemove);
+                    IAsyncResult ar = takeremDel.BeginInvoke(tupletoDelete, url, nonce, null, null);
+                    asyncResults[i] = ar;
+                    handles[i] = ar.AsyncWaitHandle;
+                }
+                //should we just wait for all or certify they return ack?
+                allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
+                if (!allcompleted) {
+                    return Take(tuple);
                 }
                 nonce += 1;
+                return tupletoDelete;
             }
             catch (SocketException) {
                 //TODO

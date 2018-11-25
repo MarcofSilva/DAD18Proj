@@ -42,30 +42,22 @@ namespace Server
             }
         }
 
-        public ArrayList Read(ArrayList tuple, string clientURL, long nonce) {
-            ArrayList responseTuple = new ArrayList();
+        public List<ArrayList> Read(ArrayList tuple, string clientURL, long nonce) {
+            List<ArrayList> responseTuple = new List<ArrayList>();
             validRequest(clientURL, nonce); //Update nonce info
             responseTuple = _server.read(tuple);
             return responseTuple;
         }
 
-        public ArrayList TakeRead(ArrayList tuple, string clientURL, long nonce) {
-            /*ArrayList ack = new ArrayList();
-            List<ArrayList> res = new List<ArrayList>();
-            if (validRequest(clientURL, nonce)) {//sucess
-                ack.Add(true);
-                ack.Add(nonce);
-                res = _server.takeRead(tuple);
-            }
-            else {//request duplicated
-                ack.Add(false);
-            }
-            _remoteStorage[clientURL].TakeResponse(ack, res);*/
-            return null;
+        public List<ArrayList> TakeRead(ArrayList tuple, string clientURL, long nonce) {
+            List<ArrayList> responseTuple = new List<ArrayList>();
+            validRequest(clientURL, nonce); //Update nonce info
+            responseTuple = _server.takeRead(tuple);
+            return responseTuple;
         }
 
         public void TakeRemove(ArrayList tuple, string clientUrl, long nonce) {
-
+            _server.takeRead(tuple);
         }
     }
 }

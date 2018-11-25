@@ -19,7 +19,6 @@ namespace Server{
         private const int defaultPort = 8086;
         private const string defaultname = "Server";
 
-
         public Server(){
             prepareRemoting(defaultPort, defaultname);
         }
@@ -70,26 +69,20 @@ namespace Server{
         public void write(ArrayList tuple){
             //Console.WriteLine("Operation: " + tupleToString(tuple)); TODO tupleToString
             tupleSpace.Add(tuple);
-            Console.WriteLine("Writed: " + printTuple(tuple) + "\n\n");
+            Console.WriteLine("Writed: " + printTuple(tuple) + "\n");
         }
 
-        //devolve arraylist vazia/1 elemento ou varios
+        //e basicamente igual ao read mas com locks nas estruturas
         public List<ArrayList> takeRead(ArrayList tuple) {
-            /*List<ArrayList> res = read(tuple);
-            if (res.Count == 0) {
-                Console.WriteLine("impossible to remove, no tuple in tuple space");
-                return res;
-            }
-            tupleSpace.Remove(res[0]);
-            return res;*/
-            return null;
+            List<ArrayList> res = read(tuple);
+            return res;
         }
 
-        public void takeRemove() {
-            //TODO
+        public void takeRemove(ArrayList tuple) {
+            tupleSpace.Remove(tuple);
         }
 
-        public ArrayList read(ArrayList tuple){
+        public List<ArrayList> read(ArrayList tuple){
             
             List<ArrayList> res = new List<ArrayList>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
@@ -109,14 +102,14 @@ namespace Server{
                     //se o pedido nao e null, para passar ou sao os 2 strings ou 2 nao sao string
                     if (tuple[i] != null && !((tuple[i].GetType() == typeof(System.String)) && (el[i].GetType() == typeof(System.String)) ||
                                               (tuple[i].GetType() != typeof(System.String)) && (el[i].GetType() != typeof(System.String)) )){
-                        Console.WriteLine("um e string e o outro nao");
+                        //Console.WriteLine("um e string e o outro nao");
                         isMatch = false;
                         break;
                     }
                     //se estamos aqui ou sao os 2 strings ou os 2 objetos
                     if (el[i].GetType() == typeof(System.String)) {
                         if (!matchStrs(el[i], tuple[i])) {
-                            Console.WriteLine("--------->strings dont match ");
+                            //Console.WriteLine("--------->strings dont match ");
                             isMatch = false;
                             break;
                         }
@@ -139,7 +132,7 @@ namespace Server{
                         DADTestA tuplei = (DADTestA)tuple[i];
                         DADTestA eli = (DADTestA)el[i];
                         if (!tuplei.Equals(eli)) {
-                            Console.WriteLine("objetos nao sao iguais DADTESTA");
+                            //Console.WriteLine("objetos nao sao iguais DADTESTA");
                             isMatch = false;
                             break;
                         }
@@ -150,7 +143,7 @@ namespace Server{
                         DADTestB tuplei = (DADTestB)tuple[i];
                         DADTestB eli = (DADTestB)el[i];
                         if (!tuplei.Equals(eli)) {
-                            Console.WriteLine("objetos nao sao iguais DADTESTB");
+                            //Console.WriteLine("objetos nao sao iguais DADTESTB");
                             isMatch = false;
                             break;
                         }
@@ -161,22 +154,21 @@ namespace Server{
                         DADTestC tuplei = (DADTestC)tuple[i];
                         DADTestC eli = (DADTestC)el[i];
                         if (!tuplei.Equals(eli)) {
-                            Console.WriteLine("objetos nao sao iguais DADTESTC");
+                            //Console.WriteLine("objetos nao sao iguais DADTESTC");
                             isMatch = false;
                             break;
                         }
                         break;
                     }
-                    Console.WriteLine("reached end");
+                    //Console.WriteLine("reached end");
                     isMatch = false;
                 }
                 if (isMatch) {
-                    Console.WriteLine("Read: " + printTuple(el) + "\n\n"); 
-                    return el;//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
+                    Console.WriteLine("Read: " + printTuple(el) + "\n");
+                    res.Add(el);//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
                 }
             }
-            Console.WriteLine("Read: No match found!");
-            return null; //no match
+            return res; //no match
         }
 
         private bool matchStrs(object local, object request){

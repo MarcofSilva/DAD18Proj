@@ -9,9 +9,9 @@ namespace RemoteServicesLibrary
 {
     public interface IServerService
     {
-        ArrayList Read(ArrayList tuple, string clientUrl, long nonce);
+        List<ArrayList> Read(ArrayList tuple, string clientUrl, long nonce);
 
-        ArrayList TakeRead(ArrayList tuple, string clientUrl, long nonce);
+        List<ArrayList> TakeRead(ArrayList tuple, string clientUrl, long nonce);
 
         void TakeRemove(ArrayList tuple, string clientUrl, long nonce);
 
