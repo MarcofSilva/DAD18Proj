@@ -20,18 +20,11 @@ namespace Client {
 
         private string url;
 
-        public API_XL() {
-            serverRemoteObjects = prepareForRemoting(ref channel, defaultPort);
+        public API_XL(string URL) {
+            serverRemoteObjects = prepareForRemoting(ref channel, URL);
             numServers = serverRemoteObjects.Count;
 
-            url = "tcp://localhost:" + defaultPort.ToString() + "/ClientService";  //TODO make url dinamic
-        }
-
-        public API_XL(int port) {
-            serverRemoteObjects = prepareForRemoting(ref channel, port);
-            numServers = serverRemoteObjects.Count;
-
-            url = "tcp://localhost:" + port.ToString() + "/ClientService";  //TODO make url dinamic
+            url = URL;
         }
 
         public delegate void writeDelegate(ArrayList tuple, string url, long nonce);

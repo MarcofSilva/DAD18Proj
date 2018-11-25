@@ -12,13 +12,14 @@ namespace Client
     class Script_Client
     {
         private API_XL _tupleSpaceAPI;
+        private string defaultURL = "tcp://4.5.6.7:60001/C";
 
         public Script_Client(){
-            _tupleSpaceAPI = new API_XL();
+            _tupleSpaceAPI = new API_XL(defaultURL);
         }
 
-        public Script_Client(int port) {
-            _tupleSpaceAPI = new API_XL(port);
+        public Script_Client(string URL) {
+            _tupleSpaceAPI = new API_XL(URL);
         }
 
         private string ConstructString(string textToParse, ref int index){
@@ -234,7 +235,9 @@ namespace Client
                 client = new Script_Client();
             }
             else {
-                client = new Script_Client(int.Parse(args[0]));
+                client = new Script_Client(args[0]);
+                client.executeScript(args[1]);
+                Console.WriteLine(args[1]);
             }
 
             while (true) {

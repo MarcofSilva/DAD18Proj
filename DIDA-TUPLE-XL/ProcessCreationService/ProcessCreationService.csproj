@@ -4,13 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}</ProjectGuid>
+    <ProjectGuid>{F5291A9F-39D6-48CE-A4D4-6788D9198D2F}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>PuppetMaster</RootNamespace>
-    <AssemblyName>PuppetMaster</AssemblyName>
+    <RootNamespace>ProcessCreationService</RootNamespace>
+    <AssemblyName>ProcessCreationService</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -33,7 +34,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Remoting" />
     <Reference Include="System.Xml.Linq" />
@@ -44,17 +44,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PuppetMaster.cs" />
+    <Compile Include="PCS.cs" />
+    <Compile Include="PCS_Service.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Client\Client.csproj">
-      <Project>{4c23d98c-481f-47be-966c-791e902265f9}</Project>
-      <Name>Client</Name>
-    </ProjectReference>
     <ProjectReference Include="..\CreationServiceLibrary\CreationServiceLibrary.csproj">
       <Project>{d4c20c4e-29ca-41a6-9e7e-889f540114a7}</Project>
       <Name>CreationServiceLibrary</Name>

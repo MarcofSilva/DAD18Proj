@@ -17,22 +17,28 @@ namespace Server{
         private TcpChannel channel;
         private ServerService myRemoteObject;
         private const int defaultPort = 8086;
-        
+        private const string defaultname = "Server";
+
 
         public Server(){
-            prepareRemoting(defaultPort);
+            prepareRemoting(defaultPort, defaultname);
         }
 
-        public Server(int port) {
-            prepareRemoting(port);
+        public Server(string URL) {
+            string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
+            int port;
+            Int32.TryParse(urlSplit[2], out port);
+
+            prepareRemoting(port, urlSplit[3]);
+            Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
         }
 
-        private void prepareRemoting(int port) {
+        private void prepareRemoting(int port, string name) {
             tupleSpace = new List<ArrayList>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
-            RemotingServices.Marshal(myRemoteObject, "ServerService", typeof(ServerService)); //TODO remote object name
+            RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
         public void write(ArrayList tuple){
@@ -162,7 +168,7 @@ namespace Server{
                 server = new Server();
             }
             else {
-                server = new Server(int.Parse(args[0]));
+                server = new Server(args[0]);
             }
 
             Console.WriteLine("<enter> to stop...");

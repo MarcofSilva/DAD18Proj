@@ -35,18 +35,20 @@ namespace Client {
 
         public abstract ArrayList Take(ArrayList tuple);
 
-        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, int port) {
-            //todo string myRemoteObjectName = "ClientService"; //TODO should the definition of this name be here?
+        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, string URL) {
+            string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
+            int port;
+            Int32.TryParse(urlSplit[2], out port);
 
             channel = new TcpChannel(port); //Port can't be 10000 (PCS) neither 10001 (Puppet Master)
             ChannelServices.RegisterChannel(channel, false);
+
+            Console.WriteLine("Hello! I'm a Client at port " + urlSplit[2]);
+
             List<IServerService> serverRemoteObjects = new List<IServerService>();
             foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
                 serverRemoteObjects.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
             }
-
-            //todo RemotingServices.Marshal(myRemoteObject, myRemoteObjectName, typeof(ClientService));
-
             return serverRemoteObjects;
         }
     }
