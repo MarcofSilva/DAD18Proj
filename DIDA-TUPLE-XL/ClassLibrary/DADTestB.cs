@@ -25,5 +25,8 @@ namespace ClassLibrary {
                 return ((this.i1 == o.i1) && (this.s1.Equals(o.s1)) && (this.i2 == o.i2));
             }
         }
+        public override string ToString() {
+            return "DADTestB(" + i1.ToString() + ", \"" + s1.ToString() + "\", " + i2.ToString() + ")";
+        }
     }
 }
