@@ -41,10 +41,36 @@ namespace Server{
             RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
+        private String printTuple(ArrayList tuple) {
+            string acc = "<";
+            for (int i = 0; i < tuple.Count; i++) {
+                if (i != 0) {
+                    acc += ",";
+                }
+                if (tuple[i].GetType() == typeof(System.String)) {
+                    acc += "\"" + tuple[i].ToString() + "\"";
+                }
+                else if(tuple[i] == typeof(DADTestA)) {
+                    acc += "DADTestA";
+                }
+                else if (tuple[i] == typeof(DADTestB)) {
+                    acc += "DADTestB";
+                }
+                else if (tuple[i] == typeof(DADTestC)) {
+                    acc += "DADTestC";
+                }
+                else {
+                    acc += tuple[i].ToString();
+                }
+            }
+            acc += ">";
+            return acc;
+        }
+
         public void write(ArrayList tuple){
             //Console.WriteLine("Operation: " + tupleToString(tuple)); TODO tupleToString
             tupleSpace.Add(tuple);
-            Console.WriteLine("Write done!");
+            Console.WriteLine("Writed: " + printTuple(tuple) + "\n\n");
         }
 
         //devolve arraylist vazia/1 elemento ou varios
@@ -64,6 +90,7 @@ namespace Server{
         }
 
         public ArrayList read(ArrayList tuple){
+            
             List<ArrayList> res = new List<ArrayList>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
@@ -71,61 +98,81 @@ namespace Server{
                 bool isMatch = true;
                 if (el.Count != tuple.Count){
                     continue;
+                    
                 }
                 //sao do mesmo tamanho, vamos percorrer elemento a elemento nos 2
                 for(int i = 0; i < tuple.Count; i++ ){
+                    //pedido e um null e estamos a ver um objeto
                     if (tuple[i] == null && el[i].GetType() != typeof(System.String)) {
-                        break;
+                        continue ;
                     }
-
-                    if (tuple[i] != null && !( (tuple[i].GetType() == typeof(System.String)) || (el[i].GetType() == tuple[i].GetType())) ){
+                    //se o pedido nao e null, para passar ou sao os 2 strings ou 2 nao sao string
+                    if (tuple[i] != null && !((tuple[i].GetType() == typeof(System.String)) && (el[i].GetType() == typeof(System.String)) ||
+                                              (tuple[i].GetType() != typeof(System.String)) && (el[i].GetType() != typeof(System.String)) )){
+                        Console.WriteLine("um e string e o outro nao");
                         isMatch = false;
                         break;
                     }
-                    if (el[i].GetType() == typeof(System.String)) { // estamos a ver uma string
-                        if (tuple[i] != null && capital.IsMatch(tuple[i].ToString())) { }//request e objeto mas estamos a ver string
-                        //request e um objeto
-                        else if (tuple[i] != null && matchStrs(el[i], tuple[i])) {
+                    //se estamos aqui ou sao os 2 strings ou os 2 objetos
+                    if (el[i].GetType() == typeof(System.String)) {
+                        if (!matchStrs(el[i], tuple[i])) {
+                            Console.WriteLine("--------->strings dont match ");
+                            isMatch = false;
                             break;
                         }
+                        continue;
                     }
-                    if (el[i].GetType() != typeof(System.String)) {
-                        if (tuple[i].GetType() == typeof(System.String) && el[i].GetType().Name == tuple[i].ToString()) {
-                            isMatch = true;
-                            break;
-                        }
-                        else if (tuple[i].GetType() == typeof(DADTestA)) {
-                            DADTestA tuplei = (DADTestA)tuple[i];
-                            DADTestA eli = (DADTestA)el[i];
-                            if (!tuplei.Equals(eli)) {
-                                isMatch = false;
-                            }
-                            break;
-                        }
-                        else if (tuple[i].GetType() == typeof(DADTestB)) {
-                            DADTestB tuplei = (DADTestB)tuple[i];
-                            DADTestB eli = (DADTestB)el[i];
-                            if (!tuplei.Equals(eli)) {
-                                isMatch = false;
-                                break;
-                            }
-                            break;
-                        }
-                        else if(tuple[i].GetType() == typeof(DADTestC)) {
-                            DADTestC tuplei = (DADTestC)tuple[i];
-                            DADTestC eli = (DADTestC)el[i];
-                            if (!tuplei.Equals(eli)) {
-                                isMatch = false;
-                                break;
-                            }
-                            break;
-                        }
+                    if (tuple[i] == typeof(DADTestA) && el[i].GetType() == typeof(DADTestA)) {
+                        //Console.WriteLine("asked for type DADTestA and there is one");
+                        continue;
                     }
+                    else if (tuple[i] == typeof(DADTestB) && el[i].GetType() == typeof(DADTestB)) {
+                        //Console.WriteLine("asked for type DADTestB and there is one");
+                        continue;
+                    }
+                    else if (tuple[i] == typeof(DADTestC) && el[i].GetType() == typeof(DADTestC)) {
+                        //Console.WriteLine("asked for type DADTestC and there is one");
+                        continue;
+                    }
+                    else if (tuple[i].GetType() == typeof(DADTestA) && el[i].GetType() == typeof(DADTestA)) {
+                        //Console.WriteLine("------------------> DADTestA");
+                        DADTestA tuplei = (DADTestA)tuple[i];
+                        DADTestA eli = (DADTestA)el[i];
+                        if (!tuplei.Equals(eli)) {
+                            Console.WriteLine("objetos nao sao iguais DADTESTA");
+                            isMatch = false;
+                            break;
+                        }
+                        continue;
+                    }
+                    else if (tuple[i].GetType() == typeof(DADTestB) && el[i].GetType() == typeof(DADTestB)) {
+                        //Console.WriteLine("------------------> DADTestB");
+                        DADTestB tuplei = (DADTestB)tuple[i];
+                        DADTestB eli = (DADTestB)el[i];
+                        if (!tuplei.Equals(eli)) {
+                            Console.WriteLine("objetos nao sao iguais DADTESTB");
+                            isMatch = false;
+                            break;
+                        }
+                        continue;
+                    }
+                    else if(tuple[i].GetType() == typeof(DADTestC) && el[i].GetType() == typeof(DADTestC)) {
+                        //Console.WriteLine("------------------> DADTestC");
+                        DADTestC tuplei = (DADTestC)tuple[i];
+                        DADTestC eli = (DADTestC)el[i];
+                        if (!tuplei.Equals(eli)) {
+                            Console.WriteLine("objetos nao sao iguais DADTESTC");
+                            isMatch = false;
+                            break;
+                        }
+                        break;
+                    }
+                    Console.WriteLine("reached end");
                     isMatch = false;
                 }
                 if (isMatch) {
-                    Console.WriteLine("Read: " + el); //TODO tupleToString(el)
-                    return el;
+                    Console.WriteLine("Read: " + printTuple(el) + "\n\n"); 
+                    return el;//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
                 }
             }
             Console.WriteLine("Read: No match found!");
@@ -136,9 +183,7 @@ namespace Server{
             string requeststr = (string)request;
             string localstr = (string)local;
             if (requeststr == "*") {
-                if (local.GetType() == typeof(System.String)) {
-                    return true;
-                }
+                return true;
             }
             if (requeststr.Contains("*")) {
                 string regex = "";
