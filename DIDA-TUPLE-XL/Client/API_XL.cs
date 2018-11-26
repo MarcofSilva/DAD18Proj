@@ -105,6 +105,7 @@ namespace Client {
                         IAsyncResult asyncResult = asyncResults[i];
                         readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         List<ArrayList> resTuple = readDel.EndInvoke(asyncResult);
+                        //esta mal TODO
                         res = res.Union(resTuple).ToList();
                     }
                 }
