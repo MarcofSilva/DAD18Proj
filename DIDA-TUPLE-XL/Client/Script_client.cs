@@ -178,7 +178,7 @@ namespace Client
 
                     response = _tupleSpaceAPI.Read(tuple);
                     Console.Write("Response: ");
-                    if (response == null) {
+                    if (response.Count == 0) {
                         Console.WriteLine("No match found\n");
                     }
                     else {
@@ -193,7 +193,7 @@ namespace Client
 
                     response = _tupleSpaceAPI.Take(tuple);
                     Console.Write("Response: ");
-                    if (response == null) {
+                    if (response.Count == 0) {
                         Console.WriteLine("No match found\n");
                     }
                     else {

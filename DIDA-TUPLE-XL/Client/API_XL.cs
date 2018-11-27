@@ -74,6 +74,10 @@ namespace Client {
                     readDelegate readDel = (readDelegate)((AsyncResult) asyncResult).AsyncDelegate;
                     List<ArrayList> resTuple = readDel.EndInvoke(asyncResult);
                     nonce += 1;
+                    if (resTuple.Count == 0) {
+                        Console.WriteLine("--->DEBUG: No tuple returned from server");
+                        return new ArrayList();
+                    }
                     return resTuple[0];
                 }
             }
@@ -84,7 +88,7 @@ namespace Client {
         }
 
         public override ArrayList Take(ArrayList tuple) {
-            //Console.Write("take in API_SMR: ");
+            //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             try {
@@ -101,16 +105,28 @@ namespace Client {
                     return Take(tuple);
                 }
                 else{ //all have to completed
-                    for(int i = 0; i < numServers; i++) {
+                    for (int i = 0; i < numServers; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
-                        readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        List<ArrayList> resTuple = readDel.EndInvoke(asyncResult);
-                        //esta mal TODO
-                        res = res.Union(resTuple).ToList();
+                        takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                        List<ArrayList> resTuple = takeReadDel.EndInvoke(asyncResult);
+                        //TODO
+                        if (i == 0) {
+                            res = resTuple;
+                        }
+                        else {
+                            //TODO comparador pode estar mal, 2 tuplos iguais podem nao dar igual no intersect
+                            //testar 2 servidores e ver se o mesmo tuplo e considerado uma intersecao
+                            res = res.Intersect(resTuple).ToList();
+                        }
                     }
                 }
                 //chose first commun to all?
+                if(res.Count == 0) {
+                    //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                    return new ArrayList();
+                }
                 ArrayList tupletoDelete = res[0];
+                nonce += 1;
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
                     takeRemoveDelegate takeremDel = new takeRemoveDelegate(remoteObject.TakeRemove);

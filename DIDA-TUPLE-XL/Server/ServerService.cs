@@ -44,20 +44,26 @@ namespace Server
 
         public List<ArrayList> Read(ArrayList tuple, string clientURL, long nonce) {
             List<ArrayList> responseTuple = new List<ArrayList>();
-            validRequest(clientURL, nonce); //Update nonce info
-            responseTuple = _server.read(tuple);
-            return responseTuple;
+            if (validRequest(clientURL, nonce)) {
+                responseTuple = _server.read(tuple);
+                return responseTuple;
+            }//Update nonce info
+            return new List<ArrayList>();
         }
 
         public List<ArrayList> TakeRead(ArrayList tuple, string clientURL, long nonce) {
             List<ArrayList> responseTuple = new List<ArrayList>();
-            validRequest(clientURL, nonce); //Update nonce info
-            responseTuple = _server.takeRead(tuple);
-            return responseTuple;
+            if (validRequest(clientURL, nonce)) {
+                responseTuple = _server.takeRead(tuple);
+                return responseTuple;
+            }//Update nonce info
+            return new List<ArrayList>();
         }
 
-        public void TakeRemove(ArrayList tuple, string clientUrl, long nonce) {
-            _server.takeRead(tuple);
+        public void TakeRemove(ArrayList tuple, string clientURL, long nonce) {
+            if (validRequest(clientURL, nonce)) {//success
+                _server.takeRemove(tuple);
+            }
         }
     }
 }
