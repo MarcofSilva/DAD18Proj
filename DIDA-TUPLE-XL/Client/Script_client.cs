@@ -202,7 +202,6 @@ namespace Client
                     break;
 
                 case "wait":
-                    Console.Write("wait" + commandItems[1]);
                     System.Threading.Thread.Sleep(int.Parse(commandItems[1]));
                     Console.WriteLine("Operation: " + commandLine + "\n");
                     break;
