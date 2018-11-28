@@ -59,7 +59,7 @@ namespace Client {
         public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
         public override void Write(ArrayList tuple) {
-            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -67,15 +67,12 @@ namespace Client {
                     writeDelegate writeDel = new writeDelegate(remoteObject.Write);
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
-                    Console.WriteLine("----->DEBUG_API_XL: YELLOW");
                 }
                 if (!WaitHandle.WaitAll(handles, 3000)) {
                     Write(tuple);
-                    Console.WriteLine("----->DEBUG_API_XL: RED");
                 }
                 else {
                     nonce += 1;
-                    Console.WriteLine("----->DEBUG_API_XL: BLUE");
                 }
             }
             catch (SocketException) {
@@ -85,7 +82,7 @@ namespace Client {
         }
 
         public override ArrayList Read(ArrayList tuple) {
-            Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
+            //Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
@@ -106,7 +103,7 @@ namespace Client {
                     List<ArrayList> resTuple = readDel.EndInvoke(asyncResult);
                     nonce += 1;
                     if (resTuple.Count == 0) {
-                        Console.WriteLine("--->DEBUG: No tuple returned from server");
+                        //Console.WriteLine("--->DEBUG: No tuple returned from server");
                         return new ArrayList();
                     }
                     return resTuple[0];
@@ -119,11 +116,11 @@ namespace Client {
         }
 
         public override ArrayList Take(ArrayList tuple) {
-            Console.WriteLine("----->DEBUG_API_XL: Begin Take");
+            //Console.WriteLine("----->DEBUG_API_XL: Begin Take");
             //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
-            Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
+            //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
@@ -144,6 +141,7 @@ namespace Client {
                         IAsyncResult asyncResult = asyncResults[i];
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         List<ArrayList> resTuple = takeReadDel.EndInvoke(asyncResult);
+                        nonce += 1;
                         if (resTuple.Count == 0) {
                             //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
                             return new ArrayList();
@@ -178,12 +176,11 @@ namespace Client {
                 }
                 //chose first commun to all?
                 if(res.Count == 0) {
-                    Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                    //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
                     return new ArrayList();
                 }
                 ArrayList tupletoDelete = res[0];
-                Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
-                nonce += 1;
+                //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
                     takeRemoveDelegate takeremDel = new takeRemoveDelegate(remoteObject.TakeRemove);

@@ -75,21 +75,20 @@ namespace Server{
         }
 
         public void write(ArrayList tuple){
-            Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
-            //Console.WriteLine("Operation: " + tupleToString(tuple)); TODO tupleToString
+            //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
-            Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-            Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
+            //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
+            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
         public void takeRemove(ArrayList tuple) {        
-            Console.WriteLine("----->DEBUG_Server: tuple to delete " + printTuple(tuple));
-            Console.WriteLine("Trying to delete Size: " + tupleSpace.Count + "\n");
+            //Console.WriteLine("----->DEBUG_Server: tuple to delete " + printTuple(tuple));
+            //Console.WriteLine("Trying to delete Size: " + tupleSpace.Count + "\n");
             foreach (ArrayList el in tupleSpace) {
                 if(compareTuple(tuple, el)) {
-                    Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
+                    //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
                     tupleSpace.Remove(el);
-                    Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
+                    //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     return;
                 }
             }
@@ -177,13 +176,13 @@ namespace Server{
                     isMatch = false;
                 }
                 if (isMatch) {
-                    Console.WriteLine("TakeRead: Added: " + printTuple(el) + "to res \n");
+                    //Console.WriteLine("TakeRead: Added: " + printTuple(el) + "to res \n");
                     res.Add(el);//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
                 }
             }
             if (res.Count() > 0 ) {
-                Console.WriteLine("----->DEBUG_Server: TakeRead " + printTuple(res[0]));
-                Console.WriteLine("TakeRead TupleSpace Size: " + tupleSpace.Count + "\n");
+                //Console.WriteLine("----->DEBUG_Server: TakeRead " + printTuple(res[0]));
+                //Console.WriteLine("TakeRead TupleSpace Size: " + tupleSpace.Count + "\n");
             }
             return res; //no match
         }
