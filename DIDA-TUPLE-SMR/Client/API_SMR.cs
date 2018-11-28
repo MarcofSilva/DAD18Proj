@@ -2,57 +2,50 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
 using System.Net.Sockets;
-using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Client {
-    public class API_SMR : TupleSpaceAPI {
-        //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
-        private ArrayList serverURLs;
+    class API_SMR : TupleSpaceAPI {
 
+        private const int defaultPort = 8085;
         private TcpChannel channel;
-        List<IServerService> serverRemoteObjects;
+        private List<IServerService> serverRemoteObjects;
+        private int numServers;
+
+        private string url;
 
         public API_SMR(string URL) {
-            //TODO estupidamente mal aqui, só para testar o resto...nao consegui usar o configuration file
-            serverURLs = new ArrayList();
-            serverURLs.Add("tcp://localhost:8086/S");
+            serverRemoteObjects = prepareForRemoting(ref channel, URL);
+            numServers = serverRemoteObjects.Count;
 
-            serverRemoteObjects = prepareForRemoting(ref channel, serverURLs, URL);
+            url = URL;
         }
+
+        public delegate void writeDelegate(ArrayList tuple, string url, long nonce);
+        public delegate List<ArrayList> readDelegate(ArrayList tuple, string url, long nonce);
+        public delegate List<ArrayList> takeDelegate(ArrayList tuple, string url, long nonce);
+        //public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
         public override void Write(ArrayList tuple) {
+            WaitHandle[] handles = new WaitHandle[numServers];
             try {
-                foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Write(tuple, "url");
+                for (int i = 0; i < numServers; i++) {
+                    IServerService remoteObject = serverRemoteObjects[i];
+                    writeDelegate writeDel = new writeDelegate(remoteObject.Write);
+                    IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
+                    handles[i] = ar.AsyncWaitHandle;
                 }
-            }
-            catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
-            }
-        }
-
-        public override void Read(ArrayList tuple) {
-            //TODO
-            //prints para debbug
-            //Console.WriteLine("read in API_SMR: ");
-            foreach (var item in tuple) {
-                if (item != null) {
-                    //Console.WriteLine(item.ToString());
+                if (!WaitHandle.WaitAll(handles, 1000)) {
+                    Write(tuple);
                 }
                 else {
-                    Console.WriteLine("null");
-                }
-            }
-            try {
-                foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Read(tuple, "url");
+                    nonce += 1;
                 }
             }
             catch (SocketException) {
@@ -60,23 +53,12 @@ namespace Client {
                 throw new NotImplementedException();
             }
         }
+        public override ArrayList Read(ArrayList tuple) {
+            throw new NotImplementedException();
+        }
 
-        public override void Take(ArrayList tuple) {
-            //TODO
-            //prints para debbug
-            //Console.Write("take in API_SMR: ");
-            foreach (var item in tuple) {
-                //Console.WriteLine(item.ToString());
-            }
-            try {
-                foreach (IServerService remoteObject in serverRemoteObjects) {
-                    remoteObject.Take(tuple, "url");
-                }
-            }
-            catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
-            }
+        public override ArrayList Take(ArrayList tuple) {
+            throw new NotImplementedException();
         }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
@@ -11,13 +12,30 @@ using System.Threading.Tasks;
 
 namespace Client {
     public abstract class TupleSpaceAPI {
+
+        private long _operationNonce;
+
+        public TupleSpaceAPI() {
+            _operationNonce = 0;
+        }
+
+        public long nonce {
+            get {
+                return _operationNonce;
+            }
+
+            set {
+                _operationNonce = value;
+            }
+        }
+
         public abstract void Write(ArrayList tuple);
 
-        public abstract void Read(ArrayList tuple);
+        public abstract ArrayList Read(ArrayList tuple);
 
-        public abstract void Take(ArrayList tuple);
+        public abstract ArrayList Take(ArrayList tuple);
 
-        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, ArrayList serverURLs, string URL) {
+        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port;
             Int32.TryParse(urlSplit[2], out port);
@@ -28,7 +46,7 @@ namespace Client {
             Console.WriteLine("Hello! I'm a Client at port " + urlSplit[2]);
 
             List<IServerService> serverRemoteObjects = new List<IServerService>();
-            foreach (string url in serverURLs) {
+            foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
                 serverRemoteObjects.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
             }
             return serverRemoteObjects;
