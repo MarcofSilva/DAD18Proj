@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
@@ -67,8 +68,26 @@ namespace PuppetMaster {
                     System.Threading.Thread.Sleep(int.Parse(items[1]));
                     break;
                 default:    //script
+                    executeScript(items[0]);
                     break;
             }
+        }
+
+        private void executeScript(string scriptName) {
+            StreamReader reader = null;
+
+            try {
+                reader = File.OpenText(scriptName);
+            } catch (FileNotFoundException) {
+                Console.WriteLine("File not found!");
+                return;
+            }
+
+            string line;
+            while ((line = reader.ReadLine()) != null) {
+                 executeCommand(line);
+            }
+            reader.Close();
         }
 
 
@@ -76,6 +95,10 @@ namespace PuppetMaster {
             Console.WriteLine("Quit to stop...");
             PuppetMaster pMaster = new PuppetMaster();
             pMaster.configure();
+
+            if (args.Length != 0) {
+                pMaster.executeScript(args[0]);
+            }
 
             while (true) {
                 string line = Console.ReadLine();
