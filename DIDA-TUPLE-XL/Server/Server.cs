@@ -77,14 +77,19 @@ namespace Server{
         public void write(ArrayList tuple){
             //Console.WriteLine("Operation: " + tupleToString(tuple)); TODO tupleToString
             tupleSpace.Add(tuple);
-            Console.WriteLine("Writed: " + printTuple(tuple) + "\n");
+            Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
+            Console.WriteLine("TupleSpace Size: " + tupleSpace.Count + "\n");
         }
 
         public void takeRemove(ArrayList tuple) {
-            //TODO martelo
+            //TODO martelo            
+            Console.WriteLine("----->DEBUG_Server: tuple to delete " + printTuple(tuple));
+            Console.WriteLine("Trying to delete Size: " + tupleSpace.Count + "\n");
             foreach (ArrayList el in tupleSpace) {
                 if(compareTuple(tuple, el)) {
+                    Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
                     tupleSpace.Remove(el);
+                    Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     return;
                 }
             }
@@ -176,6 +181,10 @@ namespace Server{
                     res.Add(el);//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
                 }
             }
+            if (res.Count() > 0 ) {
+                Console.WriteLine("----->DEBUG_Server: TakeRead " + printTuple(res[0]));
+                Console.WriteLine("TakeRead TupleSpace Size: " + tupleSpace.Count + "\n");
+            }
             return res; //no match
         }
 
@@ -265,6 +274,7 @@ namespace Server{
                     res.Add(el);//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
                 }
             }
+            Console.WriteLine("Read TupleSpace Size: " + tupleSpace.Count + "\n");
             return res; //no match
         }
 

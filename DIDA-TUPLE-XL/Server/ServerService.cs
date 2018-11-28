@@ -37,12 +37,14 @@ namespace Server
         }
 
         public void Write(ArrayList tuple, string clientURL, long nonce) {
+            Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
             if (validRequest(clientURL, nonce)) {//success
                 _server.write(tuple);
             }
         }
 
         public List<ArrayList> Read(ArrayList tuple, string clientURL, long nonce) {
+            Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
             List<ArrayList> responseTuple = new List<ArrayList>();
             if (validRequest(clientURL, nonce)) {
                 responseTuple = _server.read(tuple);
@@ -52,6 +54,7 @@ namespace Server
         }
 
         public List<ArrayList> TakeRead(ArrayList tuple, string clientURL, long nonce) {
+            Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
             List<ArrayList> responseTuple = new List<ArrayList>();
             if (validRequest(clientURL, nonce)) {
                 responseTuple = _server.takeRead(tuple);
@@ -61,6 +64,7 @@ namespace Server
         }
 
         public void TakeRemove(ArrayList tuple, string clientURL, long nonce) {
+            Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRemove Request");
             if (validRequest(clientURL, nonce)) {//success
                 _server.takeRemove(tuple);
             }

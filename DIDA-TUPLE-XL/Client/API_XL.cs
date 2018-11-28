@@ -9,6 +9,7 @@ using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ClassLibrary;
 
 namespace Client {
     public class API_XL : TupleSpaceAPI {
@@ -26,6 +27,31 @@ namespace Client {
 
             url = URL;
         }
+        private String printTuple(ArrayList tuple) {
+            string acc = "<";
+            for (int i = 0; i < tuple.Count; i++) {
+                if (i != 0) {
+                    acc += ",";
+                }
+                if (tuple[i].GetType() == typeof(System.String)) {
+                    acc += "\"" + tuple[i].ToString() + "\"";
+                }
+                else if (tuple[i] == typeof(DADTestA)) {
+                    acc += "DADTestA";
+                }
+                else if (tuple[i] == typeof(DADTestB)) {
+                    acc += "DADTestB";
+                }
+                else if (tuple[i] == typeof(DADTestC)) {
+                    acc += "DADTestC";
+                }
+                else {
+                    acc += tuple[i].ToString();
+                }
+            }
+            acc += ">";
+            return acc;
+        }
 
         public delegate void writeDelegate(ArrayList tuple, string url, long nonce);
         public delegate List<ArrayList> readDelegate(ArrayList tuple, string url, long nonce);
@@ -33,6 +59,7 @@ namespace Client {
         public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
         public override void Write(ArrayList tuple) {
+            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -41,7 +68,7 @@ namespace Client {
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                if (!WaitHandle.WaitAll(handles, 1000)) {
+                if (!WaitHandle.WaitAll(handles, 3000)) {
                     Write(tuple);
                 }
                 else {
@@ -55,6 +82,7 @@ namespace Client {
         }
 
         public override ArrayList Read(ArrayList tuple) {
+            Console.WriteLine("----->DEBUG_API_XL: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
@@ -88,9 +116,11 @@ namespace Client {
         }
 
         public override ArrayList Take(ArrayList tuple) {
+            Console.WriteLine("----->DEBUG_API_XL: Begin Take");
             //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
+            Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
@@ -101,31 +131,55 @@ namespace Client {
                 }
                 bool allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
                 List<ArrayList> res = new List<ArrayList>();
+                List<ArrayList> intersect = new List<ArrayList>();
                 if (!allcompleted) {
                     return Take(tuple);
                 }
                 else{ //all have to completed
                     for (int i = 0; i < numServers; i++) {
+                        Console.WriteLine("----->DEBUG_API_XL: iteration " + i);
                         IAsyncResult asyncResult = asyncResults[i];
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         List<ArrayList> resTuple = takeReadDel.EndInvoke(asyncResult);
-                        //TODO
+                        if (resTuple.Count == 0) {
+                            Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                            return new ArrayList();
+                        }
                         if (i == 0) {
                             res = resTuple;
+                            Console.WriteLine("----->DEBUG_API_XL: ITERATION ONE SIZE:" + res.Count);
                         }
                         else {
-                            //TODO comparador pode estar mal, 2 tuplos iguais podem nao dar igual no intersect
-                            //testar 2 servidores e ver se o mesmo tuplo e considerado uma intersecao
-                            res = res.Intersect(resTuple).ToList();
+                            bool remove = true;
+                            foreach(ArrayList inter in res) {
+                                remove = true;
+                                foreach (ArrayList el in resTuple) {
+                                    if (printTuple(inter) == printTuple(el)) {
+                                        remove = false;
+                                    }
+                                }
+                                if (remove) {
+                                    //pode dar probs porque estamos a alterar uma lista a ser iterada
+                                    res.Remove(inter);
+                                }
+                            }
+                            if (res.Count == 0) {
+                                //intersection is empty and will always be empty
+                                Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                                return new ArrayList();
+                            }
+                            Console.WriteLine("----->DEBUG_API_XL: intersect size " + res.Count);
+                            Console.WriteLine("----->DEBUG_API_XL: intersect " + printTuple(res[0]));
                         }
                     }
                 }
                 //chose first commun to all?
                 if(res.Count == 0) {
-                    //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                    Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
                     return new ArrayList();
                 }
                 ArrayList tupletoDelete = res[0];
+                Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
                 nonce += 1;
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
@@ -133,6 +187,7 @@ namespace Client {
                     IAsyncResult ar = takeremDel.BeginInvoke(tupletoDelete, url, nonce, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
+                    Console.WriteLine("----->DEBUG_API_XL: asked to remove server " + i);
                 }
                 //should we just wait for all or certify they return ack?
                 allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
