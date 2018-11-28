@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ClassLibrary;
+using System.Text.RegularExpressions;
 
 namespace ClassLibrary {
     [Serializable]
@@ -13,6 +14,16 @@ namespace ClassLibrary {
 
         //List<?> tuple = new List<?>();        
         public ArrayList _tuple = new ArrayList();
+
+        public ArrayList tuple {
+            get {
+                return _tuple;
+            }
+
+            set {
+                _tuple = value;
+            }
+        }
         private int _size;
 
         public int Size {
@@ -24,26 +35,174 @@ namespace ClassLibrary {
                 _size = value;
             }
         }
-
-        //if 2 tuples are the same
-        public bool Equals(TupleClass tuple) {
-            if (_size != tuple.Size) {
-
-            }
-
-            return false;
-        }
-
-
-        //if 2 tuples match, takes care of wildcards
-        public bool Matches(TupleClass obj) {
-
-            return false;
-        }
-
+        
         public void Add(Object o) {
             _tuple.Add(o);
             _size += 1;
+        }
+
+        public override string ToString() {
+            string acc = "<";
+            for (int i = 0; i < _tuple.Count; i++) {
+                if (i != 0) {
+                    acc += ",";
+                }
+                if (_tuple[i].GetType() == typeof(System.String)) {
+                    acc += "\"" + _tuple[i].ToString() + "\"";
+                }
+                else if (_tuple[i] == typeof(DADTestA)) {
+                    acc += "DADTestA";
+                }
+                else if (_tuple[i] == typeof(DADTestB)) {
+                    acc += "DADTestB";
+                }
+                else if (_tuple[i] == typeof(DADTestC)) {
+                    acc += "DADTestC";
+                }
+                else {
+                    acc += _tuple[i].ToString();
+                }
+            }
+            acc += ">";
+            return acc;
+        }
+        //if 2 tuples are the same
+        public bool Equals(TupleClass tupler) {
+            if (_size != tupler.Size) {
+                return false;
+            }
+            for(int i =0; i < _size; i++) {
+                ArrayList tuple = tupler.tuple;
+                if (_tuple[i].GetType() != tuple[i].GetType()) {
+                    return false;
+                }
+                if((_tuple[i].GetType() == typeof(System.String)) && (tuple[i].GetType() == typeof(System.String))) {
+                    if( ((string)_tuple[i]) != ((string)tuple[i]) ) {
+                        return false;
+                    }
+                    continue;
+                }
+                else {
+                    if (_tuple[i].GetType() == typeof(DADTestA) && tuple[i].GetType() == typeof(DADTestA)) {
+                        //Console.WriteLine("------------------> DADTestA");
+                        DADTestA tuplei = (DADTestA)_tuple[i];
+                        DADTestA eli = (DADTestA)tuple[i];
+                        if (!tuplei.Equals(eli)) {
+                            return false;
+                        }
+                    }
+                    else if (_tuple[i].GetType() == typeof(DADTestB) && tuple[i].GetType() == typeof(DADTestB)) {
+                        //Console.WriteLine("------------------> DADTestB");
+                        DADTestB tuplei = (DADTestB)_tuple[i];
+                        DADTestB eli = (DADTestB)tuple[i];
+                        if (!tuplei.Equals(eli)) {
+                            return false;
+                        }
+                    }
+                    else {
+                        //Console.WriteLine("------------------> DADTestC");
+                        DADTestC tuplei = (DADTestC)_tuple[i];
+                        DADTestC eli = (DADTestC)tuple[i];
+                        if (!tuplei.Equals(eli)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        //if 2 tuples match, takes care of wildcards
+        //receives the request
+        public bool Matches(TupleClass tupler) {
+            if (_size != tupler.Size) {
+                return false;
+            }
+            for (int i = 0; i < _size; i++) {
+                ArrayList tuple = tupler.tuple;
+                //pedido e um null e estamos a ver um objeto
+                if (tuple[i] == null && _tuple[i].GetType() != typeof(System.String)) {
+                    continue;
+                }
+                //se o pedido nao e null, para passar ou sao os 2 strings ou 2 nao sao string
+                if (tuple[i] != null && !((tuple[i].GetType() == typeof(System.String)) && (_tuple[i].GetType() == typeof(System.String)) ||
+                                          (tuple[i].GetType() != typeof(System.String)) && (_tuple[i].GetType() != typeof(System.String)))) {
+                    //Console.WriteLine("um e string e o outro nao");
+                    return false;
+                }
+                //se estamos aqui ou sao os 2 strings ou os 2 objetos
+                if (_tuple[i].GetType() == typeof(System.String)) {
+                    if (!matchStrs(_tuple[i], tuple[i])) {
+                        //Console.WriteLine("--------->strings dont match ");
+                        return false;
+                    }
+                }
+                else if (tuple[i] == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
+                    //Console.WriteLine("asked for type DADTestA and there is one");
+                }
+                else if (tuple[i] == typeof(DADTestB) && _tuple[i].GetType() == typeof(DADTestB)) {
+                    //Console.WriteLine("asked for type DADTestB and there is one");
+                }
+                else if (tuple[i] == typeof(DADTestC) && _tuple[i].GetType() == typeof(DADTestC)) {
+                    //Console.WriteLine("asked for type DADTestC and there is one");
+                }
+                else if (tuple[i].GetType() == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
+                    //Console.WriteLine("------------------> DADTestA");
+                    DADTestA tuplei = (DADTestA)tuple[i];
+                    DADTestA eli = (DADTestA)_tuple[i];
+                    if (!tuplei.Equals(eli)) {
+                        //Console.WriteLine("objetos nao sao iguais DADTESTA");
+                        return false;
+                    }
+                }
+                else if (tuple[i].GetType() == typeof(DADTestB) && _tuple[i].GetType() == typeof(DADTestB)) {
+                    //Console.WriteLine("------------------> DADTestB");
+                    DADTestB tuplei = (DADTestB)tuple[i];
+                    DADTestB eli = (DADTestB)_tuple[i];
+                    if (!tuplei.Equals(eli)) {
+                        //Console.WriteLine("objetos nao sao iguais DADTESTB");
+                        return false;
+                    }
+                }
+                else {
+                    //Console.WriteLine("------------------> DADTestC");
+                    DADTestC tuplei = (DADTestC)tuple[i];
+                    DADTestC eli = (DADTestC)_tuple[i];
+                    if (!tuplei.Equals(eli)) {
+                        //Console.WriteLine("objetos nao sao iguais DADTESTC");
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private bool matchStrs(object local, object request) {
+            string requeststr = (string)request;
+            string localstr = (string)local;
+            if (requeststr == "*") {
+                return true;
+            }
+            if (requeststr.Contains("*")) {
+                string regex = "";
+                if (requeststr[0].ToString() == "*") {
+                    //quero o resto da string menos o primeiro elemento
+                    regex = ".*" + requeststr.Substring(1) + "$";
+                }
+                else {
+                    //quero o resto da string menos o *
+                    regex = "^" + requeststr.Substring(0, (requeststr.Length - 1)) + ".*";
+                }
+                Regex wildcard = new Regex(regex);
+                if (wildcard.IsMatch(localstr)) {
+                    return true;
+                }
+            }
+            //a partir daqui wild cards tratadas, so falta tratar se as strings sao mesmo iguais
+            if (requeststr == localstr) {
+                return true;
+            }
+            return false;
         }
     }
 }
