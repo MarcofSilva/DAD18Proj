@@ -9,6 +9,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
+using ClassLibrary;
 
 namespace Client {
     public abstract class TupleSpaceAPI {
@@ -29,11 +30,11 @@ namespace Client {
             }
         }
 
-        public abstract void Write(ArrayList tuple);
+        public abstract void Write(TupleClass tuple);
 
-        public abstract ArrayList Read(ArrayList tuple);
+        public abstract TupleClass Read(TupleClass tuple);
 
-        public abstract ArrayList Take(ArrayList tuple);
+        public abstract TupleClass Take(TupleClass tuple);
 
         protected List<IServerService> prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);

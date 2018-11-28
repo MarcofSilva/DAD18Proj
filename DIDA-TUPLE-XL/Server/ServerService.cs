@@ -20,33 +20,33 @@ namespace Server
             _server = server;
         }
 
-        private bool validRequest(string clientURL, long nonce) {
+        private bool validRequest(string clientUrl, long nonce) {
             //se nunca apareceu vai ser adicionado
-            if (!_nonceStorage.ContainsKey(clientURL)) {
-                _nonceStorage.Add(clientURL, nonce);
+            if (!_nonceStorage.ContainsKey(clientUrl)) {
+                _nonceStorage.Add(clientUrl, nonce);
                 //todo _remoteStorage.Add(clientURL, (IClientService)Activator.GetObject(typeof(IClientService), clientURL));
                 return true;
             }
             else {//ja apareceu
-                long o = _nonceStorage[clientURL];
+                long o = _nonceStorage[clientUrl];
                 if (nonce > o) {
-                    _nonceStorage[clientURL] = nonce;
+                    _nonceStorage[clientUrl] = nonce;
                     return true;
                 }
                 return false;
             }
         }
 
-        public void Write(TupleClass tuple, string clientURL, long nonce) {
-            if (validRequest(clientURL, nonce)) {//success
+        public void Write(TupleClass tuple, string clientUrl, long nonce) {
+            if (validRequest(clientUrl, nonce)) {//success
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
                 _server.write(tuple);
             }
         }
 
-        public List<TupleClass> Read(TupleClass tuple, string clientURL, long nonce) {
+        public List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce) {
             List<TupleClass> responseTuple = new List<TupleClass>();
-            if (validRequest(clientURL, nonce)) {
+            if (validRequest(clientUrl, nonce)) {
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
                 responseTuple = _server.read(tuple);
                 return responseTuple;
@@ -54,9 +54,9 @@ namespace Server
             return new List<TupleClass>();
         }
 
-        public List<TupleClass> TakeRead(TupleClass tuple, string clientURL, long nonce) {
+        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl, long nonce) {
             List<TupleClass> responseTuple = new List<TupleClass>();
-            if (validRequest(clientURL, nonce)) {
+            if (validRequest(clientUrl, nonce)) {
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
                 responseTuple = _server.takeRead(tuple);
                 return responseTuple;
@@ -64,8 +64,8 @@ namespace Server
             return new List<TupleClass>();
         }
 
-        public void TakeRemove(TupleClass tuple, string clientURL, long nonce) {
-            if (validRequest(clientURL, nonce)) {//success
+        public void TakeRemove(TupleClass tuple, string clientUrl, long nonce) {
+            if (validRequest(clientUrl, nonce)) {//success
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRemove Request");
                 _server.takeRemove(tuple);
             }

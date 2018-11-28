@@ -10,167 +10,77 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
 using ClassLibrary;
-using System.Runtime.InteropServices;
 
 namespace Server {
     public class Server {
-        private List<ArrayList> tupleContainer;
-        TcpChannel channel;
-        ServerService myRemoteObject;
+        private List<TupleClass> tupleSpace;
+        private TcpChannel channel;
+        private ServerService myRemoteObject;
         private const int defaultPort = 8086;
-
+        private const string defaultname = "Server";
 
         public Server() {
-            prepareRemoting(defaultPort, defaultPort.ToString());
+            prepareRemoting(defaultPort, defaultname);
         }
 
         public Server(string URL) {
-            Console.WriteLine("3");
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port;
             Int32.TryParse(urlSplit[2], out port);
 
             prepareRemoting(port, urlSplit[3]);
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
-            
         }
 
         private void prepareRemoting(int port, string name) {
-            tupleContainer = new List<ArrayList>();
+            tupleSpace = new List<TupleClass>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
             RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
-        //void? devolve algo??
-        public void write(ArrayList tuple) {
-            tupleContainer.Add(tuple);
-            //Console.WriteLine(tupleContainer.Count);
-            return;
+        public void write(TupleClass tuple) {
+            Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
+            //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
+            tupleSpace.Add(tuple);
+            //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
+            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
-        //devolve arraylist vazia/1 elemento ou varios
-        public List<ArrayList> take(ArrayList tuple) {
-            List<ArrayList> res = read(tuple);
-            if (res.Count == 0) {
-                Console.WriteLine("impossible to remove, no tuple in tuple space");
-                return res;
-            }
-            tupleContainer.Remove(res[0]);
-            Console.WriteLine("take called " + tupleContainer.Count);
-            return res;
-        }
-
-        public List<ArrayList> read(ArrayList tuple) {
-            List<ArrayList> res = new List<ArrayList>();
+        //e basicamente igual ao read mas com locks nas estruturas
+        public List<TupleClass> take(TupleClass tuple) {
+            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+            List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
-            foreach (ArrayList el in tupleContainer) {
-                bool add = true;
-                if (el.Count != tuple.Count) {
-                    continue;
+            foreach (TupleClass el in tupleSpace) {
+                if (el.Matches(tuple)) {
+                    res.Add(el);
+                    res.Remove(el);
+                    return res;
                 }
-                //sao do mesmo tamanho, vamos percorrer elemento a elemento nos 2
-                for (int i = 0; i < tuple.Count; i++) {
-                    if (tuple[i] == null && el[i].GetType() != typeof(System.String)) {
-                        break;
-                    }
+            }
+            return res; //no match
+        }
 
-                    if (tuple[i] != null && !((tuple[i].GetType() == typeof(System.String)) || (el[i].GetType() == tuple[i].GetType()))) {
-                        add = false;
-                        break;
-                    }
-                    if (el[i].GetType() == typeof(System.String)) { // estamos a ver uma string
-                        if (tuple[i] != null && capital.IsMatch(tuple[i].ToString())) { }//request e objeto mas estamos a ver string
-                        //request e um objeto
-                        else if (tuple[i] != null && matchStrs(el[i], tuple[i])) {
-                            break;
-                        }
-                    }
-                    if (el[i].GetType() != typeof(System.String)) {
-                        if (tuple[i].GetType() == typeof(System.String) && el[i].GetType().Name == tuple[i].ToString()) {
-                            add = true;
-                            break;
-                        }
-                        else if (tuple[i].GetType() == typeof(DADTestA)) {
-                            DADTestA tuplei = (DADTestA)tuple[i];
-                            DADTestA eli = (DADTestA)el[i];
-                            if (!tuplei.Equals(eli)) {
-                                add = false;
-                            }
-                            break;
-                        }
-                        else if (tuple[i].GetType() == typeof(DADTestB)) {
-                            DADTestB tuplei = (DADTestB)tuple[i];
-                            DADTestB eli = (DADTestB)el[i];
-                            if (!tuplei.Equals(eli)) {
-                                add = false;
-                                break;
-                            }
-                            break;
-                        }
-                        else if (tuple[i].GetType() == typeof(DADTestC)) {
-                            DADTestC tuplei = (DADTestC)tuple[i];
-                            DADTestC eli = (DADTestC)el[i];
-                            if (!tuplei.Equals(eli)) {
-                                add = false;
-                                break;
-                            }
-                            break;
-                        }
-                    }
-                    add = false;
-                }
-                if (add) {
+        public List<TupleClass> read(TupleClass tuple) {
+            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+            List<TupleClass> res = new List<TupleClass>();
+            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
+            Regex capital = new Regex(@"[A-Z]");
+            foreach (TupleClass el in tupleSpace) {
+                if (el.Matches(tuple)) {
                     res.Add(el);
                 }
             }
-            Console.WriteLine("read container: " + tupleContainer.Count + " res count: " + res.Count);
-            return res;
-        }
-
-        private bool matchStrs(object local, object request) {
-            string requeststr = (string)request;
-            string localstr = (string)local;
-            if (requeststr == "*") {
-                if (local.GetType() == typeof(System.String)) {
-                    return true;
-                }
-            }
-            if (requeststr.Contains("*")) {
-                string regex = "";
-                if (requeststr[0].ToString() == "*") {
-                    //quero o resto da string menos o primeiro elemento
-                    regex = ".*" + requeststr.Substring(1) + "$";
-                }
-                else {
-                    //quero o resto da string menos o *
-                    regex = "^" + requeststr.Substring(0, (requeststr.Length - 1)) + ".*";
-                }
-                Regex wildcard = new Regex(regex);
-                if (wildcard.IsMatch(localstr)) {
-                    return true;
-                }
-            }
-            //a partir daqui wild cards tratadas, so falta tratar se as strings sao mesmo iguais
-            if (requeststr == localstr) {
-                return true;
-            }
-            return false;
-        }
-        [DllImport("kernel32.dll")]
-        static extern void RaiseException(uint dwExceptionCode, uint dwExceptionFlags, uint nNumberOfArguments, IntPtr lpArguments);
-
-        public void crash() {
-            Environment.Exit(1);
-
+            //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
+            return res; //no match
         }
 
         static void Main(string[] args) {
             Server server;
             if (args.Length == 0) {
-                Console.WriteLine("no URL found!");
                 server = new Server();
             }
             else {
