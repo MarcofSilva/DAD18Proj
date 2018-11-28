@@ -13,7 +13,7 @@ using ClassLibrary;
 
 namespace Server{
     public class Server{
-        private List<ArrayList> tupleSpace;
+        private List<TupleClass> tupleSpace;
         private TcpChannel channel;
         private ServerService myRemoteObject;
         private const int defaultPort = 8086;
@@ -33,59 +33,25 @@ namespace Server{
         }
 
         private void prepareRemoting(int port, string name) {
-            tupleSpace = new List<ArrayList>();
+            tupleSpace = new List<TupleClass>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
             RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
-        private bool compareTuple(ArrayList tuplei, ArrayList tupleo) {
-            //TODOOO
-            if(printTuple(tuplei) != printTuple(tupleo)) {
-                return false;
-            }
-            return true;
-        }
-
-        private String printTuple(ArrayList tuple) {
-            string acc = "<";
-            for (int i = 0; i < tuple.Count; i++) {
-                if (i != 0) {
-                    acc += ",";
-                }
-                if (tuple[i].GetType() == typeof(System.String)) {
-                    acc += "\"" + tuple[i].ToString() + "\"";
-                }
-                else if(tuple[i] == typeof(DADTestA)) {
-                    acc += "DADTestA";
-                }
-                else if (tuple[i] == typeof(DADTestB)) {
-                    acc += "DADTestB";
-                }
-                else if (tuple[i] == typeof(DADTestC)) {
-                    acc += "DADTestC";
-                }
-                else {
-                    acc += tuple[i].ToString();
-                }
-            }
-            acc += ">";
-            return acc;
-        }
-
-        public void write(ArrayList tuple){
+        public void write(TupleClass tuple){
             //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
             //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
             //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
-        public void takeRemove(ArrayList tuple) {        
+        public void takeRemove(TupleClass tuple) {        
             //Console.WriteLine("----->DEBUG_Server: tuple to delete " + printTuple(tuple));
             //Console.WriteLine("Trying to delete Size: " + tupleSpace.Count + "\n");
-            foreach (ArrayList el in tupleSpace) {
-                if(compareTuple(tuple, el)) {
+            foreach (TupleClass el in tupleSpace) {
+                if(tuple.Equals(el)) {
                     //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
                     tupleSpace.Remove(el);
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
@@ -95,18 +61,17 @@ namespace Server{
         }
 
         //e basicamente igual ao read mas com locks nas estruturas
-        public List<ArrayList> takeRead(ArrayList tuple) {
-            List<ArrayList> res = new List<ArrayList>();
+        public List<TupleClass> takeRead(TupleClass tuple) {
+            List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
-            foreach (ArrayList el in tupleSpace) {
+            foreach (TupleClass el in tupleSpace) {
                 bool isMatch = true;
-                if (el.Count != tuple.Count) {
+                if (el.Size != tuple.Size) {
                     continue;
-
                 }
                 //sao do mesmo tamanho, vamos percorrer elemento a elemento nos 2
-                for (int i = 0; i < tuple.Count; i++) {
+                for (int i = 0; i < tuple.Size; i++) {
                     //pedido e um null e estamos a ver um objeto
                     if (tuple[i] == null && el[i].GetType() != typeof(System.String)) {
                         continue;

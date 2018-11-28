@@ -35,13 +35,32 @@ namespace ClassLibrary {
                 _size = value;
             }
         }
-        
+        public TupleClass() {
+        }
+
+        public TupleClass(string textToParse) {
+            //se for preciso adicionar o espaco
+            Regex noproblem = new Regex(@"[<>,]");
+            for (int i = 0; i < textToParse.Length; i++) {
+                if (noproblem.IsMatch(textToParse[i].ToString())) { continue; }
+                if (textToParse[i] == '"' || textToParse[i] == '*') {
+                    this.Add(ConstructString(textToParse, ref i));
+                    continue;
+                }
+                else {
+                    this.Add(ConstructObject(textToParse, ref i));
+                }
+            }
+            //Console.WriteLine("Constructed this: " + this.ToString() +" with size "+ _size);
+        }
+
         public void Add(Object o) {
             _tuple.Add(o);
             _size += 1;
         }
 
         public override string ToString() {
+            //Console.WriteLine("------------------> ToString");
             string acc = "<";
             for (int i = 0; i < _tuple.Count; i++) {
                 if (i != 0) {
@@ -68,6 +87,7 @@ namespace ClassLibrary {
         }
         //if 2 tuples are the same
         public bool Equals(TupleClass tupler) {
+            //Console.WriteLine("------------------> Equals");
             if (_size != tupler.Size) {
                 return false;
             }
@@ -77,14 +97,14 @@ namespace ClassLibrary {
                     return false;
                 }
                 if((_tuple[i].GetType() == typeof(System.String)) && (tuple[i].GetType() == typeof(System.String))) {
-                    if( ((string)_tuple[i]) != ((string)tuple[i]) ) {
+                    if ( ((string)_tuple[i]) != ((string)tuple[i]) ) {
                         return false;
                     }
                     continue;
                 }
                 else {
                     if (_tuple[i].GetType() == typeof(DADTestA) && tuple[i].GetType() == typeof(DADTestA)) {
-                        //Console.WriteLine("------------------> DADTestA");
+                        //Console.WriteLine("------------------> DADTestA Equals");
                         DADTestA tuplei = (DADTestA)_tuple[i];
                         DADTestA eli = (DADTestA)tuple[i];
                         if (!tuplei.Equals(eli)) {
@@ -147,7 +167,7 @@ namespace ClassLibrary {
                     //Console.WriteLine("asked for type DADTestC and there is one");
                 }
                 else if (tuple[i].GetType() == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
-                    //Console.WriteLine("------------------> DADTestA");
+                    Console.WriteLine("------------------> DADTestA");
                     DADTestA tuplei = (DADTestA)tuple[i];
                     DADTestA eli = (DADTestA)_tuple[i];
                     if (!tuplei.Equals(eli)) {
@@ -178,6 +198,7 @@ namespace ClassLibrary {
         }
 
         private bool matchStrs(object local, object request) {
+            //Console.WriteLine("------------------> matchStrs");
             string requeststr = (string)request;
             string localstr = (string)local;
             if (requeststr == "*") {
@@ -203,6 +224,96 @@ namespace ClassLibrary {
                 return true;
             }
             return false;
+        }
+
+        private string ConstructString(string textToParse, ref int index){
+            string aux = "";
+            if (textToParse[index] == '*') {
+                aux += textToParse[index].ToString();
+            }
+            else{
+                index++;
+            }
+
+            for (; !(textToParse[index+1] == ',' || textToParse[index+1] == '>') ; index++){
+                aux += textToParse[index].ToString();
+            }
+            return aux;
+        }
+
+        private Type ConstructType(string textToParse) {
+            switch (textToParse) {
+                //TODO adicionar todos os outros tipos possíveis
+                case "DADTestA":
+                    return typeof(DADTestA);
+                case "DADTestB":
+                    return typeof(DADTestB);
+                case "DADTestC":
+                    return typeof(DADTestC);
+            }
+            //Careful default is null, existe mais alguma coisa para alem de Int e String?
+            return null;
+        }
+
+        private Object ConstructObject(string textToParse, ref int index) {
+            //TODO falta poder aceitar nome de um data type e null
+            Regex ints = new Regex(@"^[0-9]+");
+            Regex parenthesis = new Regex(@"[(]");
+            string aux = "";
+            string name = "";
+            ArrayList arguments = new ArrayList();
+            int auxint = index;
+            string auxstr = "";
+            for (; !(textToParse[auxint] == ',' || textToParse[auxint] == '>'); auxint++) {
+                auxstr += textToParse[auxint].ToString();
+            }
+            //TODO MARTELOZAO
+            if (!parenthesis.IsMatch(auxstr)) {
+                index = auxint;
+                if (auxstr == "null") {
+                    return null;
+                }
+                return ConstructType(auxstr);
+            }
+
+            for (; !(textToParse[index - 1] == ')' && (textToParse[index] == ',' || textToParse[index] == '>')); index++) {
+
+                if (textToParse[index] == '(') {
+                    name = aux;
+                    aux = "";
+                    continue;
+                }
+                if ((textToParse[index] == ',' || textToParse[index] == ')') && aux.Length > 0) {
+                    if (ints.IsMatch(aux)) {
+                        int a;
+                        if (Int32.TryParse(aux, out a)) {
+                            arguments.Add(a);
+                        }
+                    }
+                    else {
+                        arguments.Add(aux);
+                    }
+                    aux = "";
+                    continue;
+                }
+                if (textToParse[index].ToString() != "\"") {
+                    aux += textToParse[index].ToString();
+                }
+            }
+            switch (name) {
+                case "DADTestA":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString());
+                    return new DADTestA((int)arguments[0], (string)arguments[1]);
+                case "DADTestB":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString() + " " + ((int)arguments[2]).ToString());
+                    return new DADTestB((int)arguments[0], (string)arguments[1], (int)arguments[2]);
+                case "DADTestC":
+                    //Console.WriteLine(((int)arguments[0]).ToString() + " " + ((string)arguments[1]).ToString() + " " + ((string)arguments[2]).ToString());
+                    return new DADTestC((int)arguments[0], (string)arguments[1], (string)arguments[2]);
+            }
+            //Console.WriteLine(name);
+            //Activator.CreateInstance(name, arguments);
+            return null;
         }
     }
 }

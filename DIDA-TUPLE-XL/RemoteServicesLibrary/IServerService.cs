@@ -4,17 +4,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClassLibrary;
 
 namespace RemoteServicesLibrary
 {
     public interface IServerService
     {
-        List<ArrayList> Read(ArrayList tuple, string clientUrl, long nonce);
+        List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce);
 
-        List<ArrayList> TakeRead(ArrayList tuple, string clientUrl, long nonce);
+        List<TupleClass> TakeRead(TupleClass tuple, string clientUrl, long nonce);
 
-        void TakeRemove(ArrayList tuple, string clientUrl, long nonce);
+        void TakeRemove(TupleClass tuple, string clientUrl, long nonce);
 
-        void Write(ArrayList tuple, string clientUrl, long nonce);
+        void Write(TupleClass tuple, string clientUrl, long nonce);
     }
 }
