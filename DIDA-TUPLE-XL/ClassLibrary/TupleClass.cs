@@ -167,7 +167,7 @@ namespace ClassLibrary {
                     //Console.WriteLine("asked for type DADTestC and there is one");
                 }
                 else if (tuple[i].GetType() == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
-                    Console.WriteLine("------------------> DADTestA");
+                    //Console.WriteLine("------------------> DADTestA");
                     DADTestA tuplei = (DADTestA)tuple[i];
                     DADTestA eli = (DADTestA)_tuple[i];
                     if (!tuplei.Equals(eli)) {
