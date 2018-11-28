@@ -37,7 +37,7 @@ namespace Server
         }
 
         public void Write(ArrayList tuple, string clientURL, long nonce) {
-            Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
+            Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request CARALHO");
             if (validRequest(clientURL, nonce)) {//success
                 _server.write(tuple);
             }

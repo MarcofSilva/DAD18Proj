@@ -75,14 +75,14 @@ namespace Server{
         }
 
         public void write(ArrayList tuple){
+            Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             //Console.WriteLine("Operation: " + tupleToString(tuple)); TODO tupleToString
             tupleSpace.Add(tuple);
             Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-            Console.WriteLine("TupleSpace Size: " + tupleSpace.Count + "\n");
+            Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
-        public void takeRemove(ArrayList tuple) {
-            //TODO martelo            
+        public void takeRemove(ArrayList tuple) {        
             Console.WriteLine("----->DEBUG_Server: tuple to delete " + printTuple(tuple));
             Console.WriteLine("Trying to delete Size: " + tupleSpace.Count + "\n");
             foreach (ArrayList el in tupleSpace) {
@@ -274,7 +274,7 @@ namespace Server{
                     res.Add(el);//esta a devolver o primeiro que encontrou, n esta a devolver todos os que dao match
                 }
             }
-            Console.WriteLine("Read TupleSpace Size: " + tupleSpace.Count + "\n");
+            Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
             return res; //no match
         }
 

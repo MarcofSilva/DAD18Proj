@@ -67,12 +67,15 @@ namespace Client {
                     writeDelegate writeDel = new writeDelegate(remoteObject.Write);
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
+                    Console.WriteLine("----->DEBUG_API_XL: YELLOW");
                 }
                 if (!WaitHandle.WaitAll(handles, 3000)) {
                     Write(tuple);
+                    Console.WriteLine("----->DEBUG_API_XL: RED");
                 }
                 else {
                     nonce += 1;
+                    Console.WriteLine("----->DEBUG_API_XL: BLUE");
                 }
             }
             catch (SocketException) {
@@ -82,7 +85,7 @@ namespace Client {
         }
 
         public override ArrayList Read(ArrayList tuple) {
-            Console.WriteLine("----->DEBUG_API_XL: Begin Read");
+            Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
@@ -137,17 +140,17 @@ namespace Client {
                 }
                 else{ //all have to completed
                     for (int i = 0; i < numServers; i++) {
-                        Console.WriteLine("----->DEBUG_API_XL: iteration " + i);
+                        //Console.WriteLine("----->DEBUG_API_XL: iteration " + i);
                         IAsyncResult asyncResult = asyncResults[i];
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         List<ArrayList> resTuple = takeReadDel.EndInvoke(asyncResult);
                         if (resTuple.Count == 0) {
-                            Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                            //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
                             return new ArrayList();
                         }
                         if (i == 0) {
                             res = resTuple;
-                            Console.WriteLine("----->DEBUG_API_XL: ITERATION ONE SIZE:" + res.Count);
+                            //Console.WriteLine("----->DEBUG_API_XL: ITERATION ONE SIZE:" + res.Count);
                         }
                         else {
                             bool remove = true;
@@ -165,11 +168,11 @@ namespace Client {
                             }
                             if (res.Count == 0) {
                                 //intersection is empty and will always be empty
-                                Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
+                                //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
                                 return new ArrayList();
                             }
-                            Console.WriteLine("----->DEBUG_API_XL: intersect size " + res.Count);
-                            Console.WriteLine("----->DEBUG_API_XL: intersect " + printTuple(res[0]));
+                            //Console.WriteLine("----->DEBUG_API_XL: intersect size " + res.Count);
+                            //Console.WriteLine("----->DEBUG_API_XL: intersect " + printTuple(res[0]));
                         }
                     }
                 }
@@ -187,7 +190,7 @@ namespace Client {
                     IAsyncResult ar = takeremDel.BeginInvoke(tupletoDelete, url, nonce, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
-                    Console.WriteLine("----->DEBUG_API_XL: asked to remove server " + i);
+                    //Console.WriteLine("----->DEBUG_API_XL: asked to remove server " + i);
                 }
                 //should we just wait for all or certify they return ack?
                 allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
