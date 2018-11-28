@@ -41,6 +41,7 @@ namespace Server{
         }
 
         public void write(TupleClass tuple){
+            Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
             //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
             //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
@@ -62,6 +63,7 @@ namespace Server{
 
         //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> takeRead(TupleClass tuple) {
+            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
@@ -74,7 +76,7 @@ namespace Server{
         }
 
         public List<TupleClass> read(TupleClass tuple){
-            
+            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
@@ -83,7 +85,7 @@ namespace Server{
                     res.Add(el);
                 }
             }
-            Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
+            //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
             return res; //no match
         }
 
