@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Configuration;
 using System.Collections;
 using System.Linq;
 using System.Runtime.Remoting;
@@ -18,9 +19,11 @@ namespace Server {
         private ServerService myRemoteObject;
         private const int defaultPort = 8086;
         private const string defaultname = "Server";
+        private List<IServerService> serverRemoteObjects;
 
         public Server() {
             prepareRemoting(defaultPort, defaultname);
+            Console.WriteLine("Hello! I'm a Server at port " + defaultPort);
         }
 
         public Server(string URL) {
@@ -38,6 +41,16 @@ namespace Server {
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this);
             RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
+
+            channel = new TcpChannel(port); //Port can't be 10000 (PCS) neither 10001 (Puppet Master)
+            ChannelServices.RegisterChannel(channel, false);
+
+            Console.WriteLine("Hello! I'm a Client at port " + port);
+
+            List<IServerService> serverRemoteObjects = new List<IServerService>();
+            foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
+                serverRemoteObjects.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
+            }
         }
 
         public void write(TupleClass tuple) {
@@ -48,7 +61,6 @@ namespace Server {
             //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
-        //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> take(TupleClass tuple) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
