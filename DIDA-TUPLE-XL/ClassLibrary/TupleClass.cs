@@ -66,7 +66,10 @@ namespace ClassLibrary {
                 if (i != 0) {
                     acc += ",";
                 }
-                if (_tuple[i].GetType() == typeof(System.String)) {
+                if (_tuple[i] == null) {
+                    acc += "null";
+                }
+                else if (_tuple[i].GetType() == typeof(System.String)) {
                     acc += "\"" + _tuple[i].ToString() + "\"";
                 }
                 else if (_tuple[i] == typeof(DADTestA)) {
