@@ -70,5 +70,8 @@ namespace Server
         public string heartBeat() {
             return _server.heartBeat();
         }
+        public void electLeader(int term, string leaderUrl) {
+            _server._state.electLeader(term, leaderUrl);
+        }
     }
 }

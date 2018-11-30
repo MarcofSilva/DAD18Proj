@@ -15,30 +15,53 @@ using System.Net.Sockets;
 using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
-using RaftLibrary;
 
 namespace Server {
     public class Server {
-        private RaftState _state = new CandidateState();
+
+        //not sure about this
+        private CandidateState candidate;
+        private FollowerState follower;
+        private LeaderState leader;
+
+        // public so states can acess it, 
+        // alternative: send the map to states or even the map being created in the states
+        public Dictionary<string, IServerService> serverRemoteObjects;
+        //public so state leader can acess it,
+        //alternative: send it in constructor of leader
+        public string _url = "tcp://localhost:8086/Server";
+
+        //public so server services can acess it
+        //alternativa 
+        public RaftState _state;
+
         private List<TupleClass> tupleSpace = new List<TupleClass>();
         private TcpChannel channel;
         private ServerService myRemoteObject;
         private int _port = 8086;
         private string _name = "Server";
-        private List<IServerService> serverRemoteObjects;
+        //private List<IServerService> serverRemoteObjects;
         private int _numServers = 0;
-        private string _url = "tcp://localhost:8086/Server";
-        private Random rnd = new Random();
-        private System.Timers.Timer timer;
-        private int wait;
 
+
+/*. The leader handles all client requests (if a client contacts a follower, the follower redirects it to the leader).
+    Current terms are exchanged whenever servers communicate; if one server’s current term is smaller than the other’s, 
+        then it updates its current term to the larger value.
+    If a candidate or leader discovers that its term is out of date, it immediately reverts to follower state. 
+    If a server receives a request with a stale term number, it rejects the request
+    To prevent split votes in the first place, election timeouts arechosen randomly from a fixed interval (e.g., 150–300ms).
+    Each candidate restarts its randomized election timeout at the start of an election, and it waits for 
+        that timeout to elapse before starting the next election;
+
+    The leader appends the command to its log as a new entry, then issues AppendEntries RPCs in parallel to each of the other
+    servers to replicate the entry. When the entry has been safely replicated (as described below), the leader applies
+    the entry to its state machine and returns the result of that execution to the client. If followers crash or run slowly,
+    or if network packets are lost, the leader retries AppendEntries RPCs indefinitely (even after it has responded to
+    the client) until all followers eventually store all log entries.
+*/
 
         private void selfPrepare() {
-            SetTimer();
-            Console.WriteLine(_port);
-            Console.WriteLine(_name);
-
-            serverRemoteObjects = new List<IServerService>();
+            serverRemoteObjects = new Dictionary<string, IServerService>();
 
             channel = new TcpChannel(_port);
             ChannelServices.RegisterChannel(channel, false);
@@ -54,10 +77,23 @@ namespace Server {
                 Int32.TryParse(urlSplit[2], out portOut);
                 //not to connect to himself
                 if (portOut != _port) {
-                    serverRemoteObjects.Add((ServerService)Activator.GetObject(typeof(ServerService), url));
+                    serverRemoteObjects.Add(url, (ServerService)Activator.GetObject(typeof(ServerService), url));
                 }
             }
             _numServers = serverRemoteObjects.Count;
+
+            //martelo para teste
+            if(_port == 8086) {
+                Console.WriteLine("I am server with port:" +_port +" i am have a leader");
+                leader = new LeaderState(this, _numServers);
+                _state = leader;
+            }
+            else {
+                Console.WriteLine("I am server with port:" + _port + " i am have a follower");
+                follower = new FollowerState(this, _numServers);
+                _state = candidate;
+            }
+            candidate = new CandidateState(this, _numServers);
         }
 
         public Server() {
@@ -72,37 +108,6 @@ namespace Server {
             _name = urlSplit[3];
             _url = URL;
             selfPrepare();
-        }
-
-        public delegate string heartBeatDelegate();
-
-        private void pulseHeartbeat() {
-            WaitHandle[] handles = new WaitHandle[_numServers];
-            IAsyncResult[] asyncResults = new IAsyncResult[_numServers]; //used when want to access IAsyncResult in index of handled that give the signal
-            try {
-                for (int i = 0; i < _numServers; i++) {
-                    ServerService remoteObject = (ServerService)serverRemoteObjects[i];
-                    heartBeatDelegate heartBeatDel = new heartBeatDelegate(remoteObject.heartBeat);
-                    IAsyncResult ar = heartBeatDel.BeginInvoke(null, null) ;
-                    asyncResults[i] = ar;
-                    handles[i] = ar.AsyncWaitHandle;
-                }
-                if (!WaitHandle.WaitAll(handles, 5000)) {
-                   pulseHeartbeat();
-                }
-                else {
-                    for (int i = 0; i < _numServers; i++) {
-                        IAsyncResult asyncResult = asyncResults[i];
-                        heartBeatDelegate heartBeatDel = (heartBeatDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        string response = heartBeatDel.EndInvoke(asyncResult);
-                        Console.WriteLine(response);
-                    }
-                }
-            }
-            catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
-            }
         }
 
         public string heartBeat() {
@@ -145,23 +150,6 @@ namespace Server {
             return res; //no match
         }
 
-        public void terminateClock() {
-            timer.Stop();
-            timer.Dispose();
-        }
-        private void SetTimer() {
-            wait = rnd.Next(250, 350);
-            Console.WriteLine("----------->WAITING :" + wait);
-            timer = new System.Timers.Timer(wait);
-            timer.Elapsed += OnTimedEvent;
-            timer.AutoReset = true;
-            timer.Enabled = true;
-        }
-
-        private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            pulseHeartbeat();
-        }
-
         static void Main(string[] args) {
             Server server;
             if (args.Length == 0) {
@@ -172,7 +160,6 @@ namespace Server {
             }
             Console.WriteLine("<enter> to stop...");
             Console.ReadLine();
-            server.terminateClock();
         }
     }
 }
