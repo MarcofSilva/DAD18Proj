@@ -116,15 +116,17 @@ namespace Server {
         }
 
         public void write(TupleClass tuple) {
-            Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
+            _state.write(tuple);
+            /*Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
             //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
             //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
+            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");*/
         }
 
         public List<TupleClass> take(TupleClass tuple) {
-            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+            return _state.take(tuple);
+            /*Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             foreach (TupleClass el in tupleSpace) {
@@ -134,11 +136,12 @@ namespace Server {
                     return res;
                 }
             }
-            return res; //no match
+            return res; //no match*/
         }
 
         public List<TupleClass> read(TupleClass tuple) {
-            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+            return _state.read(tuple);
+            /*Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             foreach (TupleClass el in tupleSpace) {
@@ -147,7 +150,7 @@ namespace Server {
                 }
             }
             //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
-            return res; //no match
+            return res; //no match*/
         }
 
         static void Main(string[] args) {

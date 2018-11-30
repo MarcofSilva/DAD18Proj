@@ -1,10 +1,20 @@
-﻿using System;
+﻿using RemoteServicesLibrary;
+using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Configuration;
+using System.Collections;
 using System.Linq;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
+using System.Net.Sockets;
 using ClassLibrary;
-using RemoteServicesLibrary;
+using System.Runtime.Remoting.Messaging;
+using System.Timers;
 
 namespace Server {
     public class FollowerState : RaftState {
@@ -22,19 +32,49 @@ namespace Server {
             throw new NotImplementedException();
         }
 
-        public override List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce) {
-            //Console.WriteLine(Server.serverRemoteObjects.Count);
-            Console.WriteLine(_term);
+        
+        public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
+        
+
+        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) { 
+            WaitHandle[] handles = new WaitHandle[1];
+            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            try {
+                readDelegate readDel = new readDelegate(_leaderRemote.Read);
+                asyncResults[0] = readDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
+                handles[0] = asyncResults[0].AsyncWaitHandle;
+                int indxAsync = WaitHandle.WaitAny(handles, 3000); //Wait for the first answer from the servers
+                if (indxAsync == WaitHandle.WaitTimeout) { //if we have a timeout, due to no answer received with repeat the multicast TODO sera que querem isto
+                    return read(tuple);
+                }
+                else {
+                    IAsyncResult asyncResult = asyncResults[indxAsync];
+                    readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                    List<TupleClass> resTuple = readDel.EndInvoke(asyncResult);
+                    nonce += 1;
+                    if (resTuple.Count == 0) {
+                        //Console.WriteLine("--->DEBUG: No tuple returned from server");
+                        return new TupleClass();
+                    }
+                    return resTuple[0];
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
+        }
+
+        public delegate List<TupleClass> takeDelegate(TupleClass tuple, string url, long nonce);
+
+        public override List<TupleClass> take(TupleClass tuple) {
             //enviar para o lider
             throw new NotImplementedException();
         }
 
-        public override List<TupleClass> Take(TupleClass tuple, string clientUrl, long nonce) {
-            //enviar para o lider
-            throw new NotImplementedException();
-        }
+        public delegate void writeDelegate(TupleClass tuple);
 
-        public override void Write(TupleClass tuple, string clientUrl, long nonce) {
+        public override void write(TupleClass tuple) {
             //enviar para o lider
             throw new NotImplementedException();
         }

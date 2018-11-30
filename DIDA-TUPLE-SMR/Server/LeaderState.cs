@@ -40,16 +40,16 @@ namespace Server {
             throw new NotImplementedException();
         }
 
-        public override List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce) {
-            return _server.read(tuple);
+        public override List<TupleClass> read(TupleClass tuple) {
+            throw new NotImplementedException();
         }
 
-        public override List<TupleClass> Take(TupleClass tuple, string clientUrl, long nonce) {
-            return _server.take(tuple);
+        public override List<TupleClass> take(TupleClass tuple) {
+            throw new NotImplementedException();
         }
 
-        public override void Write(TupleClass tuple, string clientUrl, long nonce) {
-            _server.write(tuple);
+        public override void write(TupleClass tuple) {
+            throw new NotImplementedException();
         }
 
         private void SetTimer() {

@@ -31,11 +31,11 @@ namespace Server {
 
         public abstract void requestVote(int term, string candidateID);
 
-        public abstract List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce);
+        public abstract List<TupleClass> read(TupleClass tuple);
 
-        public abstract List<TupleClass> Take(TupleClass tuple, string clientUrl, long nonce);
+        public abstract List<TupleClass> take(TupleClass tuple);
 
-        public abstract void Write(TupleClass tuple, string clientUrl, long nonce);
+        public abstract void write(TupleClass tuple);
 
         //temporary function for testing
         public abstract void electLeader(int term, string leaderUrl);
