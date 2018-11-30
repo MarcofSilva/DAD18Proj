@@ -68,13 +68,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ClassLibrary1\RaftLibrary.csproj">
-      <Project>{4f878af6-87fc-462b-b78d-6f31847aa966}</Project>
-      <Name>RaftLibrary</Name>
-    </ProjectReference>
     <ProjectReference Include="..\ClassLibrary\ClassLibrary.csproj">
       <Project>{81eec082-c561-443b-a73e-07419bda7e4a}</Project>
       <Name>ClassLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RaftLibrary\RaftLibrary.csproj">
+      <Project>{3ca9d02e-8614-4ff7-835e-30629964ac3d}</Project>
+      <Name>RaftLibrary</Name>
     </ProjectReference>
     <ProjectReference Include="..\RemoteServicesLibrary\RemoteServicesLibrary.csproj">
       <Project>{030f6fda-942a-47c7-b400-6ad5811ee505}</Project>

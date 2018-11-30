@@ -15,9 +15,11 @@ using System.Net.Sockets;
 using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
+using RaftLibrary;
 
 namespace Server {
     public class Server {
+        private RaftState _state = new CandidateState();
         private List<TupleClass> tupleSpace = new List<TupleClass>();
         private TcpChannel channel;
         private ServerService myRemoteObject;

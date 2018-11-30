@@ -5,8 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using ClassLibrary;
 
-namespace Server {
-    public interface RaftState {
+namespace RaftLibrary {
+    public class CandidateState : RaftState {
 
+        public CandidateState() {
+
+        }
     }
 }

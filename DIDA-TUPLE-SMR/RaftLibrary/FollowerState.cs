@@ -5,11 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using ClassLibrary;
 
-namespace Server {
-    class LeaderState : RaftState{
-        public LeaderState() {
+namespace RaftLibrary {
+    public class FollowerState : RaftState {
+        public FollowerState() {
 
         }
     }
 }
-    
