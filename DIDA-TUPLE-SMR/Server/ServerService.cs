@@ -67,5 +67,8 @@ namespace Server
                 _server.write(tuple);
             }
         }
+        public string heartBeat() {
+            return _server.heartBeat();
+        }
     }
 }
