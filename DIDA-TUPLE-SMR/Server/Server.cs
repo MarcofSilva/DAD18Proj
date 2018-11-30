@@ -10,50 +10,127 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
+using System.Net.Sockets;
 using ClassLibrary;
+using System.Runtime.Remoting.Messaging;
+using System.Timers;
 
 namespace Server {
     public class Server {
-        private List<TupleClass> tupleSpace;
+
+        //not sure about this
+        private CandidateState candidate;
+        private FollowerState follower;
+        private LeaderState leader;
+
+        // public so states can acess it, 
+        // alternative: send the map to states or even the map being created in the states
+        public Dictionary<string, IServerService> serverRemoteObjects;
+        //public so state leader can acess it,
+        //alternative: send it in constructor of leader
+        public string _url = "tcp://localhost:8086/Server";
+
+        //public so server services can acess it
+        //alternativa 
+        public RaftState _state;
+
+        private List<TupleClass> tupleSpace = new List<TupleClass>();
         private TcpChannel channel;
         private ServerService myRemoteObject;
-        private const int defaultPort = 8086;
-        private const string defaultname = "Server";
-        private List<IServerService> serverRemoteObjects;
+        private int _port = 8086;
+        private string _name = "Server";
+        //private List<IServerService> serverRemoteObjects;
+        private int _numServers = 0;
+
+
+/*. The leader handles all client requests (if a client contacts a follower, the follower redirects it to the leader).
+    Current terms are exchanged whenever servers communicate; if one server’s current term is smaller than the other’s, 
+        then it updates its current term to the larger value.
+    If a candidate or leader discovers that its term is out of date, it immediately reverts to follower state. 
+    If a server receives a request with a stale term number, it rejects the request
+    To prevent split votes in the first place, election timeouts arechosen randomly from a fixed interval (e.g., 150–300ms).
+    Each candidate restarts its randomized election timeout at the start of an election, and it waits for 
+        that timeout to elapse before starting the next election;
+
+    The leader appends the command to its log as a new entry, then issues AppendEntries RPCs in parallel to each of the other
+    servers to replicate the entry. When the entry has been safely replicated (as described below), the leader applies
+    the entry to its state machine and returns the result of that execution to the client. If followers crash or run slowly,
+    or if network packets are lost, the leader retries AppendEntries RPCs indefinitely (even after it has responded to
+    the client) until all followers eventually store all log entries.
+*/
+
+        private void selfPrepare() {
+            serverRemoteObjects = new Dictionary<string, IServerService>();
+
+            channel = new TcpChannel(_port);
+            ChannelServices.RegisterChannel(channel, false);
+
+            myRemoteObject = new ServerService(this);
+            RemotingServices.Marshal(myRemoteObject, _name, typeof(ServerService)); //TODO remote object name
+
+            Console.WriteLine("Hello! I'm a Server at port " + _port);
+
+            foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
+                string[] urlSplit = url.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                int portOut;
+                Int32.TryParse(urlSplit[2], out portOut);
+                //not to connect to himself
+                if (portOut != _port) {
+                    serverRemoteObjects.Add(url, (ServerService)Activator.GetObject(typeof(ServerService), url));
+                }
+            }
+            _numServers = serverRemoteObjects.Count;
+
+            //martelo para teste
+            if(_port == 8086) {
+                Console.WriteLine("I am server with port:" +_port +" i am have a leader");
+                leader = new LeaderState(this, _numServers);
+                _state = leader;
+            }
+            else {
+                Console.WriteLine("I am server with port:" + _port + " i am have a follower");
+                follower = new FollowerState(this, _numServers);
+                _state = candidate;
+            }
+            candidate = new CandidateState(this, _numServers);
+        }
 
         public Server() {
-            prepareRemoting(defaultPort, defaultname);
-            Console.WriteLine("Hello! I'm a Server at port " + defaultPort);
+            selfPrepare();
         }
 
         public Server(string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port;
             Int32.TryParse(urlSplit[2], out port);
-
-            prepareRemoting(port, urlSplit[3]);
-            Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
+            _port = port;
+            _name = urlSplit[3];
+            _url = URL;
+            selfPrepare();
         }
 
-        private void prepareRemoting(int port, string name) {
-            tupleSpace = new List<TupleClass>();
-            channel = new TcpChannel(port);
-            ChannelServices.RegisterChannel(channel, false);
-            myRemoteObject = new ServerService(this);
-            RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
-
-            channel = new TcpChannel(port); //Port can't be 10000 (PCS) neither 10001 (Puppet Master)
-            ChannelServices.RegisterChannel(channel, false);
-
-            Console.WriteLine("Hello! I'm a Client at port " + port);
-
-            List<IServerService> serverRemoteObjects = new List<IServerService>();
-            foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
-                serverRemoteObjects.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
-            }
+        public string heartBeat() {
+            Console.WriteLine("Received HeartBeat");
+            string res = "Hello from server: " + _name + " at port: " + _port.ToString();
+            return res;
         }
 
-        public void write(TupleClass tuple) {
+        //methods used by states and server services
+        public void write(TupleClass tuple, string clientUrl, long nonce) {
+            _state.write(tuple, clientUrl, nonce);
+        }
+        public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            return _state.read(tuple, clientUrl, nonce);
+        }
+        public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+            return _state.take(tuple, clientUrl, nonce);
+        }
+
+        //methods used by leader state to do shit in server
+        //isto nao deve ficar assim, mas desta maneira evitamos ja a implementacao de logs
+        //isto ajuda tambem porque assim nao e necessario o tuplespace ser public 
+        public void writeLeader(TupleClass tuple) {
             Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
             //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
@@ -61,11 +138,10 @@ namespace Server {
             //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
-        public List<TupleClass> take(TupleClass tuple) {
+        public List<TupleClass> takeLeader(TupleClass tuple) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
-            Regex capital = new Regex(@"[A-Z]");
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
                     res.Add(el);
@@ -76,11 +152,10 @@ namespace Server {
             return res; //no match
         }
 
-        public List<TupleClass> read(TupleClass tuple) {
+        public List<TupleClass> readLeader(TupleClass tuple) {
             Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
-            Regex capital = new Regex(@"[A-Z]");
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
                     res.Add(el);
@@ -98,7 +173,6 @@ namespace Server {
             else {
                 server = new Server(args[0]);
             }
-
             Console.WriteLine("<enter> to stop...");
             Console.ReadLine();
         }

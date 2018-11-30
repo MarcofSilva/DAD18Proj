@@ -14,6 +14,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreationServiceLibrary", "CreationServiceLibrary\CreationServiceLibrary.csproj", "{D4C20C4E-29CA-41A6-9E7E-889F540114A7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PuppetMaster", "PuppetMaster\PuppetMaster.csproj", "{2B1F36CE-3DBC-4DD2-9EB9-180DAF70A8F1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81EEC082-C561-443B-A73E-07419BDA7E4A} = {81EEC082-C561-443B-A73E-07419BDA7E4A}
+		{CB2D7BFC-FBFA-483C-98FD-FB0A66D317DD} = {CB2D7BFC-FBFA-483C-98FD-FB0A66D317DD}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibrary", "ClassLibrary\ClassLibrary.csproj", "{81EEC082-C561-443B-A73E-07419BDA7E4A}"
 EndProject

@@ -33,7 +33,7 @@ namespace Client
                 case "add":
                     tuple = new TupleClass(commandItems[1]);
                     Console.WriteLine("Operation: " + commandLine + "\n");
-                    _tupleSpaceAPI.Write(tuple);
+                    _tupleSpaceAPI.write(tuple);
 
                     break;
 
@@ -42,7 +42,7 @@ namespace Client
 
                     Console.WriteLine("Operation: " + commandLine);
 
-                    response = _tupleSpaceAPI.Read(tuple);
+                    response = _tupleSpaceAPI.read(tuple);
                     Console.Write("Response: ");
                     if (response.Size == 0) {
                         Console.WriteLine("No match found\n");
@@ -57,7 +57,7 @@ namespace Client
                     tuple = new TupleClass(commandItems[1]);
                     Console.WriteLine("Operation: " + commandLine);
 
-                    response = _tupleSpaceAPI.Take(tuple);
+                    response = _tupleSpaceAPI.take(tuple);
                     Console.Write("Response: ");
                     if (response.Size == 0) {
                         Console.WriteLine("No match found\n");
