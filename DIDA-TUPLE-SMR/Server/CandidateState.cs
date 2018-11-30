@@ -18,15 +18,15 @@ namespace Server {
             throw new NotImplementedException();
         }
 
-        public override List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce) {
+        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             throw new NotImplementedException();
         }
 
-        public override List<TupleClass> Take(TupleClass tuple, string clientUrl, long nonce) {
+        public override List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
             throw new NotImplementedException();
         }
 
-        public override void Write(TupleClass tuple, string clientUrl, long nonce) {
+        public override void write(TupleClass tuple, string clientUrl, long nonce) {
             throw new NotImplementedException();
         }
 

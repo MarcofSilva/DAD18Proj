@@ -30,13 +30,13 @@ namespace Client {
             }
         }
 
-        public abstract void Write(TupleClass tuple);
+        public abstract void write(TupleClass tuple);
 
-        public abstract TupleClass Read(TupleClass tuple);
+        public abstract TupleClass read(TupleClass tuple);
 
-        public abstract TupleClass Take(TupleClass tuple);
+        public abstract TupleClass take(TupleClass tuple);
 
-        protected List<IServerService> prepareForRemoting(ref TcpChannel channel, string URL) {
+        protected IServerService prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port;
             Int32.TryParse(urlSplit[2], out port);
@@ -46,11 +46,12 @@ namespace Client {
 
             Console.WriteLine("Hello! I'm a Client at port " + urlSplit[2]);
 
-            List<IServerService> serverRemoteObjects = new List<IServerService>();
-            foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
-                serverRemoteObjects.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
-            }
-            return serverRemoteObjects;
+            //TODO nao usar allkeys
+            string url = ConfigurationManager.AppSettings.AllKeys[0];
+
+            IServerService serverRemoteObject = ((IServerService)Activator.GetObject(typeof(IServerService), url));
+            
+            return serverRemoteObject;
         }
     }
 }

@@ -37,26 +37,20 @@ namespace Server {
         
 
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) { 
+            //TODO resolver estas cenas de criar lista com apenas 1 elemento
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
-                readDelegate readDel = new readDelegate(_leaderRemote.Read);
+                readDelegate readDel = new readDelegate(_leaderRemote.read);
                 asyncResults[0] = readDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
                 handles[0] = asyncResults[0].AsyncWaitHandle;
-                int indxAsync = WaitHandle.WaitAny(handles, 3000); //Wait for the first answer from the servers
-                if (indxAsync == WaitHandle.WaitTimeout) { //if we have a timeout, due to no answer received with repeat the multicast TODO sera que querem isto
-                    return read(tuple);
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    return read(tuple, clientUrl, nonce);
                 }
                 else {
-                    IAsyncResult asyncResult = asyncResults[indxAsync];
-                    readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    List<TupleClass> resTuple = readDel.EndInvoke(asyncResult);
-                    nonce += 1;
-                    if (resTuple.Count == 0) {
-                        //Console.WriteLine("--->DEBUG: No tuple returned from server");
-                        return new TupleClass();
-                    }
-                    return resTuple[0];
+                    IAsyncResult asyncResult = asyncResults[0];
+                    readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                    return readDel.EndInvoke(asyncResult);
                 }
             }
             catch (SocketException) {
@@ -67,16 +61,49 @@ namespace Server {
 
         public delegate List<TupleClass> takeDelegate(TupleClass tuple, string url, long nonce);
 
-        public override List<TupleClass> take(TupleClass tuple) {
-            //enviar para o lider
-            throw new NotImplementedException();
+        public override List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+            WaitHandle[] handles = new WaitHandle[1];
+            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            try {
+                takeDelegate takeDel = new takeDelegate(_leaderRemote.take);
+                asyncResults[0] = takeDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
+                handles[0] = asyncResults[0].AsyncWaitHandle;
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    return read(tuple, clientUrl, nonce);
+                }
+                else {
+                    IAsyncResult asyncResult = asyncResults[0];
+                    takeDel = (takeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                    return takeDel.EndInvoke(asyncResult);
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
         }
 
-        public delegate void writeDelegate(TupleClass tuple);
+        public delegate void writeDelegate(TupleClass tuple, string clientUrl, long nonce);
 
-        public override void write(TupleClass tuple) {
-            //enviar para o lider
-            throw new NotImplementedException();
+        public override void write(TupleClass tuple, string clientUrl, long nonce) {
+            WaitHandle[] handles = new WaitHandle[1];
+            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            try {
+                writeDelegate takeDel = new writeDelegate(_leaderRemote.write);
+                asyncResults[0] = takeDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
+                handles[0] = asyncResults[0].AsyncWaitHandle;
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    read(tuple, clientUrl, nonce);
+                }
+                else {
+                    IAsyncResult asyncResult = asyncResults[0];
+                    takeDel = (writeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
         }
 
         public override void electLeader(int term, string leaderUrl) {

@@ -16,14 +16,12 @@ namespace Client {
 
         private const int defaultPort = 8085;
         private TcpChannel channel;
-        private List<IServerService> serverRemoteObjects;
-        private int numServers;
+        private IServerService serverRemoteObject;
 
         private string url;
 
         public API_SMR(string URL) {
-            serverRemoteObjects = prepareForRemoting(ref channel, URL);
-            numServers = serverRemoteObjects.Count;
+            serverRemoteObject = prepareForRemoting(ref channel, URL);
 
             url = URL;
         }
@@ -33,15 +31,66 @@ namespace Client {
         public delegate List<TupleClass> takeDelegate(TupleClass tuple, string url, long nonce);
         //public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
-        public override void Write(TupleClass tuple) {
-            throw new NotImplementedException();
+        public override void write(TupleClass tuple) {
+            WaitHandle[] handles = new WaitHandle[1];
+            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            try {
+                writeDelegate takeDel = new writeDelegate(serverRemoteObject.write);
+                asyncResults[0] = takeDel.BeginInvoke(tuple, url, nonce, null, null);
+                handles[0] = asyncResults[0].AsyncWaitHandle;
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    read(tuple);
+                }
+                else {
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
         }
-        public override TupleClass Read(TupleClass tuple) {
-            throw new NotImplementedException();
+        public override TupleClass read(TupleClass tuple) {
+            WaitHandle[] handles = new WaitHandle[1];
+            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            try {
+                readDelegate readDel = new readDelegate(serverRemoteObject.read);
+                asyncResults[0] = readDel.BeginInvoke(tuple, url, nonce, null, null);
+                handles[0] = asyncResults[0].AsyncWaitHandle;
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    return read(tuple);
+                }
+                else {
+                    IAsyncResult asyncResult = asyncResults[0];
+                    readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                    return readDel.EndInvoke(asyncResult)[0];
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
         }
 
-        public override TupleClass Take(TupleClass tuple) {
-            throw new NotImplementedException();
+        public override TupleClass take(TupleClass tuple) {
+            WaitHandle[] handles = new WaitHandle[1];
+            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            try {
+                takeDelegate takeDel = new takeDelegate(serverRemoteObject.take);
+                asyncResults[0] = takeDel.BeginInvoke(tuple, url, nonce, null, null);
+                handles[0] = asyncResults[0].AsyncWaitHandle;
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    return read(tuple);
+                }
+                else {
+                    IAsyncResult asyncResult = asyncResults[0];
+                    takeDel = (takeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                    return takeDel.EndInvoke(asyncResult)[0];
+                }
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
         }
     }
 }

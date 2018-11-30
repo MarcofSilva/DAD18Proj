@@ -22,7 +22,6 @@ namespace Server {
         private System.Timers.Timer timer;
         private int wait;
         
-
         public LeaderState(Server server, int numServers) : base(server, numServers) {
             Console.WriteLine("LEADER STATE BEING CONSTRUCTED");
             _leaderUrl = server._url;
@@ -40,21 +39,20 @@ namespace Server {
             throw new NotImplementedException();
         }
 
-        public override List<TupleClass> read(TupleClass tuple) {
-            throw new NotImplementedException();
+        public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
+            return _server.readLeader(tuple);
         }
 
-        public override List<TupleClass> take(TupleClass tuple) {
-            throw new NotImplementedException();
+        public override List<TupleClass> take(TupleClass tuple, string url, long nonce) {
+            return _server.takeLeader(tuple);
         }
 
-        public override void write(TupleClass tuple) {
-            throw new NotImplementedException();
+        public override void write(TupleClass tuple, string url, long nonce) {
+            _server.writeLeader(tuple);
         }
 
         private void SetTimer() {
-            wait = rnd.Next(250, 350);
-            Console.WriteLine("----------->WAITING :" + wait);
+            wait = rnd.Next(1000, 1200);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = true;

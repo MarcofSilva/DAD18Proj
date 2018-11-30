@@ -8,8 +8,6 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using RemoteServicesLibrary;
-using System;
-using System.Collections.Generic;
 
 
 namespace Server {
@@ -31,11 +29,11 @@ namespace Server {
 
         public abstract void requestVote(int term, string candidateID);
 
-        public abstract List<TupleClass> read(TupleClass tuple);
+        public abstract List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce);
 
-        public abstract List<TupleClass> take(TupleClass tuple);
+        public abstract List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce);
 
-        public abstract void write(TupleClass tuple);
+        public abstract void write(TupleClass tuple, string clientUrl, long nonce);
 
         //temporary function for testing
         public abstract void electLeader(int term, string leaderUrl);

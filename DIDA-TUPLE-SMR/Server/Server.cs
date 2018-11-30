@@ -111,22 +111,35 @@ namespace Server {
         }
 
         public string heartBeat() {
+            Console.WriteLine("Received HeartBeat");
             string res = "Hello from server: " + _name + " at port: " + _port.ToString();
             return res;
         }
 
-        public void write(TupleClass tuple) {
-            _state.write(tuple);
-            /*Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
+        //methods used by states and server services
+        public void write(TupleClass tuple, string clientUrl, long nonce) {
+            _state.write(tuple, clientUrl, nonce);
+        }
+        public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            return _state.read(tuple, clientUrl, nonce);
+        }
+        public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+            return _state.take(tuple, clientUrl, nonce);
+        }
+
+        //methods used by leader state to do shit in server
+        //isto nao deve ficar assim, mas desta maneira evitamos ja a implementacao de logs
+        //isto ajuda tambem porque assim nao e necessario o tuplespace ser public 
+        public void writeLeader(TupleClass tuple) {
+            Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
             //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
             //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");*/
+            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
-        public List<TupleClass> take(TupleClass tuple) {
-            return _state.take(tuple);
-            /*Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+        public List<TupleClass> takeLeader(TupleClass tuple) {
+            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             foreach (TupleClass el in tupleSpace) {
@@ -136,12 +149,11 @@ namespace Server {
                     return res;
                 }
             }
-            return res; //no match*/
+            return res; //no match
         }
 
-        public List<TupleClass> read(TupleClass tuple) {
-            return _state.read(tuple);
-            /*Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+        public List<TupleClass> readLeader(TupleClass tuple) {
+            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             foreach (TupleClass el in tupleSpace) {
@@ -150,7 +162,7 @@ namespace Server {
                 }
             }
             //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
-            return res; //no match*/
+            return res; //no match
         }
 
         static void Main(string[] args) {
