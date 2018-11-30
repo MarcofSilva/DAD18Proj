@@ -18,7 +18,6 @@ using System.Timers;
 
 namespace Server {
     public class Server {
-        private RaftState _state = new CandidateState();
         private List<TupleClass> tupleSpace = new List<TupleClass>();
         private TcpChannel channel;
         private ServerService myRemoteObject;
@@ -29,6 +28,7 @@ namespace Server {
         private string _url = "tcp://localhost:8086/Server";
         private Random rnd = new Random();
         private System.Timers.Timer timer;
+        private int wait;
 
 
         private void selfPrepare() {
@@ -148,7 +148,7 @@ namespace Server {
             timer.Dispose();
         }
         private void SetTimer() {
-            int wait = rnd.Next(250, 350);
+            wait = rnd.Next(250, 350);
             Console.WriteLine("----------->WAITING :" + wait);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;

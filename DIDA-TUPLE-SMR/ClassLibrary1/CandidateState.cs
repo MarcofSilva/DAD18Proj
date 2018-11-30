@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 using ClassLibrary;
 
 namespace Server {
-    class LeaderState : RaftState{
+    class CandidateState : RaftState {
+
+        public CandidateState() {
+
+        }
     }
 }

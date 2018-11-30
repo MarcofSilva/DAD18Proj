@@ -60,10 +60,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CandidateState.cs" />
-    <Compile Include="FollowerState.cs" />
-    <Compile Include="LeaderState.cs" />
-    <Compile Include="RaftState.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServerService.cs" />
@@ -72,6 +68,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ClassLibrary1\RaftLibrary.csproj">
+      <Project>{4f878af6-87fc-462b-b78d-6f31847aa966}</Project>
+      <Name>RaftLibrary</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ClassLibrary\ClassLibrary.csproj">
       <Project>{81eec082-c561-443b-a73e-07419bda7e4a}</Project>
       <Name>ClassLibrary</Name>

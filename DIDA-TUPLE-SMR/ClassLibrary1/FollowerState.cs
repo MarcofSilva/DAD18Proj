@@ -7,5 +7,8 @@ using ClassLibrary;
 
 namespace Server {
     class FollowerState : RaftState {
+        public FollowerState() {
+
+        }
     }
 }
