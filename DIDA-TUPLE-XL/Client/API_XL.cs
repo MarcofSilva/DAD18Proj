@@ -18,6 +18,7 @@ namespace Client {
         private TcpChannel channel;
         private List<IServerService> serverRemoteObjects;
         private int numServers;
+        private bool frozen = false;
 
         private string url;
 
@@ -35,6 +36,7 @@ namespace Client {
 
         public override void Write(TupleClass tuple) {
             //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            checkFrozen();
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -57,6 +59,7 @@ namespace Client {
         }
 
         public override TupleClass Read(TupleClass tuple) {
+            checkFrozen();
             //Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
@@ -81,12 +84,24 @@ namespace Client {
                 }
             }
             catch (SocketException) {
+                    List<TupleClass> resTuple = readDel.EndInvoke(asyncResult);
+                    nonce += 1;
+                    if (resTuple.Count == 0) {
+                        Console.WriteLine("--->DEBUG: No tuple returned from server");
+                        return new TupleClass();
+                    }
+                    return resTuple[0];
+                }
+            }
+            catch (SocketException e) {
                 //TODO
-                throw new NotImplementedException();
+                Console.WriteLine(e.StackTrace);
+                return null;
             }
         }
 
         public override TupleClass Take(TupleClass tuple) {
+            checkFrozen();
             //Console.WriteLine("----->DEBUG_API_XL: Begin Take");
             //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
@@ -164,6 +179,30 @@ namespace Client {
             if (!WaitHandle.WaitAll(handles/*TODO, 3000*/)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
                 takeRemove(tupleToDelete);
             }   
+        }
+
+        public override void freeze() {
+            frozen = true;
+        }
+
+        public override void unfreeze() {
+            Console.WriteLine("Unfreezing...");
+            lock (this) {
+                Monitor.PulseAll(this);
+            }
+            frozen = false;
+        }
+
+        public void checkFrozen() {
+            if (frozen) {
+                Console.WriteLine("Cant do anything, im frozen");
+                lock (this) {
+                    while (frozen) {
+                        Console.WriteLine("Waiting...");
+                        Monitor.Wait(this);
+                    }
+                }
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Client {
-    public class ClientService : IClientService{
+    public class ClientService : MarshalByRefObject, IClientService {
 
         private TupleSpaceAPI _clientAPI;
 
@@ -17,6 +17,14 @@ namespace Client {
 
         public TupleClass TakeRemove(List<TupleClass> tupleSubset) {
             throw new NotImplementedException();
+        }
+
+        public void Freeze() {
+            _clientAPI.freeze();
+        }
+
+        public void Unfreeze() {
+            _clientAPI.unfreeze();
         }
     }
 }

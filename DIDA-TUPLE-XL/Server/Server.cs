@@ -25,18 +25,23 @@ namespace Server{
         private ServerService myRemoteObject;
         private const int defaultPort = 8086;
         private const string defaultname = "Server";
+        private const int defaultDelay = 0;
+        //readonly object _Key = new object();
+        public bool frozen = false;
 
         public Server(){
             tupleSpaceLock = new ReaderWriterLockSlim();
             prepareRemoting(defaultPort, defaultname);
         }
 
-        public Server(string URL) {
+        public Server(string URL, string min_delay, string max_delay) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
-            int port;
+            int port, imin_delay, imax_delay;
             Int32.TryParse(urlSplit[2], out port);
+            Int32.TryParse(min_delay, out imin_delay);
+            Int32.TryParse(max_delay, out imax_delay);
 
-            prepareRemoting(port, urlSplit[3]);
+            prepareRemoting(port, urlSplit[3], imin_delay, imax_delay);
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
         }
 
@@ -44,7 +49,7 @@ namespace Server{
             tupleSpace = new ConcurrentBag<TupleClass>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
-            myRemoteObject = new ServerService(this);
+            myRemoteObject = new ServerService(this, min_delay, max_delay);
             RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
@@ -141,13 +146,38 @@ namespace Server{
             }
         }
 
+        public void Freeze() {
+            frozen = true;
+
+        }
+
+        public void checkFrozen() {
+            if (frozen) {
+                Console.WriteLine("Cant do anything, im frozen");
+                lock (this) {
+                    while (frozen) {
+                        Console.WriteLine("Waiting...");
+                        Monitor.Wait(this);
+                    }
+                }
+            }
+        }
+
+        public void Unfreeze() {
+            Console.WriteLine("Unfreezing...");
+            lock (this) {
+                Monitor.PulseAll(this);
+            }
+            frozen = false;
+        }
+
         static void Main(string[] args){
             Server server;
             if(args.Length == 0) {
                 server = new Server();
             }
             else {
-                server = new Server(args[0]);
+                server = new Server(args[0], args[1], args[2]);
             }
 
             Console.WriteLine("<enter> to stop...");

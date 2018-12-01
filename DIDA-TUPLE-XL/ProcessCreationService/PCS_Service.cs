@@ -6,11 +6,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using RemoteServicesLibrary;
 
 namespace ProcessCreationService {
     class PCS_Service : MarshalByRefObject, I_PCS_Service {
         private PCS _pcs;
         private Dictionary<string, Process> processes = new Dictionary<string, Process>();
+        private Dictionary<string, string> serverUrl = new Dictionary<string, string>();
+        private Dictionary<string, string> clientUrl = new Dictionary<string, string>();
 
         public PCS_Service(PCS pcs) {
             _pcs = pcs;
@@ -25,6 +28,7 @@ namespace ProcessCreationService {
             Console.WriteLine(proc.StartInfo.Arguments);
             proc.Start();
             processes.Add(id, proc);
+            clientUrl.Add(id, URL);
         }
 
         public void CreateServer(string id, string URL, int min_delay, int max_delay) {
@@ -32,10 +36,11 @@ namespace ProcessCreationService {
             Console.WriteLine("Creating server at port " + urlSplit[2]);
             Process proc = new Process();
             proc.StartInfo.FileName = "..\\..\\..\\Server\\bin\\Debug\\Server";
-            proc.StartInfo.Arguments = URL;
+            proc.StartInfo.Arguments = URL + " " + min_delay.ToString() + " " + max_delay.ToString();
             Console.WriteLine(proc.StartInfo.Arguments);
             proc.Start();
             processes.Add(id, proc);
+            serverUrl.Add(id, URL);
 
         }
 
@@ -43,21 +48,19 @@ namespace ProcessCreationService {
             Console.WriteLine("Crashing " + id);
             processes[id].Kill();
         }
-        [DllImport("kernel32.dll")]
-        static extern IntPtr OpenThread(uint dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
-        [DllImport("kernel32.dll")]
-        static extern uint SuspendThread(IntPtr hThread);
-        [DllImport("kernel32.dll")]
-        static extern uint ResumeThread(IntPtr hThread);
 
         public void Freeze(string id) {
             Console.WriteLine("Freezing " + id);
-            Process proc = processes[id];
-            ProcessThread p = proc.Threads[0];
-            IntPtr ptrOpenThread = OpenThread(0x0002, false, (uint)p.Id);
-            if (ptrOpenThread != null) {
-                SuspendThread(ptrOpenThread);
+            if (serverUrl.ContainsKey(id)) {
+                IServerService i = (IServerService)Activator.GetObject(typeof(IServerService), serverUrl[id]);
+                i.Freeze();
             }
+            else if (clientUrl.ContainsKey(id)) {
+                IClientService i = (IClientService)Activator.GetObject(typeof(IClientService), clientUrl[id]);
+                i.Freeze();
+            }
+            Console.WriteLine(id.ToString() + " frozen");
+           
 
         }
 
@@ -69,12 +72,15 @@ namespace ProcessCreationService {
 
         public void Unfreeze(string id) {
             Console.WriteLine("Unfreezing " + id);
-            Process proc = processes[id];
-            ProcessThread p = proc.Threads[0];
-            IntPtr ptrOpenThread = OpenThread(0x0002, false, (uint)p.Id);
-            if (ptrOpenThread != null) {
-                ResumeThread(ptrOpenThread);
+            if (serverUrl.ContainsKey(id)) {
+                IServerService i = (IServerService)Activator.GetObject(typeof(IServerService), serverUrl[id]);
+                i.Unfreeze();
             }
+            else if (clientUrl.ContainsKey(id)) {
+                IClientService i = (IClientService)Activator.GetObject(typeof(IClientService), clientUrl[id]);
+                i.Unfreeze();
+            }
+
 
         }
     }
