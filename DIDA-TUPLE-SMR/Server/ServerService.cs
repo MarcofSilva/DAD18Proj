@@ -66,7 +66,7 @@ namespace Server
 
         public void write(TupleClass tuple, string clientUrl, long nonce) {
             if (validRequest(clientUrl, nonce)) {//success
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
+                Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
                 _server.write(tuple, clientUrl, nonce);
             }
         }

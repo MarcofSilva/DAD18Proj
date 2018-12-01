@@ -23,12 +23,10 @@ namespace Server {
         private int wait;
         
         public LeaderState(Server server, int numServers) : base(server, numServers) {
-            Console.WriteLine("LEADER STATE BEING CONSTRUCTED");
             _leaderUrl = server._url;
-            Thread.Sleep(2000);
             electLeader(_term, _leaderUrl);
-            Thread.Sleep(4000);
             SetTimer();
+            Console.WriteLine("LEADER STATE CONSTRUCTED");
         }
 
         public override void apprendEntry(int term, string senderID) {
@@ -48,11 +46,12 @@ namespace Server {
         }
 
         public override void write(TupleClass tuple, string url, long nonce) {
+            Console.WriteLine("----->DEBUG_State: Received Write Request");
             _server.writeLeader(tuple);
         }
 
         private void SetTimer() {
-            wait = rnd.Next(1000, 1200);
+            wait = rnd.Next(2000, 2200);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = true;
@@ -123,6 +122,10 @@ namespace Server {
                 //TODO
                 throw new NotImplementedException();
             }
+        }
+
+        public override void ping() {
+            Console.WriteLine("Leader State pinged");
         }
     }
 }

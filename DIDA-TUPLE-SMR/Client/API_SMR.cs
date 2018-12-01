@@ -32,6 +32,7 @@ namespace Client {
         //public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
         public override void write(TupleClass tuple) {
+            //Console.WriteLine("-->DEBUG:  API_SMR write");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
@@ -50,6 +51,7 @@ namespace Client {
             }
         }
         public override TupleClass read(TupleClass tuple) {
+            //Console.WriteLine("-->DEBUG:  API_SMR read");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
@@ -72,6 +74,7 @@ namespace Client {
         }
 
         public override TupleClass take(TupleClass tuple) {
+            //Console.WriteLine("-->DEBUG:  API_SMR take");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {

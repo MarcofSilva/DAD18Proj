@@ -25,6 +25,8 @@ namespace Server {
             _serverRemoteObjects = server.serverRemoteObjects;
         }
 
+        public abstract void ping();
+
         public abstract void apprendEntry(int term, string senderID);
 
         public abstract void requestVote(int term, string candidateID);

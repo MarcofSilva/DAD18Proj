@@ -33,5 +33,8 @@ namespace Server {
         public override void electLeader(int term, string leaderUrl) {
             throw new NotImplementedException();
         }
+        public override void ping() {
+            Console.WriteLine("Candidate State pinged");
+        }
     }
 }

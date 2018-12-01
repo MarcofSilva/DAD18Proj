@@ -113,5 +113,9 @@ namespace Server {
             Console.WriteLine("Follower: " + _server._url);
             Console.WriteLine("My leader is: " + leaderUrl);
         }
+
+        public override void ping() {
+            Console.WriteLine("Follower State pinged");
+        }
     }
 }

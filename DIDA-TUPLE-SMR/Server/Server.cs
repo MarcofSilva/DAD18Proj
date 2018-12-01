@@ -57,7 +57,8 @@ namespace Server {
     servers to replicate the entry. When the entry has been safely replicated (as described below), the leader applies
     the entry to its state machine and returns the result of that execution to the client. If followers crash or run slowly,
     or if network packets are lost, the leader retries AppendEntries RPCs indefinitely (even after it has responded to
-    the client) until all followers eventually store all log entries.
+    the client) until all followers eventually store all log entries.
+
 */
 
         private void selfPrepare() {
@@ -84,20 +85,20 @@ namespace Server {
 
             //martelo para teste
             if(_port == 8086) {
-                Console.WriteLine("I am server with port:" +_port +" i am have a leader");
-                leader = new LeaderState(this, _numServers);
-                _state = leader;
+                Console.WriteLine("I'm a server with port:" +_port +" i am THE ONE AND ONLY leader: BY MATILDE");
+                _state = new LeaderState(this, _numServers);
             }
             else {
-                Console.WriteLine("I am server with port:" + _port + " i am have a follower");
+                Console.WriteLine("I'm a server with port:" + _port + " i am a follower");
                 follower = new FollowerState(this, _numServers);
-                _state = candidate;
+                _state = follower;
             }
             candidate = new CandidateState(this, _numServers);
         }
 
         public Server() {
             selfPrepare();
+            _state.ping();
         }
 
         public Server(string URL) {
@@ -109,9 +110,11 @@ namespace Server {
             _url = URL;
             selfPrepare();
         }
+        
+        public void ping() {
+        }
 
         public string heartBeat() {
-            Console.WriteLine("Received HeartBeat");
             string res = "Hello from server: " + _name + " at port: " + _port.ToString();
             return res;
         }
@@ -127,6 +130,7 @@ namespace Server {
             return _state.take(tuple, clientUrl, nonce);
         }
 
+
         //methods used by leader state to do shit in server
         //isto nao deve ficar assim, mas desta maneira evitamos ja a implementacao de logs
         //isto ajuda tambem porque assim nao e necessario o tuplespace ser public 
@@ -135,7 +139,7 @@ namespace Server {
             //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
             tupleSpace.Add(tuple);
             //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
+            Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
 
         public List<TupleClass> takeLeader(TupleClass tuple) {
