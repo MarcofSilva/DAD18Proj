@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace Client {
     public abstract class TupleSpaceAPI {
+        private ClientService myRemoteObject;
 
         private long _operationNonce;
 
@@ -36,6 +37,10 @@ namespace Client {
 
         public abstract TupleClass Take(TupleClass tuple);
 
+        public abstract void freeze();
+
+        public abstract void unfreeze();
+
         protected List<IServerService> prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < urlSplit.Length; i++) {
@@ -46,6 +51,8 @@ namespace Client {
 
             channel = new TcpChannel(port); //Port can't be 10000 (PCS) neither 10001 (Puppet Master)
             ChannelServices.RegisterChannel(channel, false);
+            myRemoteObject = new ClientService(this);
+            RemotingServices.Marshal(myRemoteObject, urlSplit[3], typeof(ClientService));
 
             Console.WriteLine("Hello! I'm a Client at port " + urlSplit[2]);
 

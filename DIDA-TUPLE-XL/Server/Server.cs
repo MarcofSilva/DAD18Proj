@@ -112,18 +112,6 @@ namespace Server{
             }
         }
 
-
-        /*if ((global)frozen)
-(local)imfrozen = true
-(global)frozen_req++;
-monitor.wait
-random_wait
-delivery
-realservice
-if (im frozen)
-frozen_req --
-if(frozenreq) Monitor.Pulse(this)
-         */
         public void Unfreeze() {
             Console.WriteLine("Unfreezing...");
             lock (this) {
