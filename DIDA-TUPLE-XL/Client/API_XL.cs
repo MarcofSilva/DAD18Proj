@@ -29,8 +29,8 @@ namespace Client {
         }
 
         public delegate void writeDelegate(TupleClass tuple, string url, long nonce);
-        public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
-        public delegate List<TupleClass> takeReadDelegate(TupleClass tuple, string url, long nonce);
+        public delegate TupleClass readDelegate(TupleClass tuple, string url, long nonce);
+        public delegate List<TupleClass> takeReadDelegate(TupleClass tuple, string url);
         public delegate void takeRemoveDelegate(TupleClass tuple, string url, long nonce);
 
         public override void Write(TupleClass tuple) {
@@ -43,7 +43,7 @@ namespace Client {
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                if (!WaitHandle.WaitAll(handles, 3000)) {
+                if (!WaitHandle.WaitAll(handles/*TODO, 3000*/)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
                     Write(tuple);
                 }
                 else {
@@ -68,20 +68,16 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                int indxAsync = WaitHandle.WaitAny(handles, 3000); //Wait for the first answer from the servers
+                int indxAsync = WaitHandle.WaitAny(handles/*TODO, 3000*/); //Wait for the first answer from the servers
                 if (indxAsync == WaitHandle.WaitTimeout) { //if we have a timeout, due to no answer received with repeat the multicast TODO sera que querem isto
                     return Read(tuple);
                 }
-                else {
+                else {//TODO se o retorno for nulo temos de ir ver outra resposta
                     IAsyncResult asyncResult = asyncResults[indxAsync];
                     readDelegate readDel = (readDelegate)((AsyncResult) asyncResult).AsyncDelegate;
-                    List<TupleClass> resTuple = readDel.EndInvoke(asyncResult);
-                    nonce += 1;
-                    if (resTuple.Count == 0) {
-                        //Console.WriteLine("--->DEBUG: No tuple returned from server");
-                        return new TupleClass();
-                    }
-                    return resTuple[0];
+                    TupleClass resTuple = readDel.EndInvoke(asyncResult);
+                    nonce++;
+                    return resTuple;
                 }
             }
             catch (SocketException) {
@@ -100,83 +96,72 @@ namespace Client {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = serverRemoteObjects[i];
                     takeReadDelegate takereadDel = new takeReadDelegate(remoteObject.TakeRead);
-                    IAsyncResult ar = takereadDel.BeginInvoke(tuple, url, nonce, null, null);
+                    IAsyncResult ar = takereadDel.BeginInvoke(tuple, url, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                bool allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
-                List<TupleClass> res = new List<TupleClass>();
-                List<TupleClass> intersect = new List<TupleClass>();
+                bool allcompleted = WaitHandle.WaitAll(handles/*TODO, 3000*/); //Wait for the first answer from the servers
+
                 if (!allcompleted) {
                     return Take(tuple);
                 }
-                else{ //all have to completed
-                    for (int i = 0; i < numServers; i++) {
-                        //Console.WriteLine("----->DEBUG_API_XL: iteration " + i);
-                        IAsyncResult asyncResult = asyncResults[i];
+                else { //all have completed
+                    List<List<TupleClass>> responseSets = new List<List<TupleClass>>();
+                    bool someRejection = false;
+                    foreach (IAsyncResult asyncResult in asyncResults) {
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        List<TupleClass> resTuple = takeReadDel.EndInvoke(asyncResult);
-                        nonce += 1;
-                        if (resTuple.Count == 0) {
-                            //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
-                            return new TupleClass();
-                        }
-                        if (i == 0) {
-                            res = resTuple;
-                            //Console.WriteLine("----->DEBUG_API_XL: ITERATION ONE SIZE:" + res.Count);
+                        List<TupleClass> tupleSet = takeReadDel.EndInvoke(asyncResult);
+                        if (tupleSet == null) {
+                            someRejection = true;
+                            break;
                         }
                         else {
-                            bool remove = true;
-                            foreach(TupleClass inter in res) {
-                                remove = true;
-                                foreach (TupleClass el in resTuple) {
-                                    if (inter.Equals(el)) {
-                                        remove = false;
-                                    }
-                                }
-                                if (remove) {
-                                    //pode dar probs porque estamos a alterar uma lista a ser iterada
-                                    res.Remove(inter);
-                                }
-                            }
-                            if (res.Count == 0) {
-                                //intersection is empty and will always be empty
-                                //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
-                                return new TupleClass();
-                            }
-                            //Console.WriteLine("----->DEBUG_API_XL: intersect size " + res.Count);
-                            //Console.WriteLine("----->DEBUG_API_XL: intersect " + printTuple(res[0]));
+                            responseSets.Add(tupleSet);
+                        }
+                    }
+                    if (someRejection) {
+                        return Take(tuple);
+                    }
+                    else {
+                        List<TupleClass> tupleSetsIntersection = new List<TupleClass>();
+                        //TODO intersect
+                        //
+                        //
+                        //
+                        if (tupleSetsIntersection.Count == 0) {
+                            return Take(tuple);
+                        }
+                        else {
+                            TupleClass tupleToDelete = tupleSetsIntersection[0];
+                            //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
+                            takeRemove(tupleToDelete);
+                            nonce++;
                         }
                     }
                 }
-                //chose first commun to all?
-                if(res.Count == 0) {
-                    //Console.WriteLine("--->DEBUG: Interception is empty, no tuples to remove");
-                    return new TupleClass();
-                }
-                TupleClass tupletoDelete = res[0];
-                //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
-                for (int i = 0; i < numServers; i++) {
-                    IServerService remoteObject = serverRemoteObjects[i];
-                    takeRemoveDelegate takeremDel = new takeRemoveDelegate(remoteObject.TakeRemove);
-                    IAsyncResult ar = takeremDel.BeginInvoke(tupletoDelete, url, nonce, null, null);
-                    asyncResults[i] = ar;
-                    handles[i] = ar.AsyncWaitHandle;
-                    //Console.WriteLine("----->DEBUG_API_XL: asked to remove server " + i);
-                }
-                //should we just wait for all or certify they return ack?
-                allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
-                if (!allcompleted) {
-                    return Take(tuple);
-                }
-                nonce += 1;
-                return tupletoDelete;
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
             }
-            return null;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            return null;
+        }
+
+        private void takeRemove(TupleClass tupleToDelete) {
+            WaitHandle[] handles = new WaitHandle[numServers];
+            IAsyncResult[] asyncResults = new IAsyncResult[numServers];
+
+            for (int i = 0; i < numServers; i++) {
+                IServerService remoteObject = serverRemoteObjects[i];
+                takeRemoveDelegate takeRemDel = new takeRemoveDelegate(remoteObject.TakeRemove);
+                IAsyncResult ar = takeRemDel.BeginInvoke(tupleToDelete, url, nonce, null, null);
+                asyncResults[i] = ar;
+                handles[i] = ar.AsyncWaitHandle;
+                //Console.WriteLine("----->DEBUG_API_XL: asked to remove server " + i);
+            }
+            if (!WaitHandle.WaitAll(handles/*TODO, 3000*/)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
+                takeRemove(tupleToDelete);
+            }   
         }
     }
 }

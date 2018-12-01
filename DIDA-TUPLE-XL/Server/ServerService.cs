@@ -12,9 +12,10 @@ namespace Server
     public class ServerService : MarshalByRefObject, IServerService
     {
         private Server _server;
-        //tem de se fazer lock disto
+        //TODO tem de se fazer lock disto
+        // O mesmo cliente nunca vai fazer dois pedidos concorrentes pois executa os seus pedidos de forma sincrona
         private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
-        //todo private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
+        //TODO   private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
 
         public ServerService(Server server) {
             _server = server;
@@ -44,24 +45,19 @@ namespace Server
             }
         }
 
-        public List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce) {
-            List<TupleClass> responseTuple = new List<TupleClass>();
+        public TupleClass Read(TupleClass tuple, string clientUrl, long nonce) {
             if (validRequest(clientUrl, nonce)) {
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
-                responseTuple = _server.read(tuple);
-                return responseTuple;
-            }//Update nonce info
-            return new List<TupleClass>();
+                //Console.WriteLine("----->DEBUG_ServerService: Received Read Request");
+                return _server.read(tuple);
+            }
+            return null;
         }
 
-        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl, long nonce) {
+        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl) {
             List<TupleClass> responseTuple = new List<TupleClass>();
-            if (validRequest(clientUrl, nonce)) {
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
-                responseTuple = _server.takeRead(tuple);
-                return responseTuple;
-            }//Update nonce info
-            return new List<TupleClass>();
+            //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
+            responseTuple = _server.takeRead(tuple);
+            return responseTuple;
         }
 
         public void TakeRemove(TupleClass tuple, string clientUrl, long nonce) {
