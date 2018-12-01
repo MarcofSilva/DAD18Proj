@@ -64,22 +64,20 @@ namespace Server
                 Console.WriteLine("Read Network Delay: " + r.ToString());
                 Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
-                responseTuple = _server.read(tuple);
-                
-                return responseTuple;
+                return _server.read(tuple);
             }//Update nonce info
             Console.WriteLine("empty read");
-            return null;
+            return null; //TODO what to do
         }
 
-        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl, long nonce) {
+        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl) {
             _server.checkFrozen();
             List<TupleClass> responseTuple = new List<TupleClass>();
             int r = random.Next(_min_delay, _max_delay);
             Console.WriteLine("TakeRead Network Delay: " + r.ToString());
             Thread.Sleep(r);
             //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
-            responseTuple = _server.takeRead(tuple);
+            responseTuple = _server.takeRead(tuple, clientUrl);
             return responseTuple;
        }
 

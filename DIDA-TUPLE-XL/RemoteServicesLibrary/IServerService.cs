@@ -10,8 +10,7 @@ namespace RemoteServicesLibrary
 {
     public interface IServerService
     {
-        List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce);
-
+        TupleClass Read(TupleClass tuple, string clientUrl, long nonce);
 
         List<TupleClass> TakeRead(TupleClass tuple, string clientUrl);
 

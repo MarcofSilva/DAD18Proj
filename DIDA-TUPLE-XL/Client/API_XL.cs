@@ -77,20 +77,10 @@ namespace Client {
                 }
                 else {//TODO se o retorno for nulo temos de ir ver outra resposta
                     IAsyncResult asyncResult = asyncResults[indxAsync];
-                    readDelegate readDel = (readDelegate)((AsyncResult) asyncResult).AsyncDelegate;
+                    readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                     TupleClass resTuple = readDel.EndInvoke(asyncResult);
                     nonce++;
                     return resTuple;
-                }
-            }
-            catch (SocketException) {
-                    List<TupleClass> resTuple = readDel.EndInvoke(asyncResult);
-                    nonce += 1;
-                    if (resTuple.Count == 0) {
-                        Console.WriteLine("--->DEBUG: No tuple returned from server");
-                        return new TupleClass();
-                    }
-                    return resTuple[0];
                 }
             }
             catch (SocketException e) {
@@ -153,6 +143,7 @@ namespace Client {
                             //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
                             takeRemove(tupleToDelete);
                             nonce++;
+                            return tupleToDelete;
                         }
                     }
                 }
@@ -161,7 +152,6 @@ namespace Client {
                 //TODO
                 throw new NotImplementedException();
             }
-            return null;
         }
 
         private void takeRemove(TupleClass tupleToDelete) {
@@ -178,7 +168,7 @@ namespace Client {
             }
             if (!WaitHandle.WaitAll(handles/*TODO, 3000*/)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
                 takeRemove(tupleToDelete);
-            }   
+            }
         }
 
         public override void freeze() {

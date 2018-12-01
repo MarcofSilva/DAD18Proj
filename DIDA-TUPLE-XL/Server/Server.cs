@@ -15,10 +15,10 @@ using System.Collections.Concurrent;
 
 namespace Server{
     public class Server{
-        private ReaderWriterLockSlim tupleSpaceLock;
+        private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
         private ConcurrentBag<TupleClass> tupleSpace;
 
-        private Object dummyObjForLock; //dummy object for lock and wait and lock and pulse in read and write.
+        private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
         private Dictionary<string, List<TupleClass>> toTakeSubset = new Dictionary<string, List<TupleClass>>();
 
         private TcpChannel channel;
@@ -31,7 +31,7 @@ namespace Server{
 
         public Server(){
             tupleSpaceLock = new ReaderWriterLockSlim();
-            prepareRemoting(defaultPort, defaultname);
+            prepareRemoting(defaultPort, defaultname, defaultDelay, defaultDelay);
         }
 
         public Server(string URL, string min_delay, string max_delay) {
@@ -45,7 +45,7 @@ namespace Server{
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
         }
 
-        private void prepareRemoting(int port, string name) {
+        private void prepareRemoting(int port, string name, int min_delay, int max_delay) {
             tupleSpace = new ConcurrentBag<TupleClass>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
@@ -58,10 +58,8 @@ namespace Server{
 
             tupleSpaceLock.EnterWriteLock();
             try {
-                //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
                 tupleSpace.Add(tuple);
                 //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-                //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
             }
             finally {
                 tupleSpaceLock.ExitWriteLock();
@@ -76,7 +74,7 @@ namespace Server{
             while (resTuple == null) {
                 Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
 
-                tupleSpaceLock.EnterReadLock(); //TODO NullReferenceException xDDD
+                tupleSpaceLock.EnterReadLock();
                 try {
                     //Console.WriteLine("initial read " + tupleContainer.Count + " container");
                     Regex capital = new Regex(@"[A-Z]");
@@ -148,7 +146,6 @@ namespace Server{
 
         public void Freeze() {
             frozen = true;
-
         }
 
         public void checkFrozen() {
