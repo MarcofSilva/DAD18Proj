@@ -56,14 +56,14 @@ namespace Server
         public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl) {
             List<TupleClass> responseTuple = new List<TupleClass>();
             //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
-            responseTuple = _server.takeRead(tuple);
+            responseTuple = _server.takeRead(tuple, clientUrl);
             return responseTuple;
         }
 
         public void TakeRemove(TupleClass tuple, string clientUrl, long nonce) {
             if (validRequest(clientUrl, nonce)) {//success
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRemove Request");
-                _server.takeRemove(tuple);
+                _server.takeRemove(tuple, clientUrl);
             }
         }
     }

@@ -124,10 +124,12 @@ namespace Client {
                     }
                     else {
                         List<TupleClass> tupleSetsIntersection = new List<TupleClass>();
-                        //TODO intersect
-                        //
-                        //
-                        //
+                        if (responseSets.Count != 0) {
+                            tupleSetsIntersection = responseSets[0];
+                            for (int i = 1; i < numServers - 1; i++) {
+                                //tupleSetsIntersection = tupleSetsIntersection.Intersect(responseSets, new TupleComparer());
+                            }
+                        }
                         if (tupleSetsIntersection.Count == 0) {
                             return Take(tuple);
                         }
