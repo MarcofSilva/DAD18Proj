@@ -17,5 +17,9 @@ namespace RemoteServicesLibrary
         void TakeRemove(TupleClass tuple, string clientUrl, long nonce);
 
         void Write(TupleClass tuple, string clientUrl, long nonce);
+
+        void Freeze();
+
+        void Unfreeze();
     }
 }

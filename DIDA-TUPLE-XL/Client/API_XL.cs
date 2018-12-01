@@ -78,15 +78,16 @@ namespace Client {
                     List<TupleClass> resTuple = readDel.EndInvoke(asyncResult);
                     nonce += 1;
                     if (resTuple.Count == 0) {
-                        //Console.WriteLine("--->DEBUG: No tuple returned from server");
+                        Console.WriteLine("--->DEBUG: No tuple returned from server");
                         return new TupleClass();
                     }
                     return resTuple[0];
                 }
             }
-            catch (SocketException) {
+            catch (SocketException e) {
                 //TODO
-                throw new NotImplementedException();
+                Console.WriteLine(e.StackTrace);
+                return null;
             }
         }
 

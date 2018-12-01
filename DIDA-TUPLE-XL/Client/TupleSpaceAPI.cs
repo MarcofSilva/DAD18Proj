@@ -38,6 +38,9 @@ namespace Client {
 
         protected List<IServerService> prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < urlSplit.Length; i++) {
+                Console.WriteLine(urlSplit[i]);
+            }
             int port;
             Int32.TryParse(urlSplit[2], out port);
 

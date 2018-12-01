@@ -45,11 +45,15 @@ namespace Client
 
                     response = _tupleSpaceAPI.Read(tuple);
                     Console.Write("Response: ");
-                    if (response.Size == 0) {
-                        Console.WriteLine("No match found\n");
-                    }
-                    else {
-                        Console.WriteLine(response.ToString() + "\n");
+                    try {
+                        if (response.Size == 0) {
+                            Console.WriteLine("No match found\n");
+                        }
+                        else {
+                            Console.WriteLine(response.ToString() + "\n");
+                        }
+                    } catch (Exception e) {
+                        //do nothing
                     }
 
                     break;
