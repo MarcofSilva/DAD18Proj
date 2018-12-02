@@ -13,7 +13,8 @@ namespace Server
     public class ServerService : MarshalByRefObject, IServerService
     {
         private Server _server;
-        //tem de se fazer lock disto
+        //TODO tem de se fazer lock disto
+        // O mesmo cliente nunca vai fazer dois pedidos concorrentes pois executa os seus pedidos de forma sincrona
         private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
         //todo private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
         private int _min_delay;
@@ -56,39 +57,29 @@ namespace Server
             }
         }
 
-        public List<TupleClass> Read(TupleClass tuple, string clientUrl, long nonce) {
+        public TupleClass Read(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
-            List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
                 int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("Read Network Delay: " + r.ToString());
                 Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
-                responseTuple = _server.read(tuple);
-                if (responseTuple.Count != 0) {
-                    foreach (TupleClass t in responseTuple) {
-                        Console.WriteLine(t.ToString());
-                    }
-                }
-                return responseTuple;
+                return _server.read(tuple);
             }//Update nonce info
             Console.WriteLine("empty read");
-            return new List<TupleClass>();
+            return null; //TODO what to do
         }
 
-        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl, long nonce) {
+        public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl) {
             _server.checkFrozen();
             List<TupleClass> responseTuple = new List<TupleClass>();
-            if (validRequest(clientUrl, nonce)) {
-                int r = random.Next(_min_delay, _max_delay);
-                Console.WriteLine("TakeRead Network Delay: " + r.ToString());
-                Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
-                responseTuple = _server.takeRead(tuple);
-                return responseTuple;
-            }//Update nonce info
-            return new List<TupleClass>();
-        }
+            int r = random.Next(_min_delay, _max_delay);
+            Console.WriteLine("TakeRead Network Delay: " + r.ToString());
+            Thread.Sleep(r);
+            //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
+            responseTuple = _server.takeRead(tuple, clientUrl);
+            return responseTuple;
+       }
 
         public void TakeRemove(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
@@ -97,7 +88,7 @@ namespace Server
                 Console.WriteLine("TakeRemove Network Delay: " + r.ToString());
                 Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRemove Request");
-                _server.takeRemove(tuple);
+                _server.takeRemove(tuple, clientUrl);
             }
         }
 

@@ -11,10 +11,16 @@ using System.Text;
 using System.Threading.Tasks;
 using ClassLibrary;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace Server{
     public class Server{
-        private List<TupleClass> tupleSpace;
+        private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
+        private ConcurrentBag<TupleClass> tupleSpace;
+
+        private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
+        private Dictionary<string, List<TupleClass>> toTakeSubset = new Dictionary<string, List<TupleClass>>();
+
         private TcpChannel channel;
         private ServerService myRemoteObject;
         private const int defaultPort = 8086;
@@ -24,6 +30,7 @@ namespace Server{
         public bool frozen = false;
 
         public Server(){
+            tupleSpaceLock = new ReaderWriterLockSlim();
             prepareRemoting(defaultPort, defaultname, defaultDelay, defaultDelay);
         }
 
@@ -39,7 +46,7 @@ namespace Server{
         }
 
         private void prepareRemoting(int port, string name, int min_delay, int max_delay) {
-            tupleSpace = new List<TupleClass>();
+            tupleSpace = new ConcurrentBag<TupleClass>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this, min_delay, max_delay);
@@ -48,56 +55,97 @@ namespace Server{
 
         public void write(TupleClass tuple){
             Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
-            //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
-            tupleSpace.Add(tuple);
-            Console.WriteLine("Wrote: " + tuple.ToString() + "\n");
-            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
+
+            tupleSpaceLock.EnterWriteLock();
+            try {
+                tupleSpace.Add(tuple);
+                //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
+            }
+            finally {
+                tupleSpaceLock.ExitWriteLock();
+            }
+            lock (dummyObjForLock) {//TODO sera necessario contador com numero de readers em wait para ir decrementando quando se faz pulse isto se se fizer apenas pulse no write e no read e take read se fizer tbm pulse até que se acordem todos os readers em wait de forma ordenada
+                Monitor.PulseAll(dummyObjForLock);//TODO secalhar e melhor ir fazendo pulse um a um, para manter a ordem?
+            }
         }
 
-        public void takeRemove(TupleClass tuple) {
-            //Console.WriteLine("----->DEBUG_Server: tuple to delete " + printTuple(tuple));
-            //Console.WriteLine("Trying to delete Size: " + tupleSpace.Count + "\n");
+        public TupleClass read(TupleClass tuple) {
+            TupleClass resTuple = null;
+            while (resTuple == null) {
+                Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+
+                tupleSpaceLock.EnterReadLock();
+                try {
+                    //Console.WriteLine("initial read " + tupleContainer.Count + " container");
+                    Regex capital = new Regex(@"[A-Z]");
+                    foreach (TupleClass t in tupleSpace) {
+                        if (t.Matches(tuple)) {
+                            resTuple = t;
+                            break;
+                        }
+                    }
+                    //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
+                }
+                finally {
+                    tupleSpaceLock.ExitReadLock();
+                }
+                if (resTuple == null) {
+                    lock (dummyObjForLock) {
+                        Monitor.Wait(dummyObjForLock);
+                    }
+                }
+            }
+            return resTuple;
+        }
+
+        //e basicamente igual ao read mas com locks nas estruturas
+        public List<TupleClass> takeRead(TupleClass tuple, string clientURL) {
+            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+            List<TupleClass> res = new List<TupleClass>();
+            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
+            Regex capital = new Regex(@"[A-Z]");
+            if (toTakeSubset.ContainsKey(clientURL)) {
+                lock (toTakeSubset) {
+                    toTakeSubset.Remove(clientURL);
+                }
+            }
+            List<TupleClass> allTuples = new List<TupleClass>();
+            foreach(List<TupleClass> list in toTakeSubset.Values) {
+                allTuples.Concat(list);
+            }
+            foreach (TupleClass el in tupleSpace) {
+                if (el.Matches(tuple) && !allTuples.Contains(el)) {
+                    res.Add(el);
+                }
+            }
+            if (res.Count == 0) {
+                return null; //no match
+            }
+            else {
+                lock (toTakeSubset) {
+                    toTakeSubset.Add(clientURL, res);
+                }
+                return res;
+            }
+        }
+
+        public void takeRemove(TupleClass tuple, string clientURL) {        
+            Console.WriteLine("----->DEBUG_Server: tuple to delete " + tuple.ToString());
             foreach (TupleClass el in tupleSpace) {
                 if(tuple.Equals(el)) {
-                    Console.WriteLine("----->DEBUG_Server: deleted " + el.ToString());
-                    tupleSpace.Remove(el);
+                    //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
+                    tupleSpace.TryTake(out tuple);
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
+                    lock (toTakeSubset) {
+                        toTakeSubset.Remove(clientURL);
+                    }
                     return;
                 }
             }
         }
 
-        //e basicamente igual ao read mas com locks nas estruturas
-        public List<TupleClass> takeRead(TupleClass tuple) {
-            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
-            List<TupleClass> res = new List<TupleClass>();
-            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
-            Regex capital = new Regex(@"[A-Z]");
-            foreach (TupleClass el in tupleSpace) {
-                if (el.Matches(tuple)) {
-                    res.Add(el);
-                }
-            }
-            return res; //no match
-        }
-
-        public List<TupleClass> read(TupleClass tuple){
-            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
-            List<TupleClass> res = new List<TupleClass>();
-            //Console.WriteLine("initial read " + tuple.Size + " container");
-            Regex capital = new Regex(@"[A-Z]");
-            foreach (TupleClass el in tupleSpace){
-                if (el.Matches(tuple)) {
-                    res.Add(el);
-                }
-            }
-            //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
-            return res; //no match
-        }
-
         public void Freeze() {
             frozen = true;
-
         }
 
         public void checkFrozen() {

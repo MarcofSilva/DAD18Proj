@@ -59,6 +59,7 @@ namespace ClassLibrary {
             _size += 1;
         }
 
+        //TODO check if prints are ok
         public override string ToString() {
             //Console.WriteLine("------------------> ToString");
             string acc = "<";
