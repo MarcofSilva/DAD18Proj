@@ -122,27 +122,23 @@ namespace Client {
                             response = tupleSet;
                         }
                         else {
-                            response = intersection(response, tupleSet);
+                            response = listIntersection(response, tupleSet);
                             if (response.Count == 0) {
                                 return Take(tuple);
                             }
                         }
-                        TupleClass tupleToDelete = response[0];
-                        //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
-                        takeRemove(tupleToDelete);
-                        nonce++;
-                        return tupleToDelete;
                     }
+                    TupleClass tupleToDelete = response[0];
+                    //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
+                    takeRemove(tupleToDelete);
+                    nonce++;
+                    return tupleToDelete;
                 }
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
             }
-        }
-
-        private List<TupleClass> listIntersection(List<TupleClass> tupleSet1, List<TupleClass> tupleSet2) {
-            return null; //TODO
         }
 
         private void takeRemove(TupleClass tupleToDelete) {
@@ -167,7 +163,7 @@ namespace Client {
         }
 
         
-        private List<TupleClass> intersection(List<TupleClass> tl1, List<TupleClass> tl2) {
+        private List<TupleClass> listIntersection(List<TupleClass> tl1, List<TupleClass> tl2) {
             int i;
             bool remove;
             foreach (TupleClass t1 in tl1) {
