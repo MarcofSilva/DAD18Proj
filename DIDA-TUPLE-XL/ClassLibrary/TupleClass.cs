@@ -12,29 +12,11 @@ namespace ClassLibrary {
     [Serializable]
     public class TupleClass {
 
-        //List<?> tuple = new List<?>();        
-        public ArrayList _tuple = new ArrayList();
+        //List<?> tuple = new List<?>();        TODO 
+        private ArrayList _tuple = new ArrayList();
 
-        public ArrayList tuple {
-            get {
-                return _tuple;
-            }
-
-            set {
-                _tuple = value;
-            }
-        }
         private int _size;
 
-        public int Size {
-            get {
-                return _size;
-            }
-
-            set {
-                _size = value;
-            }
-        }
         public TupleClass() {
         }
 
@@ -52,6 +34,26 @@ namespace ClassLibrary {
                 }
             }
             //Console.WriteLine("Constructed this: " + this.ToString() +" with size "+ _size);
+        }
+
+        public ArrayList tuple {
+            get {
+                return _tuple;
+            }
+
+            set {
+                _tuple = value;
+            }
+        }
+
+        public int Size {
+            get {
+                return _size;
+            }
+
+            set {
+                _size = value;
+            }
         }
 
         public void Add(Object o) {

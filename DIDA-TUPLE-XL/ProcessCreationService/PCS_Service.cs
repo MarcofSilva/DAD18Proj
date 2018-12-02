@@ -50,33 +50,33 @@ namespace ProcessCreationService {
         }
 
         public void Freeze(string id) {
-            Console.WriteLine("Freezing " + id);
             if (serverUrl.ContainsKey(id)) {
+                Console.WriteLine("Freezing " + id);
                 IServerService i = (IServerService)Activator.GetObject(typeof(IServerService), serverUrl[id]);
                 i.Freeze();
             }
             else if (clientUrl.ContainsKey(id)) {
+                Console.WriteLine("Freezing " + id);
                 IClientService i = (IClientService)Activator.GetObject(typeof(IClientService), clientUrl[id]);
                 i.Freeze();
             }
             Console.WriteLine(id.ToString() + " frozen");
-           
-
         }
 
-        public void PrintStatus() {
+        public void PrintStatus() { //TODO falta fazer o status
             foreach (Process proc in processes.Values){
                 Console.WriteLine(proc.Responding);
             }
         }
 
         public void Unfreeze(string id) {
-            Console.WriteLine("Unfreezing " + id);
             if (serverUrl.ContainsKey(id)) {
+                Console.WriteLine("Unfreezing " + id);
                 IServerService i = (IServerService)Activator.GetObject(typeof(IServerService), serverUrl[id]);
                 i.Unfreeze();
             }
             else if (clientUrl.ContainsKey(id)) {
+                Console.WriteLine("Unfreezing " + id);
                 IClientService i = (IClientService)Activator.GetObject(typeof(IClientService), clientUrl[id]);
                 i.Unfreeze();
             }

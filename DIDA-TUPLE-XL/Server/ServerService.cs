@@ -59,13 +59,13 @@ namespace Server
 
         public TupleClass Read(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
-            if (validRequest(clientUrl, nonce)) {
+            //if (validRequest(clientUrl, nonce)) { TODO all threads are stuck here or not?
                 int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("Read Network Delay: " + r.ToString());
                 Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
                 return _server.read(tuple);
-            }//Update nonce info
+            //}//Update nonce info
             Console.WriteLine("empty read");
             return null; //TODO what to do
         }

@@ -23,8 +23,8 @@ namespace Server{
 
         private TcpChannel channel;
         private ServerService myRemoteObject;
-        private const int defaultPort = 8086;
-        private const string defaultname = "Server";
+        private const int defaultPort = 50000;
+        private const string defaultname = "S";
         private const int defaultDelay = 0;
         //readonly object _Key = new object();
         public bool frozen = false;
@@ -74,7 +74,7 @@ namespace Server{
             while (resTuple == null) {
                 Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
 
-                tupleSpaceLock.EnterReadLock();
+                tupleSpaceLock.EnterReadLock(); // TODO can you read blocked tuples (by take)?
                 try {
                     //Console.WriteLine("initial read " + tupleContainer.Count + " container");
                     Regex capital = new Regex(@"[A-Z]");
@@ -114,12 +114,19 @@ namespace Server{
                 allTuples.Concat(list);
             }
             foreach (TupleClass el in tupleSpace) {
-                if (el.Matches(tuple) && !allTuples.Contains(el)) {
+                if (el.Matches(tuple)) {
+                    if (allTuples.Contains(el)) {
+                        res = new List<TupleClass>(); ;
+                        break;
+                    }
                     res.Add(el);
                 }
             }
             if (res.Count == 0) {
-                return null; //no match
+                lock (dummyObjForLock) {
+                    Monitor.Wait(dummyObjForLock);
+                } //no match
+                return takeRead(tuple, clientURL);
             }
             else {
                 lock (toTakeSubset) {
@@ -139,12 +146,15 @@ namespace Server{
                     lock (toTakeSubset) {
                         toTakeSubset.Remove(clientURL);
                     }
-                    return;
+                    lock (dummyObjForLock) {
+                        Monitor.PulseAll(dummyObjForLock);
+                    }
                 }
             }
         }
 
         public void Freeze() {
+            Console.WriteLine("i'm freezing");
             frozen = true;
         }
 
