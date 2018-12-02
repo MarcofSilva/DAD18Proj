@@ -25,11 +25,12 @@ namespace Server {
         public LeaderState(Server server, int numServers) : base(server, numServers) {
             _leaderUrl = server._url;
             SetTimer();
-            //electLeader(_term, _leaderUrl);
         }
 
         public override void heartBeat(int term, string candidateID) {
-            Console.WriteLine("heartbeat in leader state");
+            if (_term < term) {
+                _server.updateState("follower");
+            }
         }
 
         public override void apprendEntry(int term, string senderID) {
@@ -45,7 +46,6 @@ namespace Server {
         }
 
         public override void write(TupleClass tuple, string url, long nonce) {
-            Console.WriteLine("----->DEBUG_Leader_State: Received Write Request");
             _server.writeLeader(tuple);
         }
 
@@ -103,31 +103,7 @@ namespace Server {
                 throw new NotImplementedException();
             }
         }
-        /*
-        public delegate void electLeaderDelegate(int term, string leaderUrl);
-
-        public override void electLeader(int term, string leaderUrl) {
-            WaitHandle[] handles = new WaitHandle[_numServers];
-            IAsyncResult[] asyncResults = new IAsyncResult[_numServers];
-            try {
-                int i = 0;
-                foreach (KeyValuePair<string, IServerService> remoteObjectpair in _serverRemoteObjects) {
-                    ServerService remoteObject = (ServerService)remoteObjectpair.Value;
-                    electLeaderDelegate electLeaderDel = new electLeaderDelegate(remoteObject.electLeader);
-                    IAsyncResult ar = electLeaderDel.BeginInvoke(term, leaderUrl, null, null);
-                    handles[i] = ar.AsyncWaitHandle;
-                    i++;
-                }
-                if (!WaitHandle.WaitAll(handles, 5000)) {
-                    pulseHeartbeat();
-                }
-            }
-            catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
-            }
-        }*/
-
+        
         public override void ping() {
             Console.WriteLine("Leader State pinged");
         }

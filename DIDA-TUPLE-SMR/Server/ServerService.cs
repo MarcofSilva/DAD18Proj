@@ -48,9 +48,9 @@ namespace Server
         public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
-                Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
+                //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
                 responseTuple = _server.read(tuple, clientUrl, nonce);
-                Console.WriteLine("----->DEBUG_ServerSerice: " + responseTuple[0].ToString());
+                //Console.WriteLine("----->DEBUG_ServerSerice: " + responseTuple[0].ToString());
                 return responseTuple;
             }//Update nonce info
             return new List<TupleClass>();
@@ -59,7 +59,7 @@ namespace Server
         public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
             List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
-                Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
+                //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
                 responseTuple = _server.take(tuple, clientUrl, nonce);
                 return responseTuple;
             }//Update nonce info
@@ -68,7 +68,7 @@ namespace Server
 
         public void write(TupleClass tuple, string clientUrl, long nonce) {
             if (validRequest(clientUrl, nonce)) {//success
-                Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
+                //Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
                 _server.write(tuple, clientUrl, nonce);
             }
         }

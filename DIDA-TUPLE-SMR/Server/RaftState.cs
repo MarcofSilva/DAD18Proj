@@ -44,8 +44,5 @@ namespace Server {
         public abstract List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce);
 
         public abstract void write(TupleClass tuple, string clientUrl, long nonce);
-
-        //temporary function for testing
-        //public abstract void electLeader(int term, string leaderUrl);
     }
 }

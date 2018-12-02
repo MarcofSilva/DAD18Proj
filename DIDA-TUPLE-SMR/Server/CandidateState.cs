@@ -28,6 +28,7 @@ namespace Server {
         public override void stopClock() {
             electionTimeout.Stop();
         }
+
         public override void startClock() {
             requestVote();
             electionTimeout.Start();
@@ -65,7 +66,7 @@ namespace Server {
 
         public void requestVote() {
             _term++;
-            Console.WriteLine("REQUEST VOTE in term " + _term);
+            //Console.WriteLine("REQUEST VOTE in term " + _term);
             WaitHandle[] handles = new WaitHandle[_numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[_numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
@@ -104,6 +105,7 @@ namespace Server {
             }
         }
 
+        //TODO lancar excepcao e apanha no api do cliente
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             throw new NotImplementedException();
         }
@@ -124,13 +126,16 @@ namespace Server {
         }
 
         public override void heartBeat(int term, string candidateID) {
-            //TODO > ou >=
             Console.WriteLine("I am a candidate, received heart beat");
-            if(term > _term) {
+            if(term < _term) {
+                //TODO
                 //here to prevent heartbeats from past term
             }
             else {
+                _term = term;
                 Console.WriteLine("Leader changed to: " + candidateID);
+
+                //TODO nao deveria ser aqui
                 _leaderUrl = candidateID;
                 _server.updateState("follower");
             }

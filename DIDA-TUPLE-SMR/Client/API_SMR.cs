@@ -64,11 +64,7 @@ namespace Client {
                 else {
                     IAsyncResult asyncResult = asyncResults[0];
                     readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    Console.WriteLine("YOOOOOOOO");
                     List<TupleClass> res = readDel.EndInvoke(asyncResult);
-                    if (res == null) {
-                        Console.WriteLine("akjsdklasjdokaskldjl");
-                    }
                     return res[0];
                 }
             }

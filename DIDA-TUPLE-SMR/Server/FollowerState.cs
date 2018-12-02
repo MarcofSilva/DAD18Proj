@@ -36,50 +36,43 @@ namespace Server {
             if (term > _term) {
                 _term = term;
                 voted = true;
+                electionTimeout.Interval = wait;
                 return true;
             }
             if (!voted) {
                 voted = true;
+
                 return true;
             }
             return false;
         }
-        /*
-        public override void electLeader(int term, string leaderUrl) {
-            _term = term;
-            _leaderUrl = leaderUrl;
-            _leaderRemote = _serverRemoteObjects[_leaderUrl];
-            Console.WriteLine("Follower: " + _server._url);
-            Console.WriteLine("My leader is: " + leaderUrl);
-            SetTimer();
-        }*/
-
+        
         public override void heartBeat(int term, string candidateID) {
             electionTimeout.Interval = wait;
             if (term > _term) {
+                //_term = term;
                 //here to prevent heartbeats from past term
             }
             if (candidateID != _leaderUrl) {
+                //TODO quando vem do candidate state o leader url e o leader remote n tao assigned
                 Console.WriteLine("Leader changed to: " + candidateID);
                 _leaderUrl = candidateID;
                 _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
                 Console.WriteLine("heartbeat candidate state");
-                _server.updateState("follower");
             }
         }
 
         private void SetTimer() {
+            //TODO
             wait = rnd.Next(300, 500);//usually entre 150 300
             Console.WriteLine("follower will wait for: " +wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = true;
-            electionTimeout.Enabled = true;            
+            electionTimeout.Enabled = true;
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            //tornar candidato
-            Console.WriteLine("NAO RECEBI HEARTBEAT");
             _server.updateState("candidate");
         }
 
@@ -98,7 +91,7 @@ namespace Server {
         public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
 
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
-            Console.WriteLine("READ IN FOLLOWER CALLED");
+            //Console.WriteLine("READ IN FOLLOWER CALLED");
 
             //TODO resolver estas cenas de criar lista com apenas 1 elemento
             WaitHandle[] handles = new WaitHandle[1];
@@ -114,7 +107,7 @@ namespace Server {
                     IAsyncResult asyncResult = asyncResults[0];
                     readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                     List<TupleClass> res = readDel.EndInvoke(asyncResult);
-                    Console.WriteLine("----->DEBUG_FollowerState: " + res[0].ToString());
+                    //Console.WriteLine("----->DEBUG_FollowerState: " + res[0].ToString());
                     return res;
                 }
             }
