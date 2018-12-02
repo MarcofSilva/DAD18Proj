@@ -114,7 +114,9 @@ namespace Server{
                     toTakeSubset.Remove(clientURL);
                 }
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
-                    allTuples.Concat(list);
+                    foreach(TupleClass el in list) {
+                        allTuples.Add(el);
+                    }
                 }
                 foreach (TupleClass el in tupleSpace) {
                     if (el.Matches(tuple) && !allTuples.Contains(el)) {
