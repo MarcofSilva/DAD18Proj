@@ -89,7 +89,6 @@ namespace Server {
                         IAsyncResult asyncResult = asyncResults[i];
                         voteDelegate voteDel = (voteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         bool response = voteDel.EndInvoke(asyncResult);
-                        Console.WriteLine(response);
                         if (response) {
                             votes++;
                         }

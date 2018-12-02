@@ -36,6 +36,11 @@ namespace Client {
 
         public abstract TupleClass take(TupleClass tuple);
 
+        public abstract void freeze();
+
+        public abstract void unfreeze();
+
+
         protected IServerService prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port;

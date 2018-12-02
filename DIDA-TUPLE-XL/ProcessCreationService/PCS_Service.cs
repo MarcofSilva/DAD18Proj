@@ -60,8 +60,6 @@ namespace ProcessCreationService {
                 i.Freeze();
             }
             Console.WriteLine(id.ToString() + " frozen");
-           
-
         }
 
         public void PrintStatus() {
@@ -80,8 +78,6 @@ namespace ProcessCreationService {
                 IClientService i = (IClientService)Activator.GetObject(typeof(IClientService), clientUrl[id]);
                 i.Unfreeze();
             }
-
-
         }
     }
 }

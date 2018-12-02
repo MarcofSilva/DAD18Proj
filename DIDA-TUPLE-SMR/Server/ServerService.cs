@@ -9,19 +9,25 @@ using ClassLibrary;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Configuration;
+using System.Threading;
 
 namespace Server
 {
     class ServerService : MarshalByRefObject, IServerService
     {
         private Server _server;
+        private int _min_delay;
+        private int _max_delay;
+        private Random random = new Random();
 
         //tem de se fazer lock disto
         private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
         //todo private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
 
-        public ServerService(Server server) {
+        public ServerService(Server server, int min_delay, int max_delay) {
             _server = server;
+            _min_delay = min_delay;
+            _max_delay = max_delay;
         }
 
         //TODOOOOOOOO
@@ -46,8 +52,12 @@ namespace Server
         }
 
         public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            _server.checkFrozen();
             List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
+                int r = random.Next(_min_delay, _max_delay);
+                Console.WriteLine("Read Network Delay: " + r.ToString());
+                Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
                 responseTuple = _server.read(tuple, clientUrl, nonce);
                 //Console.WriteLine("----->DEBUG_ServerSerice: " + responseTuple[0].ToString());
@@ -57,8 +67,12 @@ namespace Server
         }
 
         public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+            _server.checkFrozen();
             List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
+                int r = random.Next(_min_delay, _max_delay);
+                Console.WriteLine("TakeRead Network Delay: " + r.ToString());
+                Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
                 responseTuple = _server.take(tuple, clientUrl, nonce);
                 return responseTuple;
@@ -67,21 +81,29 @@ namespace Server
         }
 
         public void write(TupleClass tuple, string clientUrl, long nonce) {
+            _server.checkFrozen();
             if (validRequest(clientUrl, nonce)) {//success
+                int r = random.Next(_min_delay, _max_delay);
+                Console.WriteLine("Write Network Delay: " + r.ToString());
+                Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
                 _server.write(tuple, clientUrl, nonce);
+                Console.WriteLine("It's written!");
             }
         }
         public string heartBeat(int term, string candidateID) {
             return _server.heartBeat(term, candidateID);
         }
-        /*
-        public void electLeader(int term, string leaderUrl) {
-            _server._state.electLeader(term, leaderUrl);
-        }*/
 
         public bool vote(int term, string candidateID) {
             return _server.vote(term, candidateID);
+        }
+        public void Freeze() {
+            _server.Freeze();
+        }
+
+        public void Unfreeze() {
+            _server.Unfreeze();
         }
     }
 }

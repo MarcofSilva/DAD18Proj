@@ -17,7 +17,7 @@ namespace Client {
         private const int defaultPort = 8085;
         private TcpChannel channel;
         private IServerService serverRemoteObject;
-
+        private bool frozen = false;
         private string url;
 
         public API_SMR(string URL) {
@@ -32,6 +32,7 @@ namespace Client {
         //public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
 
         public override void write(TupleClass tuple) {
+            checkFrozen();
             //Console.WriteLine("-->DEBUG:  API_SMR write");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
@@ -40,7 +41,7 @@ namespace Client {
                 asyncResults[0] = takeDel.BeginInvoke(tuple, url, nonce, null, null);
                 handles[0] = asyncResults[0].AsyncWaitHandle;
                 if (!WaitHandle.WaitAll(handles, 3000)) {
-                    read(tuple);
+                    write(tuple);
                 }
                 else {
                 }
@@ -51,6 +52,7 @@ namespace Client {
             }
         }
         public override TupleClass read(TupleClass tuple) {
+            checkFrozen();
             //Console.WriteLine("-->DEBUG:  API_SMR read");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
@@ -75,6 +77,7 @@ namespace Client {
         }
 
         public override TupleClass take(TupleClass tuple) {
+            checkFrozen();
             //Console.WriteLine("-->DEBUG:  API_SMR take");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
@@ -94,6 +97,30 @@ namespace Client {
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
+            }
+        }
+
+        public override void freeze() {
+            frozen = true;
+        }
+
+        public override void unfreeze() {
+            Console.WriteLine("Unfreezing...");
+            lock (this) {
+                Monitor.PulseAll(this);
+            }
+            frozen = false;
+        }
+
+        public void checkFrozen() {
+            if (frozen) {
+                Console.WriteLine("Cant do anything, im frozen");
+                lock (this) {
+                    while (frozen) {
+                        Console.WriteLine("Waiting...");
+                        Monitor.Wait(this);
+                    }
+                }
             }
         }
     }

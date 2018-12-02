@@ -59,6 +59,7 @@ namespace ClassLibrary {
             _size += 1;
         }
 
+        //TODO check if prints are ok
         public override string ToString() {
             //Console.WriteLine("------------------> ToString");
             string acc = "<";
@@ -66,7 +67,10 @@ namespace ClassLibrary {
                 if (i != 0) {
                     acc += ",";
                 }
-                if (_tuple[i].GetType() == typeof(System.String)) {
+                if (_tuple[i] == null) {
+                    acc += "null";
+                }
+                else if (_tuple[i].GetType() == typeof(System.String)) {
                     acc += "\"" + _tuple[i].ToString() + "\"";
                 }
                 else if (_tuple[i] == typeof(DADTestA)) {
