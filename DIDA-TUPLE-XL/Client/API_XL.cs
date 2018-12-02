@@ -175,6 +175,25 @@ namespace Client {
             frozen = true;
         }
 
+        
+        private List<TupleClass> intersection(List<TupleClass> tl1, List<TupleClass> tl2) {
+            int i;
+            bool remove;
+            foreach (TupleClass t1 in tl1) {
+                remove = true;
+                foreach (TupleClass t2 in tl2) {
+                    if (t1.Equals(t2)) {
+                        remove = false;
+                        break;
+                    }
+                }
+                if (remove) {
+                    tl1.Remove(t1);
+                }
+            }
+            return tl1;
+        }
+
         public override void unfreeze() {
             Console.WriteLine("Unfreezing...");
             lock (this) {
