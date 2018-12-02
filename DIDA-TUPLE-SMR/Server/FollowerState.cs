@@ -19,24 +19,87 @@ using System.Timers;
 namespace Server {
     public class FollowerState : RaftState {
         private IServerService _leaderRemote;
+        private Random rnd = new Random();
+        private System.Timers.Timer electionTimeout;
+        private int wait;
+        private bool voted = false;
 
         public FollowerState(Server server, int numServers) : base(server, numServers) {
-            Console.WriteLine("Follower being Created");
+            SetTimer();
         }
 
         public override void apprendEntry(int term, string senderID) {
             throw new NotImplementedException();
         }
 
-        public override void requestVote(int term, string candidateID) {
-            throw new NotImplementedException();
+        public override bool vote(int term, string candidateID) {
+            if (term > _term) {
+                _term = term;
+                voted = true;
+                return true;
+            }
+            if (!voted) {
+                voted = true;
+                return true;
+            }
+            return false;
+        }
+        /*
+        public override void electLeader(int term, string leaderUrl) {
+            _term = term;
+            _leaderUrl = leaderUrl;
+            _leaderRemote = _serverRemoteObjects[_leaderUrl];
+            Console.WriteLine("Follower: " + _server._url);
+            Console.WriteLine("My leader is: " + leaderUrl);
+            SetTimer();
+        }*/
+
+        public override void heartBeat(int term, string candidateID) {
+            electionTimeout.Interval = wait;
+            if (term > _term) {
+                //here to prevent heartbeats from past term
+            }
+            if (candidateID != _leaderUrl) {
+                Console.WriteLine("Leader changed to: " + candidateID);
+                _leaderUrl = candidateID;
+                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                Console.WriteLine("heartbeat candidate state");
+                _server.updateState("follower");
+            }
         }
 
-        
-        public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
-        
+        private void SetTimer() {
+            wait = rnd.Next(300, 500);//usually entre 150 300
+            Console.WriteLine("follower will wait for: " +wait);
+            electionTimeout = new System.Timers.Timer(wait);
+            electionTimeout.Elapsed += OnTimedEvent;
+            electionTimeout.AutoReset = true;
+            electionTimeout.Enabled = true;            
+        }
 
-        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) { 
+        private void OnTimedEvent(Object source, ElapsedEventArgs e) {
+            //tornar candidato
+            Console.WriteLine("NAO RECEBI HEARTBEAT");
+            _server.updateState("candidate");
+        }
+
+        public override void ping() {
+            Console.WriteLine("Follower State pinged");
+        }
+
+        public override void stopClock() {
+            electionTimeout.Stop();
+        }
+
+        public override void startClock() {
+            electionTimeout.Start();
+        }
+
+        public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
+
+        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("READ IN FOLLOWER CALLED");
+
             //TODO resolver estas cenas de criar lista com apenas 1 elemento
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
@@ -50,7 +113,9 @@ namespace Server {
                 else {
                     IAsyncResult asyncResult = asyncResults[0];
                     readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    return readDel.EndInvoke(asyncResult);
+                    List<TupleClass> res = readDel.EndInvoke(asyncResult);
+                    Console.WriteLine("----->DEBUG_FollowerState: " + res[0].ToString());
+                    return res;
                 }
             }
             catch (SocketException) {
@@ -62,6 +127,8 @@ namespace Server {
         public delegate List<TupleClass> takeDelegate(TupleClass tuple, string url, long nonce);
 
         public override List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("TAKE IN FOLLOWER CALLED");
+
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
@@ -86,6 +153,7 @@ namespace Server {
         public delegate void writeDelegate(TupleClass tuple, string clientUrl, long nonce);
 
         public override void write(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("WRITE IN FOLLOWER CALLED");
             WaitHandle[] handles = new WaitHandle[1];
             IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
@@ -96,26 +164,12 @@ namespace Server {
                     read(tuple, clientUrl, nonce);
                 }
                 else {
-                    IAsyncResult asyncResult = asyncResults[0];
-                    takeDel = (writeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                 }
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
             }
-        }
-
-        public override void electLeader(int term, string leaderUrl) {
-            _term = term;
-            _leaderUrl = leaderUrl;
-            _leaderRemote = _serverRemoteObjects[_leaderUrl];
-            Console.WriteLine("Follower: " + _server._url);
-            Console.WriteLine("My leader is: " + leaderUrl);
-        }
-
-        public override void ping() {
-            Console.WriteLine("Follower State pinged");
         }
     }
 }

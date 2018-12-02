@@ -64,7 +64,12 @@ namespace Client {
                 else {
                     IAsyncResult asyncResult = asyncResults[0];
                     readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    return readDel.EndInvoke(asyncResult)[0];
+                    Console.WriteLine("YOOOOOOOO");
+                    List<TupleClass> res = readDel.EndInvoke(asyncResult);
+                    if (res == null) {
+                        Console.WriteLine("akjsdklasjdokaskldjl");
+                    }
+                    return res[0];
                 }
             }
             catch (SocketException) {

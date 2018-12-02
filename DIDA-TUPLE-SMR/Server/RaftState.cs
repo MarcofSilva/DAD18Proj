@@ -13,6 +13,7 @@ using RemoteServicesLibrary;
 namespace Server {
     public abstract class RaftState {
         protected int _term;
+        protected string _url;
         protected string _leaderUrl;
         protected Server _server;
         protected int _numServers;
@@ -21,15 +22,22 @@ namespace Server {
         public RaftState(Server server, int numServers) {
             _server = server;
             _numServers = numServers;
-            _term = 1;
+            _term = 0;
+            _url = _server._url;
             _serverRemoteObjects = server.serverRemoteObjects;
         }
+
+        public abstract void stopClock();
+
+        public abstract void startClock();
+
+        public abstract void heartBeat(int term, string candidateID);
 
         public abstract void ping();
 
         public abstract void apprendEntry(int term, string senderID);
 
-        public abstract void requestVote(int term, string candidateID);
+        public abstract bool vote(int term, string candidateID);
 
         public abstract List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce);
 
@@ -38,6 +46,6 @@ namespace Server {
         public abstract void write(TupleClass tuple, string clientUrl, long nonce);
 
         //temporary function for testing
-        public abstract void electLeader(int term, string leaderUrl);
+        //public abstract void electLeader(int term, string leaderUrl);
     }
 }

@@ -83,22 +83,15 @@ namespace Server {
             }
             _numServers = serverRemoteObjects.Count;
 
-            //martelo para teste
-            if(_port == 8086) {
-                Console.WriteLine("I'm a server with port:" +_port +" i am THE ONE AND ONLY leader: BY MATILDE");
-                _state = new LeaderState(this, _numServers);
-            }
-            else {
-                Console.WriteLine("I'm a server with port:" + _port + " i am a follower");
-                follower = new FollowerState(this, _numServers);
-                _state = follower;
-            }
+            leader = new LeaderState(this, _numServers);
             candidate = new CandidateState(this, _numServers);
+            follower = new FollowerState(this, _numServers);
+            _state = follower;
+            Console.WriteLine("Constructed server");
         }
 
         public Server() {
             selfPrepare();
-            _state.ping();
         }
 
         public Server(string URL) {
@@ -110,26 +103,48 @@ namespace Server {
             _url = URL;
             selfPrepare();
         }
-        
-        public void ping() {
-        }
 
-        public string heartBeat() {
+        public string heartBeat(int term, string candidateID) {
+            _state.heartBeat(term, candidateID);
             string res = "Hello from server: " + _name + " at port: " + _port.ToString();
             return res;
         }
 
+        public void updateState(string state) {
+            if (state == "follower") {
+                _state.stopClock();
+                Console.WriteLine("updated state to follower");
+                _state = follower;
+            }
+            else if(state == "candidate") {
+                _state.stopClock();
+                Console.WriteLine("updated state to candidate");
+                _state = candidate;
+            }
+            else {
+                _state.stopClock();
+                Console.WriteLine("updated state to leader");
+                _state = leader;
+            }
+            _state.startClock();
+        }
+
+        public bool vote(int term, string candidateID) {
+            return _state.vote(term, candidateID);
+        }
         //methods used by states and server services
         public void write(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("Debug_Server: write received");
             _state.write(tuple, clientUrl, nonce);
         }
         public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("Debug_Server: read received");
             return _state.read(tuple, clientUrl, nonce);
         }
         public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("Debug_Server: take received");
             return _state.take(tuple, clientUrl, nonce);
         }
-
 
         //methods used by leader state to do shit in server
         //isto nao deve ficar assim, mas desta maneira evitamos ja a implementacao de logs
@@ -166,6 +181,7 @@ namespace Server {
                 }
             }
             //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
+            Console.WriteLine("Debug Read" + res[0].ToString() + "\n");
             return res; //no match
         }
 

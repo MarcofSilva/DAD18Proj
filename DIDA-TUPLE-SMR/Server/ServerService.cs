@@ -25,6 +25,7 @@ namespace Server
         }
 
         //TODOOOOOOOO
+        //necessario nounces no smr?
         private bool validRequest(string clientURL, long nonce) {
             //se nunca apareceu vai ser adicionado
             return true;
@@ -47,8 +48,9 @@ namespace Server
         public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
+                Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
                 responseTuple = _server.read(tuple, clientUrl, nonce);
+                Console.WriteLine("----->DEBUG_ServerSerice: " + responseTuple[0].ToString());
                 return responseTuple;
             }//Update nonce info
             return new List<TupleClass>();
@@ -57,7 +59,7 @@ namespace Server
         public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
             List<TupleClass> responseTuple = new List<TupleClass>();
             if (validRequest(clientUrl, nonce)) {
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
+                Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
                 responseTuple = _server.take(tuple, clientUrl, nonce);
                 return responseTuple;
             }//Update nonce info
@@ -70,11 +72,16 @@ namespace Server
                 _server.write(tuple, clientUrl, nonce);
             }
         }
-        public string heartBeat() {
-            return _server.heartBeat();
+        public string heartBeat(int term, string candidateID) {
+            return _server.heartBeat(term, candidateID);
         }
+        /*
         public void electLeader(int term, string leaderUrl) {
             _server._state.electLeader(term, leaderUrl);
+        }*/
+
+        public bool vote(int term, string candidateID) {
+            return _server.vote(term, candidateID);
         }
     }
 }

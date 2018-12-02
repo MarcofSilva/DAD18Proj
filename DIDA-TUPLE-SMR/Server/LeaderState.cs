@@ -24,16 +24,15 @@ namespace Server {
         
         public LeaderState(Server server, int numServers) : base(server, numServers) {
             _leaderUrl = server._url;
-            electLeader(_term, _leaderUrl);
             SetTimer();
-            Console.WriteLine("LEADER STATE CONSTRUCTED");
+            //electLeader(_term, _leaderUrl);
+        }
+
+        public override void heartBeat(int term, string candidateID) {
+            Console.WriteLine("heartbeat in leader state");
         }
 
         public override void apprendEntry(int term, string senderID) {
-            throw new NotImplementedException();
-        }
-
-        public override void requestVote(int term, string candidateID) {
             throw new NotImplementedException();
         }
 
@@ -46,28 +45,33 @@ namespace Server {
         }
 
         public override void write(TupleClass tuple, string url, long nonce) {
-            Console.WriteLine("----->DEBUG_State: Received Write Request");
+            Console.WriteLine("----->DEBUG_Leader_State: Received Write Request");
             _server.writeLeader(tuple);
         }
 
         private void SetTimer() {
-            wait = rnd.Next(2000, 2200);
+            wait = rnd.Next(150, 250);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = true;
             timer.Enabled = true;
+            timer.Stop();
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
             pulseHeartbeat();
         }
 
-        public void terminateClock() {
+        public override void stopClock() {
             timer.Stop();
-            timer.Dispose();
         }
 
-        public delegate string heartBeatDelegate();
+        public override void startClock() {
+            pulseHeartbeat();
+            timer.Start();
+        }
+
+        public delegate string heartBeatDelegate(int term, string candidateID);
 
         private void pulseHeartbeat() {
             WaitHandle[] handles = new WaitHandle[_numServers];
@@ -77,7 +81,7 @@ namespace Server {
                 foreach (KeyValuePair<string, IServerService> remoteObjectpair in _serverRemoteObjects) {
                     ServerService remoteObject = (ServerService)remoteObjectpair.Value;
                     heartBeatDelegate heartBeatDel = new heartBeatDelegate(remoteObject.heartBeat);
-                    IAsyncResult ar = heartBeatDel.BeginInvoke(null, null);
+                    IAsyncResult ar = heartBeatDel.BeginInvoke(_term,_url,null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
@@ -90,7 +94,7 @@ namespace Server {
                         IAsyncResult asyncResult = asyncResults[i];
                         heartBeatDelegate heartBeatDel = (heartBeatDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         string response = heartBeatDel.EndInvoke(asyncResult);
-                        Console.WriteLine(response);
+                        //Console.WriteLine(response);
                     }
                 }
             }
@@ -99,7 +103,7 @@ namespace Server {
                 throw new NotImplementedException();
             }
         }
-
+        /*
         public delegate void electLeaderDelegate(int term, string leaderUrl);
 
         public override void electLeader(int term, string leaderUrl) {
@@ -122,10 +126,14 @@ namespace Server {
                 //TODO
                 throw new NotImplementedException();
             }
-        }
+        }*/
 
         public override void ping() {
             Console.WriteLine("Leader State pinged");
+        }
+
+        public override bool vote(int term, string candidateID) {
+            throw new NotImplementedException();
         }
     }
 }
