@@ -19,12 +19,13 @@ namespace Server{
         private ConcurrentBag<TupleClass> tupleSpace;
 
         private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
+        private Object dummyObjForTakeRead = new object();
         private Dictionary<string, List<TupleClass>> toTakeSubset = new Dictionary<string, List<TupleClass>>();
 
         private TcpChannel channel;
         private ServerService myRemoteObject;
-        private const int defaultPort = 8086;
-        private const string defaultname = "Server";
+        private const int defaultPort = 50000;
+        private const string defaultname = "S";
         private const int defaultDelay = 0;
         //readonly object _Key = new object();
         public bool frozen = false;
@@ -74,7 +75,7 @@ namespace Server{
             while (resTuple == null) {
                 Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
 
-                tupleSpaceLock.EnterReadLock();
+                tupleSpaceLock.EnterReadLock(); // TODO can you read blocked tuples (by take)?
                 try {
                     //Console.WriteLine("initial read " + tupleContainer.Count + " container");
                     Regex capital = new Regex(@"[A-Z]");
@@ -101,30 +102,38 @@ namespace Server{
         //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> takeRead(TupleClass tuple, string clientURL) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+            foreach(var x in tupleSpace) {
+                Console.WriteLine("Antes -> " + x.ToString());
+            }
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
-            if (toTakeSubset.ContainsKey(clientURL)) {
-                lock (toTakeSubset) {
+            List<TupleClass> allTuples = new List<TupleClass>();
+            lock (toTakeSubset) { //Prevent a take to search for tuples when another take is already doing it
+                if (toTakeSubset.ContainsKey(clientURL)) {
                     toTakeSubset.Remove(clientURL);
                 }
-            }
-            List<TupleClass> allTuples = new List<TupleClass>();
-            foreach(List<TupleClass> list in toTakeSubset.Values) {
-                allTuples.Concat(list);
-            }
-            foreach (TupleClass el in tupleSpace) {
-                if (el.Matches(tuple) && !allTuples.Contains(el)) {
-                    res.Add(el);
+                foreach (List<TupleClass> list in toTakeSubset.Values) {
+                    foreach(TupleClass el in list) {
+                        allTuples.Add(el);
+                    }
+                }
+                foreach (TupleClass el in tupleSpace) {
+                    if (el.Matches(tuple) && !allTuples.Contains(el)) {
+                        res.Add(el);
+                    }
+                }
+                if (res.Count != 0) {
+                    toTakeSubset.Add(clientURL, res);
                 }
             }
             if (res.Count == 0) {
-                return null; //no match
+                lock (dummyObjForLock) {
+                    Monitor.Wait(dummyObjForLock);
+                } //no match
+                return takeRead(tuple, clientURL);
             }
             else {
-                lock (toTakeSubset) {
-                    toTakeSubset.Add(clientURL, res);
-                }
                 return res;
             }
         }
@@ -133,18 +142,27 @@ namespace Server{
             Console.WriteLine("----->DEBUG_Server: tuple to delete " + tuple.ToString());
             foreach (TupleClass el in tupleSpace) {
                 if(tuple.Equals(el)) {
+                    Console.WriteLine(tuple.ToString() + " -- " + el.ToString());
                     //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
-                    tupleSpace.TryTake(out tuple);
+                    bool success = tupleSpace.TryTake(out tuple);
+                    Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success);
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     lock (toTakeSubset) {
                         toTakeSubset.Remove(clientURL);
                     }
-                    return;
+                    lock (dummyObjForLock) {
+                        Monitor.PulseAll(dummyObjForLock);
+                    }
+                    break;
                 }
+            }
+            foreach(var x in tupleSpace) {
+                Console.WriteLine("Depois -> " + x.ToString());
             }
         }
 
         public void Freeze() {
+            Console.WriteLine("i'm freezing");
             frozen = true;
         }
 

@@ -9,11 +9,13 @@ using System.Threading.Tasks;
 
 namespace ProcessCreationService {
     class PCS {
+        private const int PCS_DEFAULT_PORT = 10000;
+
         private TcpChannel channel;
         private PCS_Service myRemoteObject;
 
         public PCS() {
-            channel = new TcpChannel(10000);
+            channel = new TcpChannel(PCS_DEFAULT_PORT);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new PCS_Service(this);
             RemotingServices.Marshal(myRemoteObject, "PCS_Service", typeof(PCS_Service));
@@ -22,6 +24,7 @@ namespace ProcessCreationService {
         static void Main(string[] args) {
             PCS _pcs = new PCS();
             while (true) {
+                Console.WriteLine("Quit to stop...");
                 string line = Console.ReadLine();
                 if (line.Equals("quit")) {
                     break;

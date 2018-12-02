@@ -12,7 +12,7 @@ namespace Client
     class Script_Client
     {
         private API_XL _tupleSpaceAPI;
-        private string defaultURL = "tcp://4.5.6.7:60001/C";
+        private string defaultURL = "tcp://localhost:60000/C";
 
         public Script_Client(){
             _tupleSpaceAPI = new API_XL(defaultURL);
@@ -84,7 +84,7 @@ namespace Client
             StreamReader reader = null;
 
             try {
-                reader = File.OpenText(scriptName);
+                reader = File.OpenText("../../../Client/bin/debug/" + scriptName);
             }
             catch (FileNotFoundException) {
                 Console.WriteLine("File not found!");
