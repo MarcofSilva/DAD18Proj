@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
+using ExceptionLibrary;
 
 namespace Server {
     public class FollowerState : RaftState {
@@ -28,7 +29,7 @@ namespace Server {
             SetTimer();
         }
 
-        public override void apprendEntry(int term, string senderID) {
+        public override void appendEntry(int term, string senderID) {
             throw new NotImplementedException();
         }
 
@@ -88,76 +89,40 @@ namespace Server {
             electionTimeout.Start();
         }
 
-        public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
-
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             //Console.WriteLine("READ IN FOLLOWER CALLED");
-
-            //TODO resolver estas cenas de criar lista com apenas 1 elemento
-            WaitHandle[] handles = new WaitHandle[1];
-            IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
-                readDelegate readDel = new readDelegate(_leaderRemote.read);
-                asyncResults[0] = readDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
-                handles[0] = asyncResults[0].AsyncWaitHandle;
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    return read(tuple, clientUrl, nonce);
-                }
-                else {
-                    IAsyncResult asyncResult = asyncResults[0];
-                    readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    List<TupleClass> res = readDel.EndInvoke(asyncResult);
-                    //Console.WriteLine("----->DEBUG_FollowerState: " + res[0].ToString());
-                    return res;
-                }
+                return _leaderRemote.read(tuple, clientUrl, nonce);
+            }
+            catch (ElectionException e) {
+                throw e;
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
             }
         }
-
-        public delegate List<TupleClass> takeDelegate(TupleClass tuple, string url, long nonce);
-
-        public override List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
-            Console.WriteLine("TAKE IN FOLLOWER CALLED");
-
-            WaitHandle[] handles = new WaitHandle[1];
-            IAsyncResult[] asyncResults = new IAsyncResult[1];
-            try {
-                takeDelegate takeDel = new takeDelegate(_leaderRemote.take);
-                asyncResults[0] = takeDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
-                handles[0] = asyncResults[0].AsyncWaitHandle;
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    return read(tuple, clientUrl, nonce);
-                }
-                else {
-                    IAsyncResult asyncResult = asyncResults[0];
-                    takeDel = (takeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    return takeDel.EndInvoke(asyncResult);
-                }
-            }
-            catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
-            }
-        }
-
-        public delegate void writeDelegate(TupleClass tuple, string clientUrl, long nonce);
-
         public override void write(TupleClass tuple, string clientUrl, long nonce) {
             Console.WriteLine("WRITE IN FOLLOWER CALLED");
-            WaitHandle[] handles = new WaitHandle[1];
-            IAsyncResult[] asyncResults = new IAsyncResult[1];
             try {
-                writeDelegate takeDel = new writeDelegate(_leaderRemote.write);
-                asyncResults[0] = takeDel.BeginInvoke(tuple, clientUrl, nonce, null, null);
-                handles[0] = asyncResults[0].AsyncWaitHandle;
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    read(tuple, clientUrl, nonce);
-                }
-                else {
-                }
+                _leaderRemote.write(tuple, clientUrl, nonce);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
+            catch (SocketException) {
+                //TODO
+                throw new NotImplementedException();
+            }
+        }
+
+        public override TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
+            Console.WriteLine("WRITE IN FOLLOWER CALLED");
+            try {
+                return _leaderRemote.take(tuple, clientUrl, nonce);
+            }
+            catch (ElectionException e) {
+                throw e;
             }
             catch (SocketException) {
                 //TODO

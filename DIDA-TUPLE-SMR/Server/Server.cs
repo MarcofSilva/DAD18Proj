@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
+using ExceptionLibrary;
 
 namespace Server {
     public class Server {
@@ -29,7 +30,7 @@ namespace Server {
         public Dictionary<string, IServerService> serverRemoteObjects;
         //public so state leader can acess it,
         //alternative: send it in constructor of leader
-        public string _url = "tcp://localhost:8086/Server";
+        public string _url = "tcp://localhost:8086/S";
 
         //public so server services can acess it
         //alternativa 
@@ -100,11 +101,11 @@ namespace Server {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port, imin_delay, imax_delay;
             Int32.TryParse(urlSplit[2], out port);
+            Int32.TryParse(min_delay, out imin_delay);
+            Int32.TryParse(max_delay, out imax_delay);
             _port = port;
             _name = urlSplit[3];
             _url = URL;
-            Int32.TryParse(min_delay, out imin_delay);
-            Int32.TryParse(max_delay, out imax_delay);
             selfPrepare(imin_delay, imax_delay);
         }
 
@@ -117,17 +118,17 @@ namespace Server {
         public void updateState(string state) {
             if (state == "follower") {
                 _state.stopClock();
-                Console.WriteLine("updated state to follower");
+                Console.WriteLine("Updated to follower");
                 _state = follower;
             }
             else if(state == "candidate") {
                 _state.stopClock();
-                Console.WriteLine("updated state to candidate");
+                Console.WriteLine("Updated to candidate");
                 _state = candidate;
             }
             else {
                 _state.stopClock();
-                Console.WriteLine("updated state to leader");
+                Console.WriteLine("Updated to leader");
                 _state = leader;
             }
             _state.startClock();
@@ -136,57 +137,58 @@ namespace Server {
         public bool vote(int term, string candidateID) {
             return _state.vote(term, candidateID);
         }
-        //methods used by states and server services
+
         public void write(TupleClass tuple, string clientUrl, long nonce) {
-            //Console.WriteLine("Debug_Server: write received");
-            _state.write(tuple, clientUrl, nonce);
+            try {
+                _state.write(tuple, clientUrl, nonce);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
         }
         public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
-            //Console.WriteLine("Debug_Server: read received");
-            return _state.read(tuple, clientUrl, nonce);
+            try {
+                return _state.read(tuple, clientUrl, nonce);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
         }
-        public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
-            //Console.WriteLine("Debug_Server: take received");
-            return _state.take(tuple, clientUrl, nonce);
+        public TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
+            try {
+                return _state.take(tuple, clientUrl, nonce);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
         }
 
-        //methods used by leader state to do shit in server
-        //isto nao deve ficar assim, mas desta maneira evitamos ja a implementacao de logs
-        //isto ajuda tambem porque assim nao e necessario o tuplespace ser public 
+
         public void writeLeader(TupleClass tuple) {
-            //Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
-            //Console.WriteLine("Before write Size: " + tupleSpace.Count + "\n");
+            Console.WriteLine("Operation: Add" + tuple.ToString() + "\n");
             tupleSpace.Add(tuple);
-            //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
-            //Console.WriteLine("After write Size: " + tupleSpace.Count + "\n");
         }
-
-        public List<TupleClass> takeLeader(TupleClass tuple) {
+        public TupleClass takeLeader(TupleClass tuple) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
-            List<TupleClass> res = new List<TupleClass>();
-            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
+            TupleClass res = new TupleClass();
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
-                    res.Add(el);
-                    res.Remove(el);
+                    res = el;
+                    tupleSpace.Remove(el);
                     return res;
                 }
             }
             return res; //no match
         }
-
         public List<TupleClass> readLeader(TupleClass tuple) {
-            //Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
             List<TupleClass> res = new List<TupleClass>();
-            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
                     res.Add(el);
                 }
             }
-            //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
-            //Console.WriteLine("Debug Read" + res[0].ToString() + "\n");
-            return res; //no match
+            return res;
         }
 
         public void Freeze() {

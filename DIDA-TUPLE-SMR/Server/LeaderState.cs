@@ -15,7 +15,7 @@ using System.Net.Sockets;
 using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
-
+using ExceptionLibrary;
 namespace Server {
     public class LeaderState : RaftState{
         private Random rnd = new Random();
@@ -33,7 +33,7 @@ namespace Server {
             }
         }
 
-        public override void apprendEntry(int term, string senderID) {
+        public override void appendEntry(int term, string senderID) {
             throw new NotImplementedException();
         }
 
@@ -44,22 +44,31 @@ namespace Server {
         When the entry has been safely replicated (as described below), the leader applies the entry to its state machine and 
         returns the result of thatexecution to the client
         If followers crash or run slowly, or if network packets are lost, the leader retries AppendEntries RPCs indefinitely 
-        (even after it has responded to the client) until all followers eventually store all log entries.        The term numbers in log entries are used to detect inconsistencies between logs        Each log entry stores a state machine command along with the term number when the entry was received by the leader
+        (even after it has responded to the client) until all followers eventually store all log entries.
+        The term numbers in log entries are used to detect inconsistencies between logs
+        Each log entry stores a state machine command along with the term number when the entry was received by the leader
         Each log entry also has an integer index identifying its position in the log
 
         The leader keeps track of the highest index it knows to be committed, and it includes that index in future
         AppendEntries RPCs (including heartbeats) so that the other servers eventually find out. 
-        Once a follower learns  that a log entry is committed, it applies the entry to its local state machine (in log order).        • If two entries in different logs have the same index and term, then they store the same command.
+        Once a follower learns  that a log entry is committed, it applies the entry to its local state machine (in log order).
+        • If two entries in different logs have the same index and term, then they store the same command.
         • If two entries in different logs have the same index and term, then the logs are identical in all preceding entries.
             */
 
             return _server.readLeader(tuple);
         }
-        public override List<TupleClass> take(TupleClass tuple, string url, long nonce) {
+        public override TupleClass take(TupleClass tuple, string url, long nonce) {
             return _server.takeLeader(tuple);
         }
-        public override void write(TupleClass tuple, string url, long nonce) {
-            _server.writeLeader(tuple);
+        public override void write(TupleClass tuple, string url, long nonce){
+            try {
+                _server.writeLeader(tuple);
+            }
+            catch(ElectionException e ) {
+                Console.WriteLine("BUUMMMMMM");
+                throw new ElectionException("Election exception 2");
+            }
         }
 
         private void SetTimer() {

@@ -15,6 +15,7 @@ using System.Net.Sockets;
 using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
+using ExceptionLibrary;
 
 namespace Server {
     public class CandidateState : RaftState {
@@ -45,7 +46,7 @@ namespace Server {
 
         }
 
-        public override void apprendEntry(int term, string senderID) {
+        public override void appendEntry(int term, string senderID) {
             throw new NotImplementedException();
         }
 
@@ -66,12 +67,11 @@ namespace Server {
 
         public void requestVote() {
             _term++;
-            //Console.WriteLine("REQUEST VOTE in term " + _term);
+            Console.WriteLine("REQUEST VOTE in term " + _term);
             WaitHandle[] handles = new WaitHandle[_numServers];
-            IAsyncResult[] asyncResults = new IAsyncResult[_numServers]; //used when want to access IAsyncResult in index of handled that give the signal
+            IAsyncResult[] asyncResults = new IAsyncResult[_numServers];
             try {
                 int i = 0;
-                //votes start at one because he votes for himself
                 int votes = 1;
                 foreach (KeyValuePair<string, IServerService> remoteObjectpair in _serverRemoteObjects) {
                     ServerService remoteObject = (ServerService)remoteObjectpair.Value;
@@ -85,10 +85,12 @@ namespace Server {
                     requestVote();
                 }
                 else {
+                    
                     for (i = 0; i < _numServers; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
                         voteDelegate voteDel = (voteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         bool response = voteDel.EndInvoke(asyncResult);
+                        
                         if (response) {
                             votes++;
                         }
@@ -97,29 +99,13 @@ namespace Server {
                         _server.updateState("leader");
                     }
                 }
+                
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
             }
         }
-
-        //TODO lancar excepcao e apanha no api do cliente
-        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
-            throw new NotImplementedException();
-        }
-
-        public override List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
-            throw new NotImplementedException();
-        }
-
-        public override void write(TupleClass tuple, string clientUrl, long nonce) {
-            throw new NotImplementedException();
-        }
-        /*
-        public override void electLeader(int term, string leaderUrl) {
-            throw new NotImplementedException();
-        }*/
         public override void ping() {
             Console.WriteLine("Candidate State pinged");
         }
@@ -132,13 +118,20 @@ namespace Server {
             }
             else {
                 _term = term;
+                //TODO
                 Console.WriteLine("Leader changed to: " + candidateID);
-
-                //TODO nao deveria ser aqui
-                _leaderUrl = candidateID;
                 _server.updateState("follower");
             }
-            
+        }
+
+        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            throw new ElectionException("Election going on, try later");
+        }
+        public override TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
+            throw new ElectionException("Election going on, try later");
+        }
+        public override void write(TupleClass tuple, string clientUrl, long nonce) {
+            throw new ElectionException("Election going on, try later");
         }
     }
 }
