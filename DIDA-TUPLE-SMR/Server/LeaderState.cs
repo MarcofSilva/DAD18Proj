@@ -38,13 +38,26 @@ namespace Server {
         }
 
         public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
+            /* Para as 3 operaçoes iguais
+        Each client request contains a command to be executed by the replicated state machines. The leader appends the command 
+        to its log as a new entry, then issues AppendEntries RPCs in parallel to each of the other servers to replicate the entry.
+        When the entry has been safely replicated (as described below), the leader applies the entry to its state machine and 
+        returns the result of thatexecution to the client
+        If followers crash or run slowly, or if network packets are lost, the leader retries AppendEntries RPCs indefinitely 
+        (even after it has responded to the client) until all followers eventually store all log entries.        The term numbers in log entries are used to detect inconsistencies between logs        Each log entry stores a state machine command along with the term number when the entry was received by the leader
+        Each log entry also has an integer index identifying its position in the log
+
+        The leader keeps track of the highest index it knows to be committed, and it includes that index in future
+        AppendEntries RPCs (including heartbeats) so that the other servers eventually find out. 
+        Once a follower learns  that a log entry is committed, it applies the entry to its local state machine (in log order).        • If two entries in different logs have the same index and term, then they store the same command.
+        • If two entries in different logs have the same index and term, then the logs are identical in all preceding entries.
+            */
+
             return _server.readLeader(tuple);
         }
-
         public override List<TupleClass> take(TupleClass tuple, string url, long nonce) {
             return _server.takeLeader(tuple);
         }
-
         public override void write(TupleClass tuple, string url, long nonce) {
             _server.writeLeader(tuple);
         }

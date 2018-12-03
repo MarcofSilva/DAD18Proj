@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 namespace PuppetMaster {
     class PuppetMaster {
 
+        private const int PUPPETMASTER_DEFAULT_PORT = 10001;
+
         private TcpChannel _channel;
         private Dictionary<string, I_PCS_Service> pcsList = new Dictionary<string, I_PCS_Service>(); //<ip:object>
         private Dictionary<string, I_PCS_Service> idToPcs = new Dictionary<string, I_PCS_Service>(); //<processid:object>
@@ -26,8 +28,9 @@ namespace PuppetMaster {
         public delegate void unfreezeDelegate(String id);
 
         public PuppetMaster() {
-            _channel = new TcpChannel(10001);
+            _channel = new TcpChannel(PUPPETMASTER_DEFAULT_PORT);
             ChannelServices.RegisterChannel(_channel, false);
+            configure();
         }
         //TODO otimizacao: localhost nao precisa de ter PCS
         private void configure() {
