@@ -31,50 +31,50 @@ namespace Server {
             //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
             if (term < _term) {
                 //TODO
-                return new EntryResponse(false, _term, 0);
-                //TODO se o appendEntryWrite e antigo, nao responder
+                return new EntryResponse(false, _term, _server.getLogIndex());
+                //responde false com o propio termo para quem enviou ver que este esta a frente e ficar follower
                 //o paper diz para simplesmente continuar no candidate state
             }
             else {
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
                 _server.addEntrytoLog(writeEntry);
+                _server.writeLeader(writeEntry.Tuple);
                 _server.updateState("follower", _term, leaderID);
 
-                //TODO visto que muda o estado e depois retorna o entry n sei se funciona
-                return new EntryResponse(true, _term, _server.getMatchIndex());
+                return new EntryResponse(true, _term, _server.getLogIndex()-1);
             }
         }
 
         public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
             //Console.WriteLine("Candidate: AppendEntryTake from: " + leaderID);
             if (term < _term) {
-                return new EntryResponse(false, _term, 0);
-                //TODO se o appendEntryTake e antigo, nao responder
+                return new EntryResponse(false, _term, _server.getLogIndex());
+                //responde false com o propio termo para quem enviou ver que este esta a frente e ficar follower
                 //o paper diz para simplesmente continuar no candidate state
             }
             else {
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
                 _server.addEntrytoLog(takeEntry);
+                _server.takeLeader(takeEntry.Tuple);
                 _server.updateState("follower", _term, leaderID);
-                return new EntryResponse(true, _term, _server.getMatchIndex());
+
+                return new EntryResponse(true, _term, _server.getLogIndex()-1);
             }
         }
 
         public override EntryResponse heartBeat(int term, string leaderID) {
-            Console.WriteLine("heartbeat");
             if (term < _term) {
-                return new EntryResponse(false, _term, 0);
-                //TODO se o heartbeat e antigo, nao responder
+                return new EntryResponse(false, _term, _server.getLogIndex());
+                //responde false com o propio termo para quem enviou ver que este esta a frente e ficar follower
                 //o paper diz para simplesmente continuar no candidate state
             }
             else {
-                Console.WriteLine("heartbeat that counts");
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
                 _server.updateState("follower", _term, leaderID);
-                return new EntryResponse(true, _term, _server.getMatchIndex());
+                return new EntryResponse(true, _term, _server.getLogIndex());
             }
         }
 
@@ -82,6 +82,7 @@ namespace Server {
 
         public void requestVote() {
             _term++;
+            Console.WriteLine("NEW ELECTION BITCHES, MY TERM IS " + _term);
             int votes = 1;
             //randomize the election timeout each iteration
             WaitHandle[] handles = new WaitHandle[_numServers];
@@ -101,19 +102,24 @@ namespace Server {
                 }
                 else {
                     for (i = 0; i < _numServers; i++) {
+                        Console.WriteLine("Reading for response of " + i);
                         IAsyncResult asyncResult = asyncResults[i];
                         voteDelegate voteDel = (voteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         bool response = voteDel.EndInvoke(asyncResult);
+                        //Console.WriteLine(i + " voted " + response);
                         if (response) {
                             votes++;
                         }
                     }
-                    if (votes > ((_numServers+1)/2) ) {
+                    if (votes > ((_numServers + 1)/2) ) {
                         electionTimeout.Stop();
                         _server.updateState("leader", _term, _url);
                     }
+                    else {
+                        Console.WriteLine("Finished elections without sucess");
+                    }
                 }
-                wait = rnd.Next(350, 500);
+                wait = rnd.Next(500, 700);
                 electionTimeout.Interval = wait;
             }
             catch (SocketException) {
@@ -141,6 +147,7 @@ namespace Server {
         public override bool vote(int term, string candidateID) {
             if (term > _term) {
                 _term = term;
+                Console.WriteLine("I CHANGED WHEN I WAS ASKED A VOTE WITH TERM " + term);
                 _server.updateState("follower", _term, candidateID);
                 return true;
             }

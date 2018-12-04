@@ -6,26 +6,26 @@ using System.Threading.Tasks;
 using ClassLibrary;
 
 namespace Server {
+    [Serializable]
     public abstract class Entry {
 
         private TupleClass _tuple;
         private int _term;
-        private int indexLog;
+        private int logIndex;
         private bool commited = false;
 
         public int Term { get => _term; set => _term = value; }
         public TupleClass Tuple { get => _tuple; set => _tuple = value; }
-        public bool Commited { get => commited; set => commited = value; }
-        public int IndexLog { get => indexLog; set => indexLog = value; }
+        public int LogIndex { get => logIndex; set => logIndex = value; }
 
-        public Entry(TupleClass tuple, int term) {
+        public Entry(TupleClass tuple, int term, int logIndex) {
             Term = term;
             Tuple = tuple;
+            LogIndex = logIndex;
         }
 
-        public void commit() {
-            commited = true;
+        public override string ToString() {
+            return "tuple: " + Tuple.ToString() + " ;term: " + Term + " ;logIndex: " + LogIndex;
         }
-
     }
 }
