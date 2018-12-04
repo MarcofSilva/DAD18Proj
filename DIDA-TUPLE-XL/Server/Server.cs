@@ -21,21 +21,25 @@ namespace Server{
         private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
         private Object dummyObjForTakeRead = new object();
         private Dictionary<string, List<TupleClass>> toTakeSubset = new Dictionary<string, List<TupleClass>>();
+        private FailureDetector fd;
 
         private TcpChannel channel;
         private ServerService myRemoteObject;
         private const int defaultPort = 50000;
         private const string defaultname = "S";
         private const int defaultDelay = 0;
+        public string url;
         //readonly object _Key = new object();
         public bool frozen = false;
 
         public Server(){
             tupleSpaceLock = new ReaderWriterLockSlim();
             prepareRemoting(defaultPort, defaultname, defaultDelay, defaultDelay);
+            fd = new FailureDetector();
         }
 
         public Server(string URL, string min_delay, string max_delay) {
+            url = URL;
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port, imin_delay, imax_delay;
             Int32.TryParse(urlSplit[2], out port);
@@ -43,7 +47,9 @@ namespace Server{
             Int32.TryParse(max_delay, out imax_delay);
 
             prepareRemoting(port, urlSplit[3], imin_delay, imax_delay);
+            fd = new FailureDetector();
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
+            
         }
 
         private void prepareRemoting(int port, string name, int min_delay, int max_delay) {
@@ -102,8 +108,9 @@ namespace Server{
         //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> takeRead(TupleClass tuple, string clientURL) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
-            foreach(var x in tupleSpace) {
-                Console.WriteLine("Antes -> " + x.ToString());
+            Console.WriteLine("Antes -> ");
+            foreach (var x in tupleSpace) {
+                Console.WriteLine("-> " + x.ToString());
             }
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
@@ -113,8 +120,16 @@ namespace Server{
                 if (toTakeSubset.ContainsKey(clientURL)) {
                     toTakeSubset.Remove(clientURL);
                 }
+                Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
-                    allTuples.Concat(list);
+                    foreach (var y in list) {
+                        Console.WriteLine("->" + y);
+                        allTuples.Add(y);
+                    }
+                }
+                Console.WriteLine("alltuples -> ");
+                foreach (var x in allTuples) {
+                    Console.WriteLine("-> " + x.ToString());
                 }
                 foreach (TupleClass el in tupleSpace) {
                     if (el.Matches(tuple) && !allTuples.Contains(el)) {
@@ -123,6 +138,12 @@ namespace Server{
                 }
                 if (res.Count != 0) {
                     toTakeSubset.Add(clientURL, res);
+                }
+                Console.WriteLine("totakesubset -> ");
+                foreach (var x in toTakeSubset.Values) {
+                    foreach (var y in x) {
+                        Console.WriteLine("->" + y);
+                    }
                 }
             }
             if (res.Count == 0) {
@@ -160,7 +181,7 @@ namespace Server{
         }
 
         public void Freeze() {
-            Console.WriteLine("i'm freezing");
+            Console.WriteLine("I'm freezing");
             frozen = true;
         }
 
@@ -182,6 +203,14 @@ namespace Server{
                 Monitor.PulseAll(this);
             }
             frozen = false;
+        }
+
+        public int ping() {
+            return 1;
+        }
+
+        public List<string> viewRequest() {
+            return fd.getView();
         }
 
         static void Main(string[] args){

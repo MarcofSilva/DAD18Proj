@@ -16,17 +16,18 @@ namespace Client {
 
         private const int defaultPort = 8085;
         private TcpChannel channel;
-        private List<IServerService> serverRemoteObjects;
+
         private int numServers;
         private bool frozen = false;
-
         private string url;
+        private List<IServerService> view = new List<IServerService>();
 
         public API_XL(string URL) {
-            serverRemoteObjects = prepareForRemoting(ref channel, URL);
-            numServers = serverRemoteObjects.Count;
-
             url = URL;
+            prepareForRemoting(ref channel, URL);
+            Console.WriteLine("Requesting available servers...");
+            setView();
+            Console.WriteLine("Done!");
         }
 
         public delegate void writeDelegate(TupleClass tuple, string url, long nonce);
@@ -37,10 +38,11 @@ namespace Client {
         public override void Write(TupleClass tuple) {
             //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             checkFrozen();
+            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
-                    IServerService remoteObject = serverRemoteObjects[i];
+                    IServerService remoteObject = view[i];
                     writeDelegate writeDel = new writeDelegate(remoteObject.Write);
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
@@ -60,12 +62,13 @@ namespace Client {
 
         public override TupleClass Read(TupleClass tuple) {
             checkFrozen();
+            setView();
             //Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
                 for (int i = 0; i < numServers; i++) {
-                    IServerService remoteObject = serverRemoteObjects[i];
+                    IServerService remoteObject = view[i];
                     readDelegate readDel = new readDelegate(remoteObject.Read);
                     IAsyncResult ar = readDel.BeginInvoke(tuple, url, nonce, null, null);
                     asyncResults[i] = ar;
@@ -92,6 +95,7 @@ namespace Client {
 
         public override TupleClass Take(TupleClass tuple) {
             checkFrozen();
+            setView();
             //Console.WriteLine("----->DEBUG_API_XL: Begin Take");
             //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
@@ -99,7 +103,7 @@ namespace Client {
             //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
             try {
                 for (int i = 0; i < numServers; i++) {
-                    IServerService remoteObject = serverRemoteObjects[i];
+                    IServerService remoteObject = view[i];
                     takeReadDelegate takereadDel = new takeReadDelegate(remoteObject.TakeRead);
                     IAsyncResult ar = takereadDel.BeginInvoke(tuple, url, null, null);
                     asyncResults[i] = ar;
@@ -142,11 +146,12 @@ namespace Client {
         }
 
         private void takeRemove(TupleClass tupleToDelete) {
+            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
 
             for (int i = 0; i < numServers; i++) {
-                IServerService remoteObject = serverRemoteObjects[i];
+                IServerService remoteObject = view[i];
                 takeRemoveDelegate takeRemDel = new takeRemoveDelegate(remoteObject.TakeRemove);
                 IAsyncResult ar = takeRemDel.BeginInvoke(tupleToDelete, url, nonce, null, null);
                 asyncResults[i] = ar;
@@ -199,6 +204,14 @@ namespace Client {
                     }
                 }
             }
+        }
+
+        public void setView() {
+            view = getView(view);
+            if (view.Count == 0) setView();
+            numServers = view.Count;
+            Console.WriteLine(numServers.ToString());
+
         }
     }
 }
