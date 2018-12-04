@@ -35,13 +35,12 @@ namespace Server {
         //public so server services can acess it
         //alternativa 
         public RaftState _state;
+        public string _name = "Server";
+        private int _port = 8086;
 
         private List<TupleClass> tupleSpace = new List<TupleClass>();
         private TcpChannel channel;
         private ServerService myRemoteObject;
-        private int _port = 8086;
-        private string _name = "Server";
-        //private List<IServerService> serverRemoteObjects;
         private int _numServers = 0;
         public bool frozen = false;
         private const int defaultDelay = 0;
@@ -90,7 +89,7 @@ namespace Server {
             candidate = new CandidateState(this, _numServers);
             follower = new FollowerState(this, _numServers);
             _state = follower;
-            Console.WriteLine("Constructed server");
+            Console.WriteLine("Finished constructing server "+ _port);
         }
 
         public Server() {
@@ -99,43 +98,64 @@ namespace Server {
 
         public Server(string URL, string min_delay, string max_delay) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
+            _name = urlSplit[3];
+            _url = URL;
             int port, imin_delay, imax_delay;
             Int32.TryParse(urlSplit[2], out port);
             Int32.TryParse(min_delay, out imin_delay);
             Int32.TryParse(max_delay, out imax_delay);
             _port = port;
-            _name = urlSplit[3];
-            _url = URL;
             selfPrepare(imin_delay, imax_delay);
         }
 
-        public string heartBeat(int term, string candidateID) {
-            _state.heartBeat(term, candidateID);
-            string res = "Hello from server: " + _name + " at port: " + _port.ToString();
-            return res;
-        }
-
-        public void updateState(string state) {
+        public void updateState(string state, int term, string url) {
             if (state == "follower") {
                 _state.stopClock();
-                Console.WriteLine("Updated to follower");
+                Console.WriteLine("I am now a Follower");
                 _state = follower;
             }
             else if(state == "candidate") {
                 _state.stopClock();
-                Console.WriteLine("Updated to candidate");
+                Console.WriteLine("I am now a Candidate");
                 _state = candidate;
             }
             else {
                 _state.stopClock();
-                Console.WriteLine("Updated to leader");
+                Console.WriteLine("I am now a Leader");
                 _state = leader;
             }
-            _state.startClock();
+            _state.startClock(term, url);
         }
 
         public bool vote(int term, string candidateID) {
             return _state.vote(term, candidateID);
+        }
+
+        public void writeLeader(TupleClass tuple) {
+            Console.WriteLine("Operation: Add" + tuple.ToString() + "\n");
+            tupleSpace.Add(tuple);
+        }
+        public TupleClass takeLeader(TupleClass tuple) {
+            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+            TupleClass res = new TupleClass();
+            foreach (TupleClass el in tupleSpace) {
+                if (el.Matches(tuple)) {
+                    res = el;
+                    tupleSpace.Remove(el);
+                    return res;
+                }
+            }
+            return res; //no match
+        }
+        public List<TupleClass> readLeader(TupleClass tuple) {
+            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+            List<TupleClass> res = new List<TupleClass>();
+            foreach (TupleClass el in tupleSpace) {
+                if (el.Matches(tuple)) {
+                    res.Add(el);
+                }
+            }
+            return res;
         }
 
         public void write(TupleClass tuple, string clientUrl, long nonce) {
@@ -162,32 +182,9 @@ namespace Server {
                 throw e;
             }
         }
-
-
-        public void writeLeader(TupleClass tuple) {
-            Console.WriteLine("Operation: Add" + tuple.ToString() + "\n");
-            tupleSpace.Add(tuple);
-        }
-        public TupleClass takeLeader(TupleClass tuple) {
-            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
-            TupleClass res = new TupleClass();
-            foreach (TupleClass el in tupleSpace) {
-                if (el.Matches(tuple)) {
-                    res = el;
-                    tupleSpace.Remove(el);
-                    return res;
-                }
-            }
-            return res; //no match
-        }
-        public List<TupleClass> readLeader(TupleClass tuple) {
-            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
-            List<TupleClass> res = new List<TupleClass>();
-            foreach (TupleClass el in tupleSpace) {
-                if (el.Matches(tuple)) {
-                    res.Add(el);
-                }
-            }
+        public string heartBeat(int term, string candidateID) {
+            _state.heartBeat(term, candidateID);
+            string res = "Hello from server: " + _name + " at port: " + _port.ToString();
             return res;
         }
 

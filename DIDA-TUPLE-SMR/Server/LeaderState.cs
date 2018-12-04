@@ -16,9 +16,10 @@ using ClassLibrary;
 using System.Runtime.Remoting.Messaging;
 using System.Timers;
 using ExceptionLibrary;
+
 namespace Server {
     public class LeaderState : RaftState{
-        private Random rnd = new Random();
+        private Random rnd = new Random(Guid.NewGuid().GetHashCode());
         private System.Timers.Timer timer;
         private int wait;
         
@@ -27,52 +28,35 @@ namespace Server {
             SetTimer();
         }
 
-        public override void heartBeat(int term, string candidateID) {
+        public override void appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
             if (_term < term) {
-                _server.updateState("follower");
+                _term = term;
+                Console.WriteLine("Leader: AppendEntryWrite from: " + leaderID);
+                //add this operation to log and then change to follower
+                _server.updateState("follower", _term, leaderID);
             }
         }
 
-        public override void appendEntry(int term, string senderID) {
-            throw new NotImplementedException();
-        }
-
-        public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
-            /* Para as 3 operaçoes iguais
-        Each client request contains a command to be executed by the replicated state machines. The leader appends the command 
-        to its log as a new entry, then issues AppendEntries RPCs in parallel to each of the other servers to replicate the entry.
-        When the entry has been safely replicated (as described below), the leader applies the entry to its state machine and 
-        returns the result of thatexecution to the client
-        If followers crash or run slowly, or if network packets are lost, the leader retries AppendEntries RPCs indefinitely 
-        (even after it has responded to the client) until all followers eventually store all log entries.
-        The term numbers in log entries are used to detect inconsistencies between logs
-        Each log entry stores a state machine command along with the term number when the entry was received by the leader
-        Each log entry also has an integer index identifying its position in the log
-
-        The leader keeps track of the highest index it knows to be committed, and it includes that index in future
-        AppendEntries RPCs (including heartbeats) so that the other servers eventually find out. 
-        Once a follower learns  that a log entry is committed, it applies the entry to its local state machine (in log order).
-        • If two entries in different logs have the same index and term, then they store the same command.
-        • If two entries in different logs have the same index and term, then the logs are identical in all preceding entries.
-            */
-
-            return _server.readLeader(tuple);
-        }
-        public override TupleClass take(TupleClass tuple, string url, long nonce) {
-            return _server.takeLeader(tuple);
-        }
-        public override void write(TupleClass tuple, string url, long nonce){
-            try {
-                _server.writeLeader(tuple);
+        public override void appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
+            if (_term < term) {
+                _term = term;
+                Console.WriteLine("Follower: AppendEntryTake from: " + leaderID);
+                //add this operation to log and then change to follower
+                _server.updateState("follower", _term, leaderID);
             }
-            catch(ElectionException e ) {
-                Console.WriteLine("BUUMMMMMM");
-                throw new ElectionException("Election exception 2");
+        }
+
+        public override void heartBeat(int term, string leaderID) {
+            if (_term < term) {
+                _term = term;
+                //Console.WriteLine("Follower: HeartBeat from: " + leaderID);
+                //add this operation to log and then change to follower
+                _server.updateState("follower", _term, leaderID);
             }
         }
 
         private void SetTimer() {
-            wait = rnd.Next(150, 250);
+            wait = rnd.Next(150, 300);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = true;
@@ -88,9 +72,14 @@ namespace Server {
             timer.Stop();
         }
 
-        public override void startClock() {
+        public override void startClock(int term, string url) {
+            if (term > _term) {
+                _term = term;
+            }
             pulseHeartbeat();
             timer.Start();
+            //redundante porque o url recebido e o dele proprio
+            _leaderUrl = url;
         }
 
         public delegate string heartBeatDelegate(int term, string candidateID);
@@ -127,11 +116,42 @@ namespace Server {
         }
         
         public override void ping() {
-            Console.WriteLine("Leader State pinged");
+            Console.WriteLine("Leader State pinged ");
         }
 
         public override bool vote(int term, string candidateID) {
-            throw new NotImplementedException();
+            Console.WriteLine("I WAS IN TERM " + _term + " AND THEY ARE IN TERM " + term);
+            if (_term < term) {
+                _term = term;
+                _server.updateState("follower", _term, candidateID);
+                return true;
+            }
+            //the system doesnt alow it to come here
+            return false;
+        }
+        public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
+            try {
+                return _server.readLeader(tuple);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
+        }
+        public override TupleClass take(TupleClass tuple, string url, long nonce) {
+            try {
+                return _server.takeLeader(tuple);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
+        }
+        public override void write(TupleClass tuple, string url, long nonce) {
+            try {
+                _server.writeLeader(tuple);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
         }
     }
 }

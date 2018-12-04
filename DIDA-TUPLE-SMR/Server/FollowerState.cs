@@ -20,7 +20,7 @@ using ExceptionLibrary;
 namespace Server {
     public class FollowerState : RaftState {
         private IServerService _leaderRemote;
-        private Random rnd = new Random();
+        private Random rnd = new Random(Guid.NewGuid().GetHashCode());
         private System.Timers.Timer electionTimeout;
         private int wait;
         private bool voted = false;
@@ -29,8 +29,51 @@ namespace Server {
             SetTimer();
         }
 
-        public override void appendEntry(int term, string senderID) {
-            throw new NotImplementedException();
+        public override void appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
+            Console.WriteLine("Follower: appendEntryWrite from: " + leaderID);
+            //Considers requests from old entry
+            if (term > _term) {
+                return;
+            }
+            //Treasts case of leader changed
+            if (leaderID != _leaderUrl) {
+                electionTimeout.Interval = wait;
+                _leaderUrl = leaderID;
+                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                Console.WriteLine("Follower: Leader is now: " + leaderID);
+            }
+            //add entry to log
+        }
+
+        public override void appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
+            Console.WriteLine("Follower: appendEntryTake from: " + leaderID);
+            //Considers requests from old entry
+            if (term > _term) {
+                return;
+            }
+            //Treasts case of leader changed
+            if (leaderID != _leaderUrl) {
+                electionTimeout.Interval = wait;
+                _leaderUrl = leaderID;
+                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                Console.WriteLine("Follower: Leader is now: " + leaderID);
+            }
+            //add entry to log
+        }
+        public override void heartBeat(int term, string leaderID) {
+            //Console.WriteLine("Follower: heartBeat from: " + leaderID);
+            //Considers requests from old entry
+            if (term > _term) {
+                return;
+            }
+            //Treasts case of leader changed
+            if (leaderID != _leaderUrl) {
+                _leaderUrl = leaderID;
+                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                Console.WriteLine("Follower: Leader is now: " + leaderID);
+            }
+            electionTimeout.Interval = wait;
+            //add entry to log
         }
 
         public override bool vote(int term, string candidateID) {
@@ -42,55 +85,37 @@ namespace Server {
             }
             if (!voted) {
                 voted = true;
-
                 return true;
             }
             return false;
         }
-        
-        public override void heartBeat(int term, string candidateID) {
-            electionTimeout.Interval = wait;
-            if (term > _term) {
-                //_term = term;
-                //here to prevent heartbeats from past term
-            }
-            if (candidateID != _leaderUrl) {
-                //TODO quando vem do candidate state o leader url e o leader remote n tao assigned
-                Console.WriteLine("Leader changed to: " + candidateID);
-                _leaderUrl = candidateID;
-                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                Console.WriteLine("heartbeat candidate state");
-            }
-        }
-
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(300, 500);//usually entre 150 300
-            Console.WriteLine("follower will wait for: " +wait);
+            wait = rnd.Next(350, 500);//usually entre 150 300
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = true;
             electionTimeout.Enabled = true;
         }
-
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            _server.updateState("candidate");
+            _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
         }
-
         public override void ping() {
             Console.WriteLine("Follower State pinged");
         }
-
         public override void stopClock() {
             electionTimeout.Stop();
         }
-
-        public override void startClock() {
+        public override void startClock(int term, string url) {
+            //quando vem de candidato
+            if (term > _term) {
+                _term = term;
+            }
+            _leaderUrl = url;
+            _leaderRemote = _serverRemoteObjects[url];
             electionTimeout.Start();
         }
-
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
-            //Console.WriteLine("READ IN FOLLOWER CALLED");
             try {
                 return _leaderRemote.read(tuple, clientUrl, nonce);
             }
@@ -103,7 +128,6 @@ namespace Server {
             }
         }
         public override void write(TupleClass tuple, string clientUrl, long nonce) {
-            Console.WriteLine("WRITE IN FOLLOWER CALLED");
             try {
                 _leaderRemote.write(tuple, clientUrl, nonce);
             }
@@ -115,9 +139,7 @@ namespace Server {
                 throw new NotImplementedException();
             }
         }
-
         public override TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
-            Console.WriteLine("WRITE IN FOLLOWER CALLED");
             try {
                 return _leaderRemote.take(tuple, clientUrl, nonce);
             }

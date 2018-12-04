@@ -30,13 +30,15 @@ namespace Server {
 
         public abstract void stopClock();
 
-        public abstract void startClock();
-
-        public abstract void heartBeat(int term, string candidateID);
+        public abstract void startClock(int term, string url);
 
         public abstract void ping();
 
-        public abstract void appendEntry(int term, string senderID);
+        public abstract void heartBeat(int term, string leaderID);
+
+        public abstract void appendEntryWrite(WriteEntry writeEntry, int term, string leaderID);
+
+        public abstract void appendEntryTake(TakeEntry takeEntry, int term, string leaderID);
 
         public abstract bool vote(int term, string candidateID);
 
