@@ -29,42 +29,11 @@ namespace Server {
             SetTimer();
         }
 
-        public override void appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
+        public override EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
             Console.WriteLine("Follower: appendEntryWrite from: " + leaderID);
             //Considers requests from old entry
             if (term > _term) {
-                return;
-            }
-            //Treasts case of leader changed
-            if (leaderID != _leaderUrl) {
-                electionTimeout.Interval = wait;
-                _leaderUrl = leaderID;
-                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                Console.WriteLine("Follower: Leader is now: " + leaderID);
-            }
-            //add entry to log
-        }
-
-        public override void appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
-            Console.WriteLine("Follower: appendEntryTake from: " + leaderID);
-            //Considers requests from old entry
-            if (term > _term) {
-                return;
-            }
-            //Treasts case of leader changed
-            if (leaderID != _leaderUrl) {
-                electionTimeout.Interval = wait;
-                _leaderUrl = leaderID;
-                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                Console.WriteLine("Follower: Leader is now: " + leaderID);
-            }
-            //add entry to log
-        }
-        public override void heartBeat(int term, string leaderID) {
-            //Console.WriteLine("Follower: heartBeat from: " + leaderID);
-            //Considers requests from old entry
-            if (term > _term) {
-                return;
+                return new EntryResponse(false, _term, 0);
             }
             //Treasts case of leader changed
             if (leaderID != _leaderUrl) {
@@ -73,7 +42,40 @@ namespace Server {
                 Console.WriteLine("Follower: Leader is now: " + leaderID);
             }
             electionTimeout.Interval = wait;
-            //add entry to log
+            _server.addEntrytoLog(writeEntry);
+            return new EntryResponse(true, _term, _server.getMatchIndex());
+        }
+
+        public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
+            Console.WriteLine("Follower: appendEntryTake from: " + leaderID);
+            //Considers requests from old entry
+            if (term > _term) {
+                return new EntryResponse(false, 0, 0);
+            }
+            //Treasts case of leader changed
+            if (leaderID != _leaderUrl) {
+                _leaderUrl = leaderID;
+                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                Console.WriteLine("Follower: Leader is now: " + leaderID);
+            }
+            electionTimeout.Interval = wait;
+            _server.addEntrytoLog(takeEntry);
+            return new EntryResponse(true, _term, _server.getMatchIndex());
+        }
+        public override EntryResponse heartBeat(int term, string leaderID) {
+            //Console.WriteLine("Follower: heartBeat from: " + leaderID);
+            //Considers requests from old entry
+            if (term > _term) {
+                return new EntryResponse(false, _term, 0);
+            }
+            //Treasts case of leader changed
+            if (leaderID != _leaderUrl) {
+                _leaderUrl = leaderID;
+                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                Console.WriteLine("Follower: Leader is now: " + leaderID);
+            }
+            electionTimeout.Interval = wait;
+            return new EntryResponse(true, _term, _server.getMatchIndex());
         }
 
         public override bool vote(int term, string candidateID) {

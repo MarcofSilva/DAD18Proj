@@ -27,41 +27,45 @@ namespace Server {
             SetTimer();
         }
 
-        public override void appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
+        public override EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
             //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
             if (term < _term) {
-                return;
+                //TODO
+                return new EntryResponse(false, _term, 0);
                 //TODO se o appendEntryWrite e antigo, nao responder
                 //o paper diz para simplesmente continuar no candidate state
-                //throw exeption a dizer que o termo de quem enviou esta na merda? 
             }
             else {
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
-                //add this operation to log and then change to follower
+                _server.addEntrytoLog(writeEntry);
                 _server.updateState("follower", _term, leaderID);
+
+                //TODO visto que muda o estado e depois retorna o entry n sei se funciona
+                return new EntryResponse(true, _term, _server.getMatchIndex());
             }
         }
 
-        public override void appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
+        public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
             //Console.WriteLine("Candidate: AppendEntryTake from: " + leaderID);
             if (term < _term) {
-                return;
+                return new EntryResponse(false, _term, 0);
                 //TODO se o appendEntryTake e antigo, nao responder
                 //o paper diz para simplesmente continuar no candidate state
             }
             else {
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
-                //add this operation to log and then change to follower
+                _server.addEntrytoLog(takeEntry);
                 _server.updateState("follower", _term, leaderID);
+                return new EntryResponse(true, _term, _server.getMatchIndex());
             }
         }
 
-        public override void heartBeat(int term, string leaderID) {
+        public override EntryResponse heartBeat(int term, string leaderID) {
             Console.WriteLine("heartbeat");
             if (term < _term) {
-                return;
+                return new EntryResponse(false, _term, 0);
                 //TODO se o heartbeat e antigo, nao responder
                 //o paper diz para simplesmente continuar no candidate state
             }
@@ -70,6 +74,7 @@ namespace Server {
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
                 _server.updateState("follower", _term, leaderID);
+                return new EntryResponse(true, _term, _server.getMatchIndex());
             }
         }
 

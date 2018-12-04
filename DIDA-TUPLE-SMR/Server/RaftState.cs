@@ -34,11 +34,11 @@ namespace Server {
 
         public abstract void ping();
 
-        public abstract void heartBeat(int term, string leaderID);
+        public abstract EntryResponse heartBeat(int term, string leaderID);
 
-        public abstract void appendEntryWrite(WriteEntry writeEntry, int term, string leaderID);
+        public abstract EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID);
 
-        public abstract void appendEntryTake(TakeEntry takeEntry, int term, string leaderID);
+        public abstract EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID);
 
         public abstract bool vote(int term, string candidateID);
 

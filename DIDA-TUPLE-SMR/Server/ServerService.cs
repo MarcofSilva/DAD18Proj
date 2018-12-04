@@ -95,7 +95,16 @@ namespace Server
                 throw e;
             }
         }
-        public string heartBeat(int term, string candidateID) {
+
+        public  EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
+            return _server.appendEntryWrite(writeEntry, term, leaderID);
+        }
+
+        public  EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
+            return _server.appendEntryTake(takeEntry, term, leaderID);
+        }
+
+        public EntryResponse heartBeat(int term, string candidateID) {
             return _server.heartBeat(term, candidateID);
         }
 
@@ -105,7 +114,6 @@ namespace Server
         public void Freeze() {
             _server.Freeze();
         }
-
         public void Unfreeze() {
             _server.Unfreeze();
         }
