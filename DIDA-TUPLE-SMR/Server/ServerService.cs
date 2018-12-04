@@ -10,6 +10,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Configuration;
 using System.Threading;
+using ExceptionLibrary;
 
 namespace Server
 {
@@ -20,9 +21,8 @@ namespace Server
         private int _max_delay;
         private Random random = new Random();
 
-        //tem de se fazer lock disto
         private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
-        //todo private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
+        private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
 
         public ServerService(Server server, int min_delay, int max_delay) {
             _server = server;
@@ -30,68 +30,81 @@ namespace Server
             _max_delay = max_delay;
         }
 
-        //TODOOOOOOOO
-        //necessario nounces no smr?
         private bool validRequest(string clientURL, long nonce) {
-            //se nunca apareceu vai ser adicionado
-            return true;
-            /*
+            
             if (!_nonceStorage.ContainsKey(clientURL)) {
                 _nonceStorage.Add(clientURL, nonce);
-                //todo _remoteStorage.Add(clientURL, (IClientService)Activator.GetObject(typeof(IClientService), clientURL));
+                _remoteStorage.Add(clientURL, (IClientService)Activator.GetObject(typeof(IClientService), clientURL));
                 return true;
             }
-            else {//ja apareceu
+            else { 
                 long o = _nonceStorage[clientURL];
                 if (nonce > o) {
                     _nonceStorage[clientURL] = nonce;
                     return true;
                 }
                 return false;
-            }*/
+            }
         }
 
         public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+            //TODO
             _server.checkFrozen();
-            List<TupleClass> responseTuple = new List<TupleClass>();
-            if (validRequest(clientUrl, nonce)) {
-                int r = random.Next(_min_delay, _max_delay);
-                Console.WriteLine("Read Network Delay: " + r.ToString());
-                Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
-                responseTuple = _server.read(tuple, clientUrl, nonce);
-                //Console.WriteLine("----->DEBUG_ServerSerice: " + responseTuple[0].ToString());
-                return responseTuple;
-            }//Update nonce info
-            return new List<TupleClass>();
+            try {
+                List<TupleClass> responseTuple = new List<TupleClass>();
+                if (validRequest(clientUrl, nonce)) {
+                    int r = random.Next(_min_delay, _max_delay);
+                    Thread.Sleep(r);
+                    responseTuple = _server.read(tuple, clientUrl, nonce);
+                    return responseTuple;
+                }
+                return new List<TupleClass>();
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
         }
 
-        public List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce) {
+        public TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
-            List<TupleClass> responseTuple = new List<TupleClass>();
-            if (validRequest(clientUrl, nonce)) {
-                int r = random.Next(_min_delay, _max_delay);
-                Console.WriteLine("TakeRead Network Delay: " + r.ToString());
-                Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
-                responseTuple = _server.take(tuple, clientUrl, nonce);
-                return responseTuple;
-            }//Update nonce info
-            return new List<TupleClass>();
+            try {
+                TupleClass responseTuple = new TupleClass();
+                if (validRequest(clientUrl, nonce)) {
+                    int r = random.Next(_min_delay, _max_delay);
+                    Thread.Sleep(r);
+                    responseTuple = _server.take(tuple, clientUrl, nonce);
+                    return responseTuple;
+                }//Update nonce info
+                return new TupleClass();
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
         }
 
         public void write(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
-            if (validRequest(clientUrl, nonce)) {//success
-                int r = random.Next(_min_delay, _max_delay);
-                Console.WriteLine("Write Network Delay: " + r.ToString());
-                Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
-                _server.write(tuple, clientUrl, nonce);
-                Console.WriteLine("It's written!");
+            try {
+                if (validRequest(clientUrl, nonce)) {
+                    int r = random.Next(_min_delay, _max_delay);
+                    Thread.Sleep(r);
+                    _server.write(tuple, clientUrl, nonce);
+                }
+            }
+            catch (ElectionException e) {
+                throw e;
             }
         }
-        public string heartBeat(int term, string candidateID) {
+
+        public  EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
+            return _server.appendEntryWrite(writeEntry, term, leaderID);
+        }
+
+        public  EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
+            return _server.appendEntryTake(takeEntry, term, leaderID);
+        }
+
+        public EntryResponse heartBeat(int term, string candidateID) {
             return _server.heartBeat(term, candidateID);
         }
 
@@ -101,7 +114,6 @@ namespace Server
         public void Freeze() {
             _server.Freeze();
         }
-
         public void Unfreeze() {
             _server.Unfreeze();
         }

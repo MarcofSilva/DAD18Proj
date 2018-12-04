@@ -103,7 +103,8 @@ namespace ClassLibrary {
                     return false;
                 }
                 if((_tuple[i].GetType() == typeof(System.String)) && (tuple[i].GetType() == typeof(System.String))) {
-                    if ( ((string)_tuple[i]) != ((string)tuple[i]) ) {
+                    if ( !((string)_tuple[i]).Equals(((string)tuple[i])) ) {
+                        Console.WriteLine("nao e iguaaal");
                         return false;
                     }
                     continue;

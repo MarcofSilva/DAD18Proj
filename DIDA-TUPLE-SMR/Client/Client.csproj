@@ -59,6 +59,10 @@
       <Project>{81eec082-c561-443b-a73e-07419bda7e4a}</Project>
       <Name>ClassLibrary</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ExceptionLibrary\ExceptionLibrary.csproj">
+      <Project>{793e178e-129e-4553-a801-fe3618ea4d85}</Project>
+      <Name>ExceptionLibrary</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RemoteServicesLibrary\RemoteServicesLibrary.csproj">
       <Project>{030f6fda-942a-47c7-b400-6ad5811ee505}</Project>
       <Name>RemoteServicesLibrary</Name>

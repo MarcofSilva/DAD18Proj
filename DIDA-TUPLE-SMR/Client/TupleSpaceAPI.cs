@@ -44,6 +44,8 @@ namespace Client {
         protected IServerService prepareForRemoting(ref TcpChannel channel, string URL) {
             string[] urlSplit = URL.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             int port;
+            Console.WriteLine(URL);
+
             Int32.TryParse(urlSplit[2], out port);
 
             channel = new TcpChannel(port); //Port can't be 10000 (PCS) neither 10001 (Puppet Master)
