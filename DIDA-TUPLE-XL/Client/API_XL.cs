@@ -49,7 +49,7 @@ namespace Client {
                     Write(tuple);
                 }
                 else {
-                    nonce += 1;
+                    nonce ++;
                 }
             }
             catch (SocketException) {
