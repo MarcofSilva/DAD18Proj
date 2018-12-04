@@ -12,7 +12,7 @@ namespace Client
     public class Script_Client
     {
         private API_SMR _tupleSpaceAPI;
-        private string defaultURL = "tcp://4.5.6.7:60001/C";
+        private string defaultURL = "tcp://localhost:8080/c1";
 
         public Script_Client() {
             _tupleSpaceAPI = new API_SMR(defaultURL);

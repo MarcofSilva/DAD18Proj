@@ -83,8 +83,6 @@ namespace ProcessCreationService {
                 IClientService i = (IClientService)Activator.GetObject(typeof(IClientService), clientUrl[id]);
                 i.Unfreeze();
             }
-
-
         }
     }
 }

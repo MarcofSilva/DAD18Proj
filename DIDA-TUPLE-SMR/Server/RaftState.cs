@@ -8,6 +8,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using RemoteServicesLibrary;
+using ExceptionLibrary;
 
 
 namespace Server {
@@ -29,23 +30,22 @@ namespace Server {
 
         public abstract void stopClock();
 
-        public abstract void startClock();
-
-        public abstract void heartBeat(int term, string candidateID);
+        public abstract void startClock(int term, string url);
 
         public abstract void ping();
 
-        public abstract void apprendEntry(int term, string senderID);
+        public abstract EntryResponse heartBeat(int term, string leaderID);
+
+        public abstract EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID);
+
+        public abstract EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID);
 
         public abstract bool vote(int term, string candidateID);
 
         public abstract List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce);
 
-        public abstract List<TupleClass> take(TupleClass tuple, string clientUrl, long nonce);
+        public abstract TupleClass take(TupleClass tuple, string clientUrl, long nonce);
 
         public abstract void write(TupleClass tuple, string clientUrl, long nonce);
-
-        //temporary function for testing
-        //public abstract void electLeader(int term, string leaderUrl);
     }
 }

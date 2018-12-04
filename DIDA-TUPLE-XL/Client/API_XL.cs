@@ -136,7 +136,7 @@ namespace Client {
                     //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
                     takeRemove(tupleToDelete);
                     nonce++;
-                    return tupleToDelete;
+                    return tupleToDelete; 
                 }
             }
             catch (SocketException) {

@@ -56,6 +56,10 @@
       <Project>{d4c20c4e-29ca-41a6-9e7e-889f540114a7}</Project>
       <Name>CreationServiceLibrary</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RemoteServicesLibrary\RemoteServicesLibrary.csproj">
+      <Project>{030f6fda-942a-47c7-b400-6ad5811ee505}</Project>
+      <Name>RemoteServicesLibrary</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

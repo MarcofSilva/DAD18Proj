@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ClassLibrary;
+using ExceptionLibrary;
 
 namespace Client {
     class API_SMR : TupleSpaceAPI {
@@ -17,7 +18,7 @@ namespace Client {
         private const int defaultPort = 8085;
         private TcpChannel channel;
         private IServerService serverRemoteObject;
-
+        private bool frozen = false;
         private string url;
 
         public API_SMR(string URL) {
@@ -26,24 +27,15 @@ namespace Client {
             url = URL;
         }
 
-        public delegate void writeDelegate(TupleClass tuple, string url, long nonce);
-        public delegate List<TupleClass> readDelegate(TupleClass tuple, string url, long nonce);
-        public delegate List<TupleClass> takeDelegate(TupleClass tuple, string url, long nonce);
-        //public delegate void takeRemoveDelegate(ArrayList tuple, string url, long nonce);
-
         public override void write(TupleClass tuple) {
-            //Console.WriteLine("-->DEBUG:  API_SMR write");
-            WaitHandle[] handles = new WaitHandle[1];
-            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            checkFrozen();
             try {
-                writeDelegate takeDel = new writeDelegate(serverRemoteObject.write);
-                asyncResults[0] = takeDel.BeginInvoke(tuple, url, nonce, null, null);
-                handles[0] = asyncResults[0].AsyncWaitHandle;
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    read(tuple);
-                }
-                else {
-                }
+                serverRemoteObject.write(tuple,url, nonce);
+                nonce++;
+            }
+            catch (ElectionException) {
+                Thread.Sleep(500);
+                write(tuple);
             }
             catch (SocketException) {
                 //TODO
@@ -51,26 +43,15 @@ namespace Client {
             }
         }
         public override TupleClass read(TupleClass tuple) {
-            //Console.WriteLine("-->DEBUG:  API_SMR read");
-            WaitHandle[] handles = new WaitHandle[1];
-            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            checkFrozen();
             try {
-                readDelegate readDel = new readDelegate(serverRemoteObject.read);
-                asyncResults[0] = readDel.BeginInvoke(tuple, url, nonce, null, null);
-                handles[0] = asyncResults[0].AsyncWaitHandle;
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    return read(tuple);
-                }
-                else {
-                    IAsyncResult asyncResult = asyncResults[0];
-                    readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    Console.WriteLine("YOOOOOOOO");
-                    List<TupleClass> res = readDel.EndInvoke(asyncResult);
-                    if (res == null) {
-                        Console.WriteLine("akjsdklasjdokaskldjl");
-                    }
-                    return res[0];
-                }
+                List<TupleClass> res = serverRemoteObject.read(tuple, url, nonce);
+                nonce++;
+                return res[0];
+            }
+            catch (ElectionException) {
+                Thread.Sleep(500);
+                return read(tuple);
             }
             catch (SocketException) {
                 //TODO
@@ -79,25 +60,43 @@ namespace Client {
         }
 
         public override TupleClass take(TupleClass tuple) {
-            //Console.WriteLine("-->DEBUG:  API_SMR take");
-            WaitHandle[] handles = new WaitHandle[1];
-            IAsyncResult[] asyncResults = new IAsyncResult[1];
+            checkFrozen();
             try {
-                takeDelegate takeDel = new takeDelegate(serverRemoteObject.take);
-                asyncResults[0] = takeDel.BeginInvoke(tuple, url, nonce, null, null);
-                handles[0] = asyncResults[0].AsyncWaitHandle;
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    return read(tuple);
-                }
-                else {
-                    IAsyncResult asyncResult = asyncResults[0];
-                    takeDel = (takeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    return takeDel.EndInvoke(asyncResult)[0];
-                }
+                TupleClass res = serverRemoteObject.take(tuple, url, nonce);
+                nonce++;
+                return res;
+            }
+            catch (ElectionException) {
+                Thread.Sleep(500);
+                return take(tuple);
             }
             catch (SocketException) {
                 //TODO
                 throw new NotImplementedException();
+            }
+        }
+
+        public override void freeze() {
+            frozen = true;
+        }
+
+        public override void unfreeze() {
+            Console.WriteLine("Unfreezing...");
+            lock (this) {
+                Monitor.PulseAll(this);
+            }
+            frozen = false;
+        }
+
+        public void checkFrozen() {
+            if (frozen) {
+                Console.WriteLine("Cant do anything, im frozen");
+                lock (this) {
+                    while (frozen) {
+                        Console.WriteLine("Waiting...");
+                        Monitor.Wait(this);
+                    }
+                }
             }
         }
     }
