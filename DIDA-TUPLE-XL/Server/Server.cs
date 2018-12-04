@@ -145,7 +145,7 @@ namespace Server{
                     Console.WriteLine(tuple.ToString() + " -- " + el.ToString());
                     //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
                     bool success = tupleSpace.TryTake(out tuple);
-                    Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success);
+                    //Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success); TODO
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     lock (toTakeSubset) {
                         toTakeSubset.Remove(clientURL);
