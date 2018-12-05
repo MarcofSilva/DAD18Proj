@@ -25,42 +25,52 @@ namespace Server {
 
         private List<Entry> requestStorage = new List<Entry>();
         private List<Entry> answerStorage = new List<Entry>();
-        
-        
+
+        private readonly Object vote_heartbeat_Lock = new object();
+
+
         public LeaderState(Server server, int numServers) : base(server, numServers) {
             _leaderUrl = server._url;
             SetTimer();
         }
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
-            if (_term < term) {
-                _term = term;
-                Console.WriteLine("Leader: AppendEntry from: " + leaderID);
+            lock (vote_heartbeat_Lock)
+            {
+                if (_term < term)
+                {
+                    _term = term;
+                    Console.WriteLine("Leader: AppendEntry from: " + leaderID);
 
-                //TODO PEDIR AO SOUSA PARA EXPLICAR, FOLHA DO MARCO
-                if ( (_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count -1].LogIndex )  {
-                    //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                    //TODO PEDIR AO SOUSA PARA EXPLICAR, FOLHA DO MARCO
+                    if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    {
+                        //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        _server.updateState("follower", _term, leaderID);
+                        return new EntryResponse(false, _term, _server.getLogIndex());
+                    }
+                    foreach (Entry entry in entryPacket.Entrys)
+                    {
+                        _server.addEntrytoLog(entry);
+                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                        if (entry.Type == "write")
+                        {
+                            _server.writeLeader(entry.Tuple);
+                        }
+                        else
+                        {
+                            _server.takeLeader(entry.Tuple);
+                        }
+                    }
                     _server.updateState("follower", _term, leaderID);
-                    return new EntryResponse(false, _term, _server.getLogIndex());
+                    //envio o server log index porque quando o servidor me enviar isto ele ja vai ter adicionado ao log dele
+                    //logo na resposta vou comparar _server.logIndex do lado de lado com o deste
+                    //na verdade o que estao a ver e: se deu true, entao eu tenho tantas packets como quem me respondeu
+                    //se bem que visto que esta true ele n vai verificar nada do log index ou term
+                    return new EntryResponse(true, _term, _server.getLogIndex());
                 }
-                foreach (Entry entry in entryPacket.Entrys) {
-                    _server.addEntrytoLog(entry);
-                    //TODO, matilde queres meter a comparacao de strings como gostas? xD
-                    if(entry.Type == "write") {
-                        _server.writeLeader(entry.Tuple);
-                    }
-                    else {
-                        _server.takeLeader(entry.Tuple);
-                    }
-                }
-                _server.updateState("follower", _term, leaderID);
-                //envio o server log index porque quando o servidor me enviar isto ele ja vai ter adicionado ao log dele
-                //logo na resposta vou comparar _server.logIndex do lado de lado com o deste
-                //na verdade o que estao a ver e: se deu true, entao eu tenho tantas packets como quem me respondeu
-                //se bem que visto que esta true ele n vai verificar nada do log index ou term
-                return new EntryResponse(true, _term, _server.getLogIndex());
+                return new EntryResponse(false, _term, _server.getLogIndex());
             }
-            return new EntryResponse(false, _term, _server.getLogIndex());
         }
 
         public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
@@ -194,7 +204,7 @@ namespace Server {
             }
             pulseHeartbeat();
             timer.Start();
-            //redundante porque o url recebido e o dele proprio
+            //TODO redundante porque o url recebido e o dele proprio
             _leaderUrl = url;
         }
       
@@ -203,14 +213,17 @@ namespace Server {
         }
 
         public override bool vote(int term, string candidateID) {
-            Console.WriteLine("I WAS IN TERM " + _term + " AND THEY ARE IN TERM " + term);
-            if (_term < term) {
-                _term = term;
-                _server.updateState("follower", _term, candidateID);
-                return true;
+            lock (vote_heartbeat_Lock) {
+                Console.WriteLine("I WAS IN TERM " + _term + " AND THEY ARE IN TERM " + term);
+                if (_term < term)
+                {
+                    _term = term;
+                    _server.updateState("follower", _term, candidateID);
+                    return true;
+                }
+                //the system doesnt alow it to come here
+                return false;
             }
-            //the system doesnt alow it to come here
-            return false;
         }
     }
 }

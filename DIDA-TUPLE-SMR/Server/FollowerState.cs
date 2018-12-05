@@ -24,64 +24,86 @@ namespace Server {
         private System.Timers.Timer electionTimeout;
         private int wait;
         private bool voted = false;
+        private readonly Object vote_heartbeat_Lock = new object();
 
         public FollowerState(Server server, int numServers) : base(server, numServers) {
             SetTimer();
         }
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
-            if (term < _term) {
-                //o pedido que recebi e de um lider que ficou para tras
-                //apenas no unperfect
-                Console.WriteLine("Returned false because term of leader is lower");
-                return new EntryResponse(false, _term, _server.getLogIndex());
-            }
-            else {
-                electionTimeout.Interval = wait;
-                if (entryPacket.Count == 0) {
-                    return new EntryResponse(true, _term, _server.getLogIndex());
-                }
-                _term = term;                           //pode ser != mas visto que se tiver desatualizado e para tras
-                if ((_server.getLogIndex() - 1 + entryPacket.Count) == entryPacket.Entrys[entryPacket.Count - 1].LogIndex) {
-                    //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
-                    //Treasts case of leader changed
-                    if (leaderID != _leaderUrl) {
-                        _leaderUrl = leaderID;
-                        _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                        Console.WriteLine("Follower: Leader is now: " + leaderID);
-                    }
-                    foreach (Entry entry in entryPacket.Entrys) {
-                        _server.addEntrytoLog(entry);
-                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
-                        if (entry.Type == "write") {
-                            _server.writeLeader(entry.Tuple);
-                        }
-                        else {
-                            _server.takeLeader(entry.Tuple);
-                        }
-                    }
-                    return new EntryResponse(true, _term, _server.getLogIndex());
-                }
-                else {
-                    Console.WriteLine("Rejected entry because i am not up do date");
-                    //manda apenas o log index porque assim o server vai saber quantas entrys no log do follower estao
+            lock (vote_heartbeat_Lock)
+            {
+                if (term < _term)
+                {
+                    //o pedido que recebi e de um lider que ficou para tras
+                    //apenas no unperfect
+                    Console.WriteLine("Returned false because term of leader is lower");
                     return new EntryResponse(false, _term, _server.getLogIndex());
+                }
+                else
+                {
+                    electionTimeout.Interval = wait;
+                    if (entryPacket.Count == 0)
+                    {
+                        return new EntryResponse(true, _term, _server.getLogIndex());
+                    }
+                    _term = term;                           //pode ser != mas visto que se tiver desatualizado e para tras
+                    if ((_server.getLogIndex() - 1 + entryPacket.Count) == entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    {
+                        //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        //Treasts case of leader changed
+                        if (leaderID != _leaderUrl)
+                        {
+                            _leaderUrl = leaderID;
+                            _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                            Console.WriteLine("Follower: Leader is now: " + leaderID);
+                        }
+                        foreach (Entry entry in entryPacket.Entrys)
+                        {
+                            _server.addEntrytoLog(entry);
+                            //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                            if (entry.Type == "write")
+                            {
+                                _server.writeLeader(entry.Tuple);
+                            }
+                            else
+                            {
+                                _server.takeLeader(entry.Tuple);
+                            }
+                        }
+                        return new EntryResponse(true, _term, _server.getLogIndex());
+                    }
+                    else
+                    {
+                        Console.WriteLine("Rejected entry because i am not up do date");
+                        //manda apenas o log index porque assim o server vai saber quantas entrys no log do follower estao
+                        return new EntryResponse(false, _term, _server.getLogIndex());
+                    }
                 }
             }
         }
 
         public override bool vote(int term, string candidateID) {
-            if (term > _term) {
-                _term = term;
-                voted = true;
-                return true;
+            lock (vote_heartbeat_Lock)
+            {
+                if (term > _term)
+                {
+                    _term = term;
+                    voted = true;
+                    electionTimeout.Interval = wait;
+                    return true;
+                }
+                else if (term == _term)
+                {
+                    if (!voted)
+                    {
+                        voted = true;
+                        electionTimeout.Interval = wait;
+                        return true;
+                    }
+                }
+                return false;
             }
-            if (!voted) {
-                voted = true;
-                return true;
-            }
-            electionTimeout.Interval = wait;
-            return false;
         }
         private void SetTimer() {
             //TODO
@@ -98,7 +120,7 @@ namespace Server {
         public override void ping() {
             Console.WriteLine("Follower State pinged");
         }
-        public override void stopClock() {
+        public override void stopClock() {   
             electionTimeout.Stop();
         }
         public override void startClock(int term, string url) {

@@ -22,6 +22,7 @@ namespace Server {
         private System.Timers.Timer electionTimeout;
         private int wait;
         private Random rnd = new Random(Guid.NewGuid().GetHashCode());
+        private readonly Object vote_heartbeat_Lock = new object();
 
         public CandidateState(Server server, int numServers) : base(server, numServers) {
             SetTimer();
@@ -29,31 +30,40 @@ namespace Server {
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
             //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
-            if (term < _term) {
-                //TODO
-                return new EntryResponse(false, _term, _server.getLogIndex());
-            }
-            else {
-                _term = term;
-                Console.WriteLine("Leader changed to: " + leaderID);
-                if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex) {
-                    //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
-                    _server.updateState("follower", _term, leaderID);
+            lock (vote_heartbeat_Lock)
+            {
+                if (term < _term)
+                {
+                    //TODO
                     return new EntryResponse(false, _term, _server.getLogIndex());
                 }
-                foreach (Entry entry in entryPacket.Entrys) {
-                    _server.addEntrytoLog(entry);
-                    //TODO, matilde queres meter a comparacao de strings como gostas? xD
-                    if (entry.Type == "write") {
-                        _server.writeLeader(entry.Tuple);
+                else
+                {
+                    _term = term;
+                    Console.WriteLine("Leader changed to: " + leaderID);
+                    if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    {
+                        //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        _server.updateState("follower", _term, leaderID);
+                        return new EntryResponse(false, _term, _server.getLogIndex());
                     }
-                    else {
-                        _server.takeLeader(entry.Tuple);
+                    foreach (Entry entry in entryPacket.Entrys)
+                    {
+                        _server.addEntrytoLog(entry);
+                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                        if (entry.Type == "write")
+                        {
+                            _server.writeLeader(entry.Tuple);
+                        }
+                        else
+                        {
+                            _server.takeLeader(entry.Tuple);
+                        }
                     }
-                }
-                _server.updateState("follower", _term, leaderID);;
+                    _server.updateState("follower", _term, leaderID); ;
 
-                return new EntryResponse(true, _term, _server.getLogIndex());
+                    return new EntryResponse(true, _term, _server.getLogIndex());
+                }
             }
         }
 
@@ -76,7 +86,7 @@ namespace Server {
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 5000)) {
+                if (!WaitHandle.WaitAll(handles, 5000)) { //TODO
                     requestVote();
                 }
                 else {
@@ -113,7 +123,7 @@ namespace Server {
             electionTimeout.Start();
         }
         private void SetTimer() {
-            //usually entre 150 300
+            //TODO usually entre 150 300
             wait = rnd.Next(500, 700);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
@@ -123,13 +133,16 @@ namespace Server {
             electionTimeout.Stop();
         }
         public override bool vote(int term, string candidateID) {
-            if (term > _term) {
-                _term = term;
-                Console.WriteLine("I CHANGED WHEN I WAS ASKED A VOTE WITH TERM " + term);
-                _server.updateState("follower", _term, candidateID);
-                return true;
+            lock (vote_heartbeat_Lock) {
+                if (term > _term)
+                {
+                    _term = term;
+                    Console.WriteLine("I CHANGED WHEN I WAS ASKED A VOTE WITH TERM " + term);
+                    _server.updateState("follower", _term, candidateID);
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
             requestVote();
