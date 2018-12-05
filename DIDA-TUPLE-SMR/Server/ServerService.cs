@@ -96,16 +96,8 @@ namespace Server
             }
         }
 
-        public  EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
-            return _server.appendEntryWrite(writeEntry, term, leaderID);
-        }
-
-        public  EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
-            return _server.appendEntryTake(takeEntry, term, leaderID);
-        }
-
-        public EntryResponse heartBeat(int term, string candidateID) {
-            return _server.heartBeat(term, candidateID);
+        public  EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
+            return _server.appendEntry(entryPacket, term, leaderID);
         }
 
         public bool vote(int term, string candidateID) {

@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="CandidateState.cs" />
     <Compile Include="Entry.cs" />
+    <Compile Include="EntryPacket.cs" />
     <Compile Include="EntryResponse.cs" />
     <Compile Include="FollowerState.cs" />
     <Compile Include="LeaderState.cs" />

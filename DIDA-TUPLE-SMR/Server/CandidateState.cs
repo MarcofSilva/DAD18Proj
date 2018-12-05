@@ -27,53 +27,32 @@ namespace Server {
             SetTimer();
         }
 
-        public override EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
+        public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
             //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
             if (term < _term) {
                 //TODO
                 return new EntryResponse(false, _term, _server.getLogIndex());
-                //responde false com o propio termo para quem enviou ver que este esta a frente e ficar follower
-                //o paper diz para simplesmente continuar no candidate state
             }
             else {
                 _term = term;
                 Console.WriteLine("Leader changed to: " + leaderID);
-                _server.addEntrytoLog(writeEntry);
-                _server.writeLeader(writeEntry.Tuple);
-                _server.updateState("follower", _term, leaderID);
+                if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex) {
+                    //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                    _server.updateState("follower", _term, leaderID);
+                    return new EntryResponse(false, _term, _server.getLogIndex());
+                }
+                foreach (Entry entry in entryPacket.Entrys) {
+                    _server.addEntrytoLog(entry);
+                    //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                    if (entry.Type == "write") {
+                        _server.writeLeader(entry.Tuple);
+                    }
+                    else {
+                        _server.takeLeader(entry.Tuple);
+                    }
+                }
+                _server.updateState("follower", _term, leaderID);;
 
-                return new EntryResponse(true, _term, _server.getLogIndex()-1);
-            }
-        }
-
-        public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
-            //Console.WriteLine("Candidate: AppendEntryTake from: " + leaderID);
-            if (term < _term) {
-                return new EntryResponse(false, _term, _server.getLogIndex());
-                //responde false com o propio termo para quem enviou ver que este esta a frente e ficar follower
-                //o paper diz para simplesmente continuar no candidate state
-            }
-            else {
-                _term = term;
-                Console.WriteLine("Leader changed to: " + leaderID);
-                _server.addEntrytoLog(takeEntry);
-                _server.takeLeader(takeEntry.Tuple);
-                _server.updateState("follower", _term, leaderID);
-
-                return new EntryResponse(true, _term, _server.getLogIndex()-1);
-            }
-        }
-
-        public override EntryResponse heartBeat(int term, string leaderID) {
-            if (term < _term) {
-                return new EntryResponse(false, _term, _server.getLogIndex());
-                //responde false com o propio termo para quem enviou ver que este esta a frente e ficar follower
-                //o paper diz para simplesmente continuar no candidate state
-            }
-            else {
-                _term = term;
-                Console.WriteLine("Leader changed to: " + leaderID);
-                _server.updateState("follower", _term, leaderID);
                 return new EntryResponse(true, _term, _server.getLogIndex());
             }
         }
@@ -102,7 +81,6 @@ namespace Server {
                 }
                 else {
                     for (i = 0; i < _numServers; i++) {
-                        Console.WriteLine("Reading for response of " + i);
                         IAsyncResult asyncResult = asyncResults[i];
                         voteDelegate voteDel = (voteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         bool response = voteDel.EndInvoke(asyncResult);
@@ -119,7 +97,7 @@ namespace Server {
                         Console.WriteLine("Finished elections without sucess");
                     }
                 }
-                wait = rnd.Next(500, 700);
+                wait = rnd.Next(350, 450);
                 electionTimeout.Interval = wait;
             }
             catch (SocketException) {

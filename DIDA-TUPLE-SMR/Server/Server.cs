@@ -103,16 +103,8 @@ namespace Server {
             return entryLog.Count;
         }
 
-        public EntryResponse heartBeat(int term, string candidateID) {
-            return _state.heartBeat(term, candidateID);
-        }
-
-        public EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
-            return _state.appendEntryWrite(writeEntry, term, leaderID);
-        }
-
-        public EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
-            return _state.appendEntryTake(takeEntry, term, leaderID);
+        public EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
+            return _state.appendEntry(entryPacket, term, leaderID);
         }
 
         public void writeLeader(TupleClass tuple) {
