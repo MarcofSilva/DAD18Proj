@@ -46,7 +46,7 @@ namespace Server {
         private int _numServers = 0;
         
         private List<Entry> entryLog = new List<Entry>();
-        private FailureDetector fd;
+        public FailureDetector fd;
 
 
         private void selfPrepare(int min_delay, int max_delay) {
@@ -72,11 +72,16 @@ namespace Server {
             }
             _numServers = serverRemoteObjects.Count;
 
-            leader = new LeaderState(this, _numServers);
-            candidate = new CandidateState(this, _numServers);
-            follower = new FollowerState(this, _numServers);
+            List<string> view = fd.getView();
+            while (view == null || view.Count == 0) {
+                Thread.Sleep(100);
+                view = fd.getView();
+            }
+            leader = new LeaderState(this);
+            candidate = new CandidateState(this);
+            follower = new FollowerState(this);
             _state = follower;
-            Console.WriteLine("Finished constructing server "+ _port);
+            Console.WriteLine("Finished constructing server "+ _port + " with thread " + Thread.CurrentThread.ManagedThreadId);
         }
 
         public Server() {
@@ -164,6 +169,8 @@ namespace Server {
             tupleSpaceLock.ExitReadLock();
             return res;
         }
+        bool test = false;
+
         public void updateState(string state, int term, string url) {
             if (state == "follower") {
                 _state.stopClock();
@@ -171,6 +178,9 @@ namespace Server {
                 _state = follower;
             }
             else if (state == "candidate") {
+                if () {
+
+                }
                 _state.stopClock();
                 Console.WriteLine("I am now a Candidate");
                 _state = candidate;

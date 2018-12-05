@@ -22,12 +22,13 @@ namespace Server {
         private Random rnd = new Random(Guid.NewGuid().GetHashCode());
         private System.Timers.Timer timer;
         private int wait;
+        private bool timerThreadBlock = false;
 
         private List<Entry> requestStorage = new List<Entry>();
         private List<Entry> answerStorage = new List<Entry>();
         
         
-        public LeaderState(Server server, int numServers) : base(server, numServers) {
+        public LeaderState(Server server) : base(server) {
             _leaderUrl = server._url;
             SetTimer();
         }
@@ -40,7 +41,10 @@ namespace Server {
                 //TODO PEDIR AO SOUSA PARA EXPLICAR, FOLHA DO MARCO
                 if ( (_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count -1].LogIndex )  {
                     //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                    Console.WriteLine("Leader -> Follower : appendEntry");
+
                     _server.updateState("follower", _term, leaderID);
+                    timerThreadBlock = true;
                     return new EntryResponse(false, _term, _server.getLogIndex());
                 }
                 foreach (Entry entry in entryPacket.Entrys) {
@@ -53,6 +57,8 @@ namespace Server {
                         _server.takeLeader(entry.Tuple);
                     }
                 }
+                Console.WriteLine("Leader -> Follower : appendEntry");
+                timerThreadBlock = true;
                 _server.updateState("follower", _term, leaderID);
                 //envio o server log index porque quando o servidor me enviar isto ele ja vai ter adicionado ao log dele
                 //logo na resposta vou comparar _server.logIndex do lado de lado com o deste
@@ -117,14 +123,26 @@ namespace Server {
         public delegate EntryResponse appendEntryDelegate(EntryPacket entryPacket, int term, string leaderID);
 
         public void pulseAppendEntry(EntryPacket entryPacket) {
-            int sucess = 0;
-            timer.Interval = wait;
-            WaitHandle[] handles = new WaitHandle[_numServers];
-            IAsyncResult[] asyncResults = new IAsyncResult[_numServers];
+            
+            if (timerThreadBlock) {
+                return;
+            }
+            
+            int sucess = 1;
+            timer.Enabled = true;
+            if (_server.fd.changed()) {
+                _view = _server.fd.getView();
+                _numServers = _view.Count();
+            }
+            WaitHandle[] handles = new WaitHandle[_numServers-1];
+            IAsyncResult[] asyncResults = new IAsyncResult[_numServers-1];
             try {
                 int i = 0;
-                foreach (KeyValuePair<string, IServerService> remoteObjectpair in _serverRemoteObjects) {
-                    ServerService remoteObject = (ServerService)remoteObjectpair.Value;
+                foreach (string url in _view) {
+                    if (url == _url) {
+                        continue;
+                    }
+                    ServerService remoteObject = (ServerService)_serverRemoteObjects[url];
                     appendEntryDelegate appendEntryDel = new appendEntryDelegate(remoteObject.appendEntry);
                     IAsyncResult ar = appendEntryDel.BeginInvoke(entryPacket, _term, _url, null, null);
                     asyncResults[i] = ar;
@@ -135,13 +153,14 @@ namespace Server {
                     pulseHeartbeat();
                 }
                 else {
-                    for (i = 0; i < _numServers; i++) {
+                    for (i = 0; i < _numServers-1; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
                         appendEntryDelegate appendEntryDel = (appendEntryDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         EntryResponse response = appendEntryDel.EndInvoke(asyncResult);
-
                         if (!response.Sucess) {//foi false
                             if (_term < response.Term) {//term da resposta e maior do que o meu
+                                Console.WriteLine("Leader -> Follower : pulseappendEntry");
+                                timerThreadBlock = true;
                                 _server.updateState("follower", _term, response.Leader);
                             }
                             else {//o meu log esta mais avancado que o dele
@@ -155,7 +174,7 @@ namespace Server {
                             sucess++;
                         }
                     }
-                    if (!(sucess > _numServers / 2)) {
+                    if (!(sucess > (_numServers / 2))) {
                         pulseAppendEntry(entryPacket);
                     }
 
@@ -179,9 +198,8 @@ namespace Server {
             wait = rnd.Next(200, 300);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
-            timer.AutoReset = true;
-            timer.Enabled = true;
-            timer.Stop();
+            timer.AutoReset = false;
+            timer.Enabled = false;
         }
 
         public override void stopClock() {
@@ -192,6 +210,7 @@ namespace Server {
             if (term > _term) {
                 _term = term;
             }
+            timerThreadBlock = false;
             pulseHeartbeat();
             timer.Start();
             //redundante porque o url recebido e o dele proprio
@@ -206,6 +225,8 @@ namespace Server {
             Console.WriteLine("I WAS IN TERM " + _term + " AND THEY ARE IN TERM " + term);
             if (_term < term) {
                 _term = term;
+                Console.WriteLine("Leader -> Follower : vote for " + candidateID);
+                timerThreadBlock = true;
                 _server.updateState("follower", _term, candidateID);
                 return true;
             }
