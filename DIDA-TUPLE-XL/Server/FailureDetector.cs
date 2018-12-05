@@ -24,41 +24,44 @@ namespace Server {
 
         public void pingLoop() {
             while (true) {
-                Console.WriteLine("pinging");
                 List<string> oldView = view;
                 WaitHandle[] handles = new WaitHandle[allServers.Count];
                 IAsyncResult[] asyncResults = new IAsyncResult[allServers.Count];
                 try {
                     int i = 0;
-                    
+                    int[] responses = new int[allServers.Count];
                     foreach (KeyValuePair<string, IServerService> remoteObjectpair in serverRemoteObjects) {
-                        
                         ServerService remoteObject = (ServerService)remoteObjectpair.Value;
                         pingDelegate pingDel = new pingDelegate(remoteObject.Ping);
-                        Console.WriteLine("AAAAAAAAAAA");
                         IAsyncResult ar = pingDel.BeginInvoke(null, null);
-                        Console.WriteLine("BBBBBBBBBB");
+                        
                         asyncResults[i] = ar;
                         handles[i] = ar.AsyncWaitHandle;
                         i++;
-                        
                     }
-                    if (!WaitHandle.WaitAll(handles, 600)) {
-                        Console.WriteLine("timeout");
+                    if (!WaitHandle.WaitAll(handles, 300)) {
+                        Console.WriteLine("TIMEOUT");
+                        for (int k = 0; k < allServers.Count; k++) {
+                            Console.WriteLine(handles[k].WaitOne(0));
+                            if(handles[k].WaitOne(0) == false) {
+                                responses[k] = -1;
+                            } 
+                        }
                     }
-                    int[] responses = new int[allServers.Count];
-                    for (i = 0; i < allServers.Count; i++) {
-                        try {
-                            IAsyncResult asyncResult = asyncResults[i];
-                            pingDelegate pingDel = (pingDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                            responses[i] = pingDel.EndInvoke(asyncResult);
-                            //Console.WriteLine(response);
-                        }
-                        catch (SocketException e) {
-                            responses[i] = -1;
-                        }
-                        catch (NullReferenceException e) {
-                            responses[i] = -1;
+                    else {
+                        for (i = 0; i < allServers.Count; i++) {
+                            try {
+                                IAsyncResult asyncResult = asyncResults[i];
+                                pingDelegate pingDel = (pingDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                                responses[i] = pingDel.EndInvoke(asyncResult);
+                                //Console.WriteLine(response);
+                            }
+                            catch (SocketException e) {
+                                responses[i] = -1;
+                            }
+                            catch (NullReferenceException e) {
+                                responses[i] = -1;
+                            }
                         }
                     }
                     lock (view) {
@@ -92,6 +95,9 @@ namespace Server {
 
         public List<string> getView() {
             Console.WriteLine("view request - count: " + view.Count());
+            foreach (string bla in view) {
+                Console.WriteLine("-->" + bla);
+            }
             return view;
         }
 

@@ -65,6 +65,7 @@ namespace Client {
         public List<IServerService> getView(List<IServerService> view) {
             int numServers;
             if (view.Count == 0) {
+                Console.WriteLine("No connections found. Broadcasting...");
                 view = serverRemoteObjects;
                 numServers = ConfigurationManager.AppSettings.AllKeys.Count(); //TODO use same file for client and server!!
             }
@@ -72,16 +73,18 @@ namespace Client {
                 numServers = view.Count;
             }
             WaitHandle[] handles = new WaitHandle[numServers];
+            Console.WriteLine("Broadcasting to " + numServers + " servers...");
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = view[i];
                     requestViewDelegate viewDel = new requestViewDelegate(remoteObject.ViewRequest);
+                    Console.WriteLine(i);
                     IAsyncResult ar = viewDel.BeginInvoke(null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                int indxAsync = WaitHandle.WaitAny(handles, 3000); //Wait for the first answer from the servers
+                int indxAsync = WaitHandle.WaitAny(handles, 300); //Wait for the first answer from the servers
                 if (indxAsync == WaitHandle.WaitTimeout) {
                     Console.WriteLine("timeout with " + numServers.ToString());
                     getView(view);
@@ -89,19 +92,33 @@ namespace Client {
                 else {
                     IAsyncResult asyncResult = asyncResults[indxAsync];
                     requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    List<string> servers = viewDel.EndInvoke(asyncResult);
-                    List<IServerService> serverobjs = new List<IServerService>();
-                    foreach (string url in servers) {
-                        Console.WriteLine(url);
-                        serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), url));
+                    try {
+                        List<string> servers = viewDel.EndInvoke(asyncResult);
+                        List<IServerService> serverobjs = new List<IServerService>();
+                        for(int j = 0; j<servers.Count; j++) { 
+                            Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
+                            serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), servers[j]));
+                            
+                        }
+                        return serverobjs;
                     }
-                    return serverobjs;
+                    catch (SocketException) {
+                        Console.WriteLine("ERROR: view is " + view.Count());
+                        Console.WriteLine("Server " + indxAsync + " is down. Restarting...");
+                        List<IServerService> newView = view;
+                        
+                        newView.RemoveAt(indxAsync);
+                        Console.WriteLine("Trying again with " + newView.Count);
+                        return getView(newView);
+                    }
+                    
                 }
             } catch (SocketException e) {
-                //TODO
-                Console.WriteLine(e.StackTrace);
+                Console.WriteLine("Connection error. Restarting...");
+                return getView(serverRemoteObjects); //TODO? 
             }
-            return null; //TODO
+            Console.WriteLine("you shouldnt be here");
+            return null;
         }
     }
 }
