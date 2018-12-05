@@ -119,7 +119,7 @@ namespace Client {
                 }
             } catch (SocketException e) {
                 Console.WriteLine("Connection error. Restarting...");
-                return getView(serverRemoteObjects); //TODO? 
+                return getView(serverRemoteObjects); //TODO? isto acho que nao precisa de estar aqui (este catch)
             }
             Console.WriteLine("you shouldnt be here");
             return null;

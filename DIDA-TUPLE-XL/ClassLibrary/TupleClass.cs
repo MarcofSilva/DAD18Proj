@@ -145,14 +145,8 @@ namespace ClassLibrary {
             if (_size != tupler.Size) {
                 return false;
             }
-            Console.WriteLine(tupler.ToString());
             for (int i = 0; i < _size; i++) {
                 ArrayList tuple = tupler.tuple;
-                for (int k = 0; k<tuple.Count; k++) {
-                    Console.WriteLine(tuple[k]);
-                    if (tuple[k] == null) Console.WriteLine("null");
-                    else Console.WriteLine(tuple[k].GetType());
-                }
                 //pedido e um null e estamos a ver um objeto
                 if (tuple[i] == null && _tuple[i].GetType() != typeof(System.String)) {
                     continue;
@@ -160,31 +154,31 @@ namespace ClassLibrary {
                 //se o pedido nao e null, para passar ou sao os 2 strings ou 2 nao sao string
                 if (tuple[i] != null && !((tuple[i].GetType() == typeof(System.String)) && (_tuple[i].GetType() == typeof(System.String)) ||
                                           (tuple[i].GetType() != typeof(System.String)) && (_tuple[i].GetType() != typeof(System.String)))) {
-                    Console.WriteLine("um e string e o outro nao");
+                    //Console.WriteLine("um e string e o outro nao");
                     return false;
                 }
                 //se estamos aqui ou sao os 2 strings ou os 2 objetos
                 if (_tuple[i].GetType() == typeof(System.String)) {
                     if (!matchStrs(_tuple[i], tuple[i])) {
-                        Console.WriteLine("--------->strings dont match ");
+                        //Console.WriteLine("--------->strings dont match ");
                         return false;
                     }
                 }
                 else if (tuple[i] == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
-                    Console.WriteLine("asked for type DADTestA and there is one");
+                    //Console.WriteLine("asked for type DADTestA and there is one");
                 }
                 else if (tuple[i] == typeof(DADTestB) && _tuple[i].GetType() == typeof(DADTestB)) {
-                    Console.WriteLine("asked for type DADTestB and there is one");
+                    //Console.WriteLine("asked for type DADTestB and there is one");
                 }
                 else if (tuple[i] == typeof(DADTestC) && _tuple[i].GetType() == typeof(DADTestC)) {
-                    Console.WriteLine("asked for type DADTestC and there is one");
+                    //Console.WriteLine("asked for type DADTestC and there is one");
                 }
                 else if (tuple[i].GetType() == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
                     Console.WriteLine("------------------> DADTestA");
                     DADTestA tuplei = (DADTestA)tuple[i];
                     DADTestA eli = (DADTestA)_tuple[i];
                     if (!tuplei.Equals(eli)) {
-                        Console.WriteLine("objetos nao sao iguais DADTESTA");
+                        //Console.WriteLine("objetos nao sao iguais DADTESTA");
                         return false;
                     }
                 }
@@ -193,7 +187,7 @@ namespace ClassLibrary {
                     DADTestB tuplei = (DADTestB)tuple[i];
                     DADTestB eli = (DADTestB)_tuple[i];
                     if (!tuplei.Equals(eli)) {
-                        Console.WriteLine("objetos nao sao iguais DADTESTB");
+                        //Console.WriteLine("objetos nao sao iguais DADTESTB");
                         return false;
                     }
                 }
@@ -202,7 +196,7 @@ namespace ClassLibrary {
                     DADTestC tuplei = (DADTestC)tuple[i];
                     DADTestC eli = (DADTestC)_tuple[i];
                     if (!tuplei.Equals(eli)) {
-                        Console.WriteLine("objetos nao sao iguais DADTESTC");
+                        //Console.WriteLine("objetos nao sao iguais DADTESTC");
                         return false;
                     }
                 }
