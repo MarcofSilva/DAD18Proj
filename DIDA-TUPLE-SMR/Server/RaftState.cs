@@ -9,6 +9,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using RemoteServicesLibrary;
 using ExceptionLibrary;
+using System.Threading;
 
 
 namespace Server {
@@ -18,13 +19,15 @@ namespace Server {
         protected string _leaderUrl;
         protected Server _server;
         protected int _numServers;
+        protected List<string>  _view;
         protected Dictionary<string, IServerService> _serverRemoteObjects;
 
-        public RaftState(Server server, int numServers) {
+        public RaftState(Server server) {
             _server = server;
-            _numServers = numServers;
             _term = 0;
             _url = _server._url;
+            _view = _server.fd.getView();
+            _numServers = _view.Count();
             _serverRemoteObjects = server.serverRemoteObjects;
         }
 

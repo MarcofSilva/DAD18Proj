@@ -10,13 +10,16 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server {
-    class FailureDetector {
+    public class FailureDetector {
 
         private List<string> allServers = new List<string>();
         private List<string> view = new List<string>();
         private int numServers;
         private Dictionary<string, IServerService> serverRemoteObjects = new Dictionary<string, IServerService>();
         public delegate int pingDelegate();
+
+        private bool modified = true;
+        
 
         public FailureDetector() {
             configure();
@@ -26,6 +29,7 @@ namespace Server {
 
         public void pingLoop() {
             while (true) {
+                
                 List<string> oldView = view;
                 WaitHandle[] handles = new WaitHandle[numServers];
                 IAsyncResult[] asyncResults = new IAsyncResult[numServers];
@@ -42,9 +46,9 @@ namespace Server {
                         i++;
                     }
                     if (!WaitHandle.WaitAll(handles, 300)) {
-                        Console.WriteLine("TIMEOUT");
+                        //Console.WriteLine("TIMEOUT");
                         for (int k = 0; k < numServers; k++) {
-                            Console.WriteLine(handles[k].WaitOne(0));
+                            //Console.WriteLine(handles[k].WaitOne(0));
                             if (handles[k].WaitOne(0) == false) {
                                 responses[k] = -1;
                             }
@@ -58,10 +62,12 @@ namespace Server {
                                 responses[i] = pingDel.EndInvoke(asyncResult);
                             }
                         }
-                        catch (SocketException e) {
+                        catch (SocketException ) {
+                            //Console.WriteLine("SOCKETEXCEPTION");
                             responses[i] = -1;
                         }
-                        catch (NullReferenceException e) {
+                        catch (NullReferenceException ) {
+                            //Console.WriteLine("NULLEXECEPTION");
                             responses[i] = -1;
                         }
                     }
@@ -72,10 +78,10 @@ namespace Server {
                                 view.Add(allServers[j]);
                             }
                             else {
-                                Console.WriteLine(j.ToString() + " is down");
+                                //Console.WriteLine(j.ToString() + " is down");
                             }
                         }
-                        Console.WriteLine("view count: " + view.Count);
+                        //Console.WriteLine("view count: " + view.Count);
                     }
                 }
                 catch (Exception e) {
@@ -86,23 +92,27 @@ namespace Server {
                 if (oldView.Count != view.Count) isChanged = true;
 
                 foreach (string bla in view) {
-                    Console.WriteLine("-> " + bla);
+                    //Console.WriteLine("-> " + bla);
                     if (!oldView.Contains(bla)) {
                         isChanged = true;
                     }
                 }
                 if (isChanged) {
-                    Console.WriteLine("view changed!!!");
+                    modified = true;
+                    //Console.WriteLine("view changed!!! view count " + view.Count);
                 }
             }
         }
 
         public List<string> getView() {
-            Console.WriteLine("view request - count: " + view.Count());
-            foreach (string bla in view) {
-                Console.WriteLine("-->" + bla);
-            }
+            modified = false;
+            //Console.WriteLine("someone got view");
             return view;
+        }
+
+        public bool changed() {
+            //Console.WriteLine("someone checked view with cout" + view.Count);
+            return modified;
         }
 
         public void configure() {
