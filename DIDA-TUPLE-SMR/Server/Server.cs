@@ -46,7 +46,7 @@ namespace Server {
         private int _numServers = 0;
         
         private List<Entry> entryLog = new List<Entry>();
-        private FailureDetector fd = new FailureDetector();
+        private FailureDetector fd;
 
 
         private void selfPrepare(int min_delay, int max_delay) {
@@ -58,7 +58,7 @@ namespace Server {
 
             myRemoteObject = new ServerService(this, min_delay, max_delay);
             RemotingServices.Marshal(myRemoteObject, _name, typeof(ServerService)); //TODO remote object name
-
+            fd = new FailureDetector();
             Console.WriteLine("Hello! I'm a Server at port " + _port);
 
             foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
