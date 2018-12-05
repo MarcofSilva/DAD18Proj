@@ -16,7 +16,7 @@ using System.Collections.Concurrent;
 namespace Server{
     public class Server{
         private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
-        private ConcurrentBag<TupleClass> tupleSpace;
+        private List<TupleClass> tupleSpace;
 
         private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
         private Object dummyObjForTakeRead = new object();
@@ -53,7 +53,7 @@ namespace Server{
         }
 
         private void prepareRemoting(int port, string name, int min_delay, int max_delay) {
-            tupleSpace = new ConcurrentBag<TupleClass>();
+            tupleSpace = new List<TupleClass>();
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this, min_delay, max_delay);
@@ -85,10 +85,12 @@ namespace Server{
                 try {
                     //Console.WriteLine("initial read " + tupleContainer.Count + " container");
                     Regex capital = new Regex(@"[A-Z]");
-                    foreach (TupleClass t in tupleSpace) {
-                        if (t.Matches(tuple)) {
-                            resTuple = t;
-                            break;
+                    lock (tupleSpace) {
+                        foreach (TupleClass t in tupleSpace) {
+                            if (t.Matches(tuple)) {
+                                resTuple = t;
+                                break;
+                            }
                         }
                     }
                     //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
@@ -108,10 +110,10 @@ namespace Server{
         //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> takeRead(TupleClass tuple, string clientURL) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
-            Console.WriteLine("Antes -> ");
+            /*Console.WriteLine("Antes -> ");
             foreach (var x in tupleSpace) {
                 Console.WriteLine("-> " + x.ToString());
-            }
+            }*/
             List<TupleClass> res = new List<TupleClass>();
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
@@ -127,19 +129,22 @@ namespace Server{
                         allTuples.Add(y);
                     }
                 }
-                Console.WriteLine("alltuples -> ");
+                /*Console.WriteLine("alltuples -> ");
                 foreach (var x in allTuples) {
                     Console.WriteLine("-> " + x.ToString());
-                }
-                foreach (TupleClass el in tupleSpace) {
-                    Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
-                    if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
-                        res.Add(el);
+                }*/
+                lock (tupleSpace) {
+                    foreach (TupleClass el in tupleSpace.ToList()) {
+                        Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
+                        if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
+                            res.Add(el);
+                        }
+                    }
+                    if (res.Count != 0) {
+                        toTakeSubset.Add(clientURL, res);
                     }
                 }
-                if (res.Count != 0) {
-                    toTakeSubset.Add(clientURL, res);
-                }
+                
                 Console.WriteLine("totakesubset -> ");
                 foreach (var x in toTakeSubset.Values) {
                     foreach (var y in x) {
@@ -148,12 +153,16 @@ namespace Server{
                 }
             }
             if (res.Count == 0) {
+                Console.WriteLine("empty res");
                 lock (dummyObjForLock) {
                     Monitor.Wait(dummyObjForLock);
                 } //no match
                 return takeRead(tuple, clientURL);
             }
             else {
+                foreach (TupleClass t in res) {
+                    Console.WriteLine("res -> " + t.ToString());
+                }
                 return res;
             }
         }
@@ -164,7 +173,9 @@ namespace Server{
                 if(tuple.Equals(el)) {
                     Console.WriteLine(tuple.ToString() + " -- " + el.ToString());
                     //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
-                    bool success = tupleSpace.TryTake(out tuple);
+                    lock (tupleSpace) {
+                        tupleSpace.Remove(tuple);
+                    }
                     //Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success); TODO
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     lock (toTakeSubset) {

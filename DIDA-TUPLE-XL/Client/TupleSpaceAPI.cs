@@ -103,6 +103,7 @@ namespace Client {
                             return serverobjs;
                         }
                         else {
+                            Console.WriteLine("Empty view");
                             return getView(view); //TODO? I dont like this
                         }
                     }

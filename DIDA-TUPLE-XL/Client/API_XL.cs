@@ -36,9 +36,10 @@ namespace Client {
         public delegate void takeRemoveDelegate(TupleClass tuple, string url, long nonce);
 
         public override void Write(TupleClass tuple) {
-            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            
             checkFrozen();
             setView();
+            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -63,7 +64,7 @@ namespace Client {
         public override TupleClass Read(TupleClass tuple) {
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
+            Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
@@ -96,7 +97,7 @@ namespace Client {
         public override TupleClass Take(TupleClass tuple) {
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL: Begin Take");
+            Console.WriteLine("----->DEBUG_API_XL: Begin Take");
             //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
@@ -112,6 +113,7 @@ namespace Client {
                 bool allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
 
                 if (!allcompleted) {
+                    Console.WriteLine("timeout");
                     return Take(tuple);
                 }
                 else { //all have completed
@@ -124,10 +126,12 @@ namespace Client {
                         if (firstiteration) {
                             firstiteration = false;
                             response = tupleSet;
+                            Console.WriteLine("doooneee");
                         }
                         else {
                             response = listIntersection(response, tupleSet);
                             if (response.Count == 0) {
+                                Console.WriteLine("No possible intersection. Repeating...");
                                 return Take(tuple);
                             }
                         }
@@ -207,10 +211,12 @@ namespace Client {
         }
 
         public void setView() {
-            if (view == null) view = new List<IServerService>();
+            if (view == null)
+                view = new List<IServerService>();
             view = getView(view);
-            if (view == null || view.Count == 0) setView();
+            //if (view == null || view.Count == 0) setView();
             numServers = view.Count;
+            Console.WriteLine("got view");
 
         }
     }

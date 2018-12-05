@@ -75,7 +75,7 @@ namespace Server {
                                 Console.WriteLine(j.ToString() + " is down");
                             }
                         }
-                        Console.WriteLine("view count: " + view.Count);
+                        //Console.WriteLine("view count: " + view.Count);
                     }
                 }
                 catch (Exception e) {
@@ -86,7 +86,7 @@ namespace Server {
                 if (oldView.Count != view.Count) isChanged = true;
                 
                 foreach (string bla in view) {
-                    Console.WriteLine("-> " + bla);
+                    //Console.WriteLine("-> " + bla);
                     if (!oldView.Contains(bla)) {
                         isChanged = true;
                     }
