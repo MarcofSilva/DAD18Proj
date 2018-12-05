@@ -188,7 +188,7 @@ namespace ClassLibrary {
                         return false;
                     }
                 }
-                else {
+                else if(tuple[i].GetType() == typeof(DADTestC) && _tuple[i].GetType() == typeof(DADTestC)) {
                     //Console.WriteLine("------------------> DADTestC");
                     DADTestC tuplei = (DADTestC)tuple[i];
                     DADTestC eli = (DADTestC)_tuple[i];
@@ -196,6 +196,9 @@ namespace ClassLibrary {
                         //Console.WriteLine("objetos nao sao iguais DADTESTC");
                         return false;
                     }
+                }
+                else {
+                    return false;
                 }
             }
             return true;

@@ -112,8 +112,8 @@ namespace Server {
         public void writeLeader(TupleClass tuple) {
             tupleSpaceLock.EnterWriteLock();
             tupleSpace.Add(tuple);
-            tupleSpaceLock.ExitWriteLock();
             Console.WriteLine("Operation: Added" + tuple.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
+            tupleSpaceLock.ExitWriteLock();
         }
         //Enters reader mode and if it found same valid tuple it enters write mode to remove it
         public TupleClass takeLeader(TupleClass tuple) {
