@@ -207,10 +207,11 @@ namespace Client {
         }
 
         public void setView() {
+            Console.WriteLine("SETVIEW CALLED");
+            if (view == null) view = new List<IServerService>();
             view = getView(view);
-            if (view.Count == 0) setView();
+            if (view == null || view.Count == 0) setView();
             numServers = view.Count;
-            Console.WriteLine(numServers.ToString());
 
         }
     }

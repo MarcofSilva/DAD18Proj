@@ -145,6 +145,7 @@ namespace ClassLibrary {
             if (_size != tupler.Size) {
                 return false;
             }
+            Console.WriteLine(tupler.ToString());
             for (int i = 0; i < _size; i++) {
                 ArrayList tuple = tupler.tuple;
                 //pedido e um null e estamos a ver um objeto
