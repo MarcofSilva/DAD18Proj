@@ -36,7 +36,7 @@ namespace Server {
                         ServerService remoteObject = (ServerService)remoteObjectpair.Value;
                         pingDelegate pingDel = new pingDelegate(remoteObject.Ping);
                         IAsyncResult ar = pingDel.BeginInvoke(null, null);
-                        
+
                         asyncResults[i] = ar;
                         handles[i] = ar.AsyncWaitHandle;
                         i++;
@@ -45,9 +45,9 @@ namespace Server {
                         Console.WriteLine("TIMEOUT");
                         for (int k = 0; k < numServers; k++) {
                             Console.WriteLine(handles[k].WaitOne(0));
-                            if(handles[k].WaitOne(0) == false) {
+                            if (handles[k].WaitOne(0) == false) {
                                 responses[k] = -1;
-                            } 
+                            }
                         }
                     }
                     for (i = 0; i < numServers; i++) {
@@ -84,7 +84,7 @@ namespace Server {
 
                 bool isChanged = false;
                 if (oldView.Count != view.Count) isChanged = true;
-                
+
                 foreach (string bla in view) {
                     Console.WriteLine("-> " + bla);
                     if (!oldView.Contains(bla)) {
@@ -114,6 +114,6 @@ namespace Server {
             numServers = serverRemoteObjects.Count();
         }
 
-       
+
     }
 }

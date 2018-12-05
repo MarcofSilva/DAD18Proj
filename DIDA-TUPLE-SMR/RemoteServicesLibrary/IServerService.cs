@@ -19,5 +19,9 @@ namespace RemoteServicesLibrary
         void Freeze();
 
         void Unfreeze();
+
+        int Ping();
+
+        List<string> ViewRequest();
     }
 }

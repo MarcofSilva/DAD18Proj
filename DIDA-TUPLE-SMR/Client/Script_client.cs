@@ -82,7 +82,6 @@ namespace Client
             }
             catch (FileNotFoundException f) {
                 Console.WriteLine("File not found!");
-                Console.WriteLine(f.ToString());
                 return;
             }
             string line;

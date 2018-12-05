@@ -94,13 +94,17 @@ namespace Client {
                     requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                     try {
                         List<string> servers = viewDel.EndInvoke(asyncResult);
-                        List<IServerService> serverobjs = new List<IServerService>();
-                        for(int j = 0; j<servers.Count; j++) { 
-                            Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
-                            serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), servers[j]));
-                            
+                        if (servers.Count() != 0) {
+                            List<IServerService> serverobjs = new List<IServerService>();
+                            for (int j = 0; j < servers.Count; j++) {
+                                Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
+                                serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), servers[j]));
+                            }
+                            return serverobjs;
                         }
-                        return serverobjs;
+                        else {
+                            return getView(view); //TODO? I dont like this
+                        }
                     }
                     catch (SocketException) {
                         Console.WriteLine("ERROR: view is " + view.Count());
@@ -115,7 +119,7 @@ namespace Client {
                 }
             } catch (SocketException e) {
                 Console.WriteLine("Connection error. Restarting...");
-                return getView(serverRemoteObjects); //TODO? 
+                return getView(serverRemoteObjects); //TODO? isto acho que nao precisa de estar aqui (este catch)
             }
             Console.WriteLine("you shouldnt be here");
             return null;

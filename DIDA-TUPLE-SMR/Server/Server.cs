@@ -46,17 +46,19 @@ namespace Server {
         private int _numServers = 0;
         
         private List<Entry> entryLog = new List<Entry>();
+        private FailureDetector fd;
 
 
         private void selfPrepare(int min_delay, int max_delay) {
             serverRemoteObjects = new Dictionary<string, IServerService>();
 
             channel = new TcpChannel(_port);
+            Console.WriteLine(_port.ToString());
             ChannelServices.RegisterChannel(channel, false);
 
             myRemoteObject = new ServerService(this, min_delay, max_delay);
             RemotingServices.Marshal(myRemoteObject, _name, typeof(ServerService)); //TODO remote object name
-
+            fd = new FailureDetector();
             Console.WriteLine("Hello! I'm a Server at port " + _port);
 
             foreach (string url in ConfigurationManager.AppSettings.AllKeys) {
@@ -79,6 +81,7 @@ namespace Server {
 
         public Server() {
             selfPrepare(defaultDelay, defaultDelay);
+
         }
 
         public Server(string URL, string min_delay, string max_delay) {
@@ -227,6 +230,16 @@ namespace Server {
             }
             frozen = false;
         }
+
+        public int ping() { //TODO put this only on serverservice?
+            checkFrozen();
+            return 1;
+        }
+
+        public List<string> viewRequest() {
+            return fd.getView();
+        }
+
         static void Main(string[] args) {
             Server server;
             if (args.Length == 0) {
