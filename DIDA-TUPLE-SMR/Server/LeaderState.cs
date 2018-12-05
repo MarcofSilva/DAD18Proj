@@ -37,10 +37,11 @@ namespace Server {
                 _term = term;
                 Console.WriteLine("Leader: AppendEntryWrite from: " + leaderID);
                 _server.addEntrytoLog(writeEntry);
+                _server.writeLeader(writeEntry.Tuple);
                 _server.updateState("follower", _term, leaderID);
-                return new EntryResponse(true, _term, _server.getMatchIndex());
+                return new EntryResponse(true, _term, _server.getLogIndex()-1);
             }
-            return new EntryResponse(false, _term, 0);
+            return new EntryResponse(false, _term, _server.getLogIndex());
         }
 
         public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
@@ -48,26 +49,27 @@ namespace Server {
                 _term = term;
                 Console.WriteLine("Follower: AppendEntryTake from: " + leaderID);
                 _server.addEntrytoLog(takeEntry);
+                _server.writeLeader(takeEntry.Tuple);
                 _server.updateState("follower", _term, leaderID);
-                return new EntryResponse(true, _term, _server.getMatchIndex());
+                return new EntryResponse(true, _term, _server.getLogIndex()-1);
             }
-            return new EntryResponse(false, _term, 0);
+            return new EntryResponse(false, _term, _server.getLogIndex());
         }
 
         public override EntryResponse heartBeat(int term, string leaderID) {
             if (_term < term) {
                 _term = term;
-                //Console.WriteLine("Follower: HeartBeat from: " + leaderID);
+                Console.WriteLine("Leader: HeartBeat from: " + leaderID);
                 //add this operation to log and then change to follower
                 _server.updateState("follower", _term, leaderID);
-                return new EntryResponse(true, _term, _server.getMatchIndex());
+                return new EntryResponse(true, _term, _server.getLogIndex());
             }
-            return new EntryResponse(false, _term, 0);
+            return new EntryResponse(false, _term, _server.getLogIndex());
         }
 
         public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
             try {
-                return _server.readLeader(tuple);
+                return _server.readLeader(tuple, true);
             }
             catch (ElectionException e) {
                 throw e;
@@ -75,19 +77,40 @@ namespace Server {
         }
 
         public override TupleClass take(TupleClass tuple, string url, long nonce) {
-            TakeEntry entry = new TakeEntry(tuple, _term);
+            TupleClass realTuple = _server.readLeader(tuple, false)[0];
+            TakeEntry entry = new TakeEntry(tuple, _term, _server.getLogIndex());
+            
+            //arranjar lock para o log e tuplespace(?)
             _server.addEntrytoLog(entry);
-            requestStorage.Add(entry);
-            while (answerStorage.Count == 0) {
 
-            }
-            return answerStorage[0].Tuple;
+            pulseAppendEntryTake(entry);
+
+            return _server.takeLeader(tuple);
         }
 
+        //TODO falta utilizar nounce
+        public override void write(TupleClass tuple, string url, long nonce) {
+            try {
+                WriteEntry entry = new WriteEntry(tuple, _term, _server.getLogIndex());
+                //arranjar lock para o log
+                _server.addEntrytoLog(entry);
+
+                pulseAppendEntryWrite(entry);
+                _server.writeLeader(tuple);
+            }
+            catch (ElectionException e) {
+                throw e;
+            }
+        }
+
+        //TODO falta utilizar nounce
         public delegate EntryResponse appendEntryTakeDelegate(TakeEntry takeEntry, int term, string leaderID);
+        public delegate EntryResponse appendEntryWriteDelegate(WriteEntry takeEntry, int term, string leaderID);
+        public delegate EntryResponse heartBeatDelegate(int term, string candidateID);
 
         public void pulseAppendEntryTake(TakeEntry takeEntry) {
             int sucess = 0;
+            timer.Interval = wait;
             WaitHandle[] handles = new WaitHandle[_numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[_numServers];
             try {
@@ -95,7 +118,7 @@ namespace Server {
                 foreach (KeyValuePair<string, IServerService> remoteObjectpair in _serverRemoteObjects) {
                     ServerService remoteObject = (ServerService)remoteObjectpair.Value;
                     appendEntryTakeDelegate appendEntryTakeDel = new appendEntryTakeDelegate(remoteObject.appendEntryTake);
-                    IAsyncResult ar = appendEntryTakeDel.BeginInvoke(takeEntry, _term ,_url, null, null);
+                    IAsyncResult ar = appendEntryTakeDel.BeginInvoke(takeEntry, _term, _url, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
@@ -107,21 +130,24 @@ namespace Server {
 
                     for (i = 0; i < _numServers; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
-                        heartBeatDelegate heartBeatDel = (heartBeatDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        EntryResponse response = heartBeatDel.EndInvoke(asyncResult);
+                        appendEntryTakeDelegate appendEntryTakeDel = (appendEntryTakeDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                        EntryResponse response = appendEntryTakeDel.EndInvoke(asyncResult);
+                        if (!response.Sucess) {//foi false
+                            if (_term < response.Term) {//term da resposta e maior do que o meu
+                                _server.updateState("follower", _term, "");
+                                //TODO
+                                //isto esta mal, temos de ter o url do lider para quando for para follower saber quem e
+                            }
+                            else {//o meu log esta mais avancado que o dele
+
+                            }
+                        }
                         if (response.Sucess) {
                             sucess++;
                         }
-                        //falta dar update para quais e que teve sucesso
-                        //update da lista dos servidores etc
-
-                        //IDEIA em vez de controlar quais tiveram sucessos, mandar para todos ate todos responderem com controlo de nounce
                     }
-                    if (sucess > _numServers / 2) {
-                        //commit entry?
-                        //meter a entry no answerStorage
-                        //desbloquear o metodo
-                        //enviar acks para todos
+                    if (!(sucess > _numServers / 2)) {
+                        pulseAppendEntryTake(takeEntry);
                     }
                 }
             }
@@ -133,23 +159,9 @@ namespace Server {
                 throw new NotImplementedException();
             }
         }
-
-        public override void write(TupleClass tuple, string url, long nonce) {
-            try {
-                WriteEntry entry = new WriteEntry(tuple, _term);
-                _server.writeLeader(tuple);
-                requestStorage.Add(entry);
-
-            }
-            catch (ElectionException e) {
-                throw e;
-            }
-        }
-
-        public delegate EntryResponse appendEntryWriteDelegate(WriteEntry takeEntry, int term, string leaderID);
-
         public void pulseAppendEntryWrite(WriteEntry writeEntry) {
             int sucess = 0;
+            timer.Interval = wait;
             WaitHandle[] handles = new WaitHandle[_numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[_numServers];
             try {
@@ -169,21 +181,25 @@ namespace Server {
 
                     for (i = 0; i < _numServers; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
-                        heartBeatDelegate heartBeatDel = (heartBeatDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        EntryResponse response = heartBeatDel.EndInvoke(asyncResult);
+                        appendEntryWriteDelegate appendEntryWriteDel = (appendEntryWriteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                        EntryResponse response = appendEntryWriteDel.EndInvoke(asyncResult);
+                        if (!response.Sucess) {//foi false
+                            if (_term < response.Term) {//term da resposta e maior do que o meu
+                                //TODO
+                                //isto esta mal, temos de ter o url do lider para quando for para follower saber quem e
+                                _server.updateState("follower", _term, "");
+
+                            }
+                            else {//o meu log esta mais avancado que o dele
+
+                            }
+                        }
                         if (response.Sucess) {
                             sucess++;
                         }
-                        //falta dar update para quais e que teve sucesso
-                        //update da lista dos servidores etc
-
-                        //IDEIA em vez de controlar quais tiveram sucessos, mandar para todos ate todos responderem com controlo de nounce
                     }
-                    if (sucess > _numServers / 2) {
-                        //commit entry?
-                        //meter a entry no answerStorage
-                        //desbloquear o metodo
-                        //enviar acks para todos
+                    if (!(sucess > _numServers / 2)) {
+                        pulseAppendEntryWrite(writeEntry);
                     }
                 }
             }
@@ -195,9 +211,6 @@ namespace Server {
                 throw new NotImplementedException();
             }
         }
-
-        public delegate EntryResponse heartBeatDelegate(int term, string candidateID);
-
         private void pulseHeartbeat() {
             WaitHandle[] handles = new WaitHandle[_numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[_numServers]; //used when want to access IAsyncResult in index of handled that give the signal
@@ -211,7 +224,7 @@ namespace Server {
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 5000)) {//TODO esta desoncronizado
+                if (!WaitHandle.WaitAll(handles, 1000)) {//TODO esta desoncronizado
                     pulseHeartbeat();
                 }
                 else {
@@ -219,7 +232,18 @@ namespace Server {
                         IAsyncResult asyncResult = asyncResults[i];
                         heartBeatDelegate heartBeatDel = (heartBeatDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         EntryResponse response = heartBeatDel.EndInvoke(asyncResult);
-                        Console.WriteLine("heartbeat to " + i +" was " +response.Sucess);
+                        if (!response.Sucess) {//foi false
+                            if (_term < response.Term) {//term da resposta e maior do que o meu
+                                //TODO
+                                //isto esta mal, temos de ter o url do lider para quando for para follower saber quem e
+                                _server.updateState("follower", _term, "");
+
+                            }
+                            else {//o meu log esta mais avancado que o dele
+                                //tratar deste caso
+                            }  
+                        }
+                        //Console.WriteLine("heartbeat to " + i + " was " + response.Sucess);
                     }
                 }
             }
@@ -230,19 +254,7 @@ namespace Server {
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            if(requestStorage.Count > 0) {
-                if (requestStorage[0].GetType() == typeof(WriteEntry)) {
-                    //TODO verificar casts
-                    pulseAppendEntryWrite((WriteEntry)requestStorage[0]);
-                }
-                else {
-                    //TODO verificar casts
-                    pulseAppendEntryTake((TakeEntry)requestStorage[0]);
-                }
-            }
-            else {
-                pulseHeartbeat();
-            }
+            pulseHeartbeat();
         }
 
         private void SetTimer() {

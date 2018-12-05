@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using ClassLibrary;
 
 namespace Server {
+    [Serializable]
     public class TakeEntry : Entry {
 
-        public TakeEntry(TupleClass tuple, int term) : base(tuple, term) {
+        public TakeEntry(TupleClass tuple, int term, int logIndex) : base(tuple, term, logIndex) {
 
         }
     }

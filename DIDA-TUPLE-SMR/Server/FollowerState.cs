@@ -31,42 +31,67 @@ namespace Server {
 
         public override EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
             Console.WriteLine("Follower: appendEntryWrite from: " + leaderID);
+            electionTimeout.Interval = wait;
             //Considers requests from old entry
-            if (term > _term) {
-                return new EntryResponse(false, _term, 0);
+            if (term > _term ) {
+                //posso atualizar primeiro, porque apesar de na response nao mostrar que estava atrasado, devido ao logindex da para ver 
+                _term = term;
+                return new EntryResponse(false, _term, _server.getLogIndex()); ;
             }
             //Treasts case of leader changed
             if (leaderID != _leaderUrl) {
                 _leaderUrl = leaderID;
                 _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
                 Console.WriteLine("Follower: Leader is now: " + leaderID);
+
+                // verfifica se a posicao para onde vai o a entry e menor que onde era suposto ela ficar
+                // nao verificamos se e maior, porque e impossivel
+                // verificamos so aqui, porque so e impossivel isto acontecer se o lider mudou
+                // se o lider nunca mudou, o follower acompanhou sempre
+                //TODO acham que isto e verdade? ^
+                if (_server.getLogIndex() < writeEntry.LogIndex) {
+                    return new EntryResponse(false, _term, _server.getLogIndex());
+                }
             }
-            electionTimeout.Interval = wait;
             _server.addEntrytoLog(writeEntry);
-            return new EntryResponse(true, _term, _server.getMatchIndex());
+            _server.writeLeader(writeEntry.Tuple);
+            return new EntryResponse(true, _term, _server.getLogIndex()-1);
         }
 
         public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
             Console.WriteLine("Follower: appendEntryTake from: " + leaderID);
+            electionTimeout.Interval = wait;
             //Considers requests from old entry
             if (term > _term) {
-                return new EntryResponse(false, 0, 0);
+                _term = term;
+                return new EntryResponse(false, _term, _server.getLogIndex()); ;
             }
             //Treasts case of leader changed
             if (leaderID != _leaderUrl) {
                 _leaderUrl = leaderID;
                 _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
                 Console.WriteLine("Follower: Leader is now: " + leaderID);
+
+                // verfifica se a posicao para onde vai o a entry e menor que onde era suposto ela ficar
+                // nao verificamos se e maior, porque e impossivel
+                // verificamos so aqui, porque so e impossivel isto acontecer se o lider mudou
+                // se o lider nunca mudou, o follower acompanhou sempre
+                //TODO acham que isto e verdade? ^
+                if ( _server.getLogIndex() < takeEntry.LogIndex) {
+                    return new EntryResponse(false, _term, _server.getLogIndex());
+                }
             }
-            electionTimeout.Interval = wait;
             _server.addEntrytoLog(takeEntry);
-            return new EntryResponse(true, _term, _server.getMatchIndex());
+            _server.takeLeader(takeEntry.Tuple);
+            return new EntryResponse(true, _term, _server.getLogIndex()-1);
         }
+
         public override EntryResponse heartBeat(int term, string leaderID) {
-            //Console.WriteLine("Follower: heartBeat from: " + leaderID);
             //Considers requests from old entry
+            electionTimeout.Interval = wait;
             if (term > _term) {
-                return new EntryResponse(false, _term, 0);
+                _term = term;
+                return new EntryResponse(false, _term, _server.getLogIndex());
             }
             //Treasts case of leader changed
             if (leaderID != _leaderUrl) {
@@ -74,8 +99,8 @@ namespace Server {
                 _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
                 Console.WriteLine("Follower: Leader is now: " + leaderID);
             }
-            electionTimeout.Interval = wait;
-            return new EntryResponse(true, _term, _server.getMatchIndex());
+            //ter em atencao se do outro lado no heartbeat response verificamos isto
+            return new EntryResponse(true, _term, _server.getLogIndex());
         }
 
         public override bool vote(int term, string candidateID) {
@@ -87,19 +112,22 @@ namespace Server {
             }
             if (!voted) {
                 voted = true;
+                electionTimeout.Interval = wait;
                 return true;
             }
+            electionTimeout.Interval = wait;
             return false;
         }
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(350, 500);//usually entre 150 300
+            wait = rnd.Next(400, 600);//usually entre 150 300
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = true;
             electionTimeout.Enabled = true;
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
+            Console.WriteLine("I CHANGED BECAUSE OF ON TIMED EVENT ON FOLLOWER");
             _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
         }
         public override void ping() {
@@ -119,6 +147,7 @@ namespace Server {
         }
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             try {
+                Console.WriteLine("Read in follower");
                 return _leaderRemote.read(tuple, clientUrl, nonce);
             }
             catch (ElectionException e) {
@@ -131,6 +160,7 @@ namespace Server {
         }
         public override void write(TupleClass tuple, string clientUrl, long nonce) {
             try {
+                Console.WriteLine("Write called in follower");
                 _leaderRemote.write(tuple, clientUrl, nonce);
             }
             catch (ElectionException e) {
@@ -143,6 +173,7 @@ namespace Server {
         }
         public override TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
             try {
+                Console.WriteLine("Take in follower");
                 return _leaderRemote.take(tuple, clientUrl, nonce);
             }
             catch (ElectionException e) {

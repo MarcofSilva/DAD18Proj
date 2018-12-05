@@ -95,10 +95,11 @@ namespace Server {
 
         public void addEntrytoLog(Entry entry) {
             entryLog.Add(entry);
+            Console.WriteLine("log size: "+ entryLog.Count +" ,Added this to log: "+entry.ToString());
         }
 
         //TODOOOO
-        public int getMatchIndex() {
+        public int getLogIndex() {
             return entryLog.Count;
         }
 
@@ -115,23 +116,27 @@ namespace Server {
         }
 
         public void writeLeader(TupleClass tuple) {
-            Console.WriteLine("Operation: Add" + tuple.ToString() + "\n");
             tupleSpace.Add(tuple);
+            Console.WriteLine("Operation: Added" + tuple.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
         }
         public TupleClass takeLeader(TupleClass tuple) {
-            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
             TupleClass res = new TupleClass();
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
                     res = el;
                     tupleSpace.Remove(el);
+                    Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
                     return res;
                 }
             }
+            Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
             return res; //no match
         }
-        public List<TupleClass> readLeader(TupleClass tuple) {
-            Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+        public List<TupleClass> readLeader(TupleClass tuple, bool verbose) {
+            //verbose esta aqui porque no take, utilizamos, e n queremos que faca print de read
+            if (verbose) {
+                Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+            }
             List<TupleClass> res = new List<TupleClass>();
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
@@ -151,7 +156,7 @@ namespace Server {
                 Console.WriteLine("I am now a Candidate");
                 _state = candidate;
             }
-            else {
+            else if(state == "leader") {
                 _state.stopClock();
                 Console.WriteLine("I am now a Leader");
                 _state = leader;

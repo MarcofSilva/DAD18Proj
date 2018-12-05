@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Server {
+    [Serializable]
     public class EntryResponse {
         private bool _sucess;
         private int _term;
@@ -20,6 +21,9 @@ namespace Server {
             _matchIndex = matchIndex;
         }
 
+        public override string ToString() {
+            return "Sucess: " + Sucess + " term "+ Term + " index " + MatchIndex;
+        }
 
     }
 }
