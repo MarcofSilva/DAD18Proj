@@ -178,9 +178,6 @@ namespace Server {
                 _state = follower;
             }
             else if (state == "candidate") {
-                if () {
-
-                }
                 _state.stopClock();
                 Console.WriteLine("I am now a Candidate");
                 _state = candidate;
