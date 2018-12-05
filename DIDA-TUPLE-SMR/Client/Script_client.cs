@@ -80,7 +80,7 @@ namespace Client
             try {
                 reader = File.OpenText("../../../Client/bin/debug/" + scriptName);
             }
-            catch (FileNotFoundException f) {
+            catch (FileNotFoundException) {
                 Console.WriteLine("File not found!");
                 return;
             }

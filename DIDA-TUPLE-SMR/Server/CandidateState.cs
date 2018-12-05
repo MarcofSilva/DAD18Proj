@@ -22,16 +22,18 @@ namespace Server {
         private System.Timers.Timer electionTimeout;
         private int wait;
         private Random rnd = new Random(Guid.NewGuid().GetHashCode());
+        private bool timerThreadBlock = false;
         private readonly Object vote_heartbeat_Lock = new object();
 
-        public CandidateState(Server server, int numServers) : base(server, numServers) {
+        public CandidateState(Server server) : base(server) {
             SetTimer();
         }
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
-            //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
             lock (vote_heartbeat_Lock)
             {
+                Console.WriteLine("heartbeat");
+                //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
                 if (term < _term)
                 {
                     //TODO
@@ -41,9 +43,18 @@ namespace Server {
                 {
                     _term = term;
                     Console.WriteLine("Leader changed to: " + leaderID);
+                    if (entryPacket.Count == 0)
+                    {
+                        timerThreadBlock = true;
+                        _server.updateState("follower", _term, leaderID); ;
+                        return new EntryResponse(true, _term, _server.getLogIndex());
+                    }
+
                     if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
                     {
                         //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        Console.WriteLine("Candidate -> Follower : appendEntry ");
+                        timerThreadBlock = true;
                         _server.updateState("follower", _term, leaderID);
                         return new EntryResponse(false, _term, _server.getLogIndex());
                     }
@@ -60,8 +71,9 @@ namespace Server {
                             _server.takeLeader(entry.Tuple);
                         }
                     }
+                    Console.WriteLine("Candidate -> Follower : append Entry");
+                    timerThreadBlock = true;
                     _server.updateState("follower", _term, leaderID); ;
-
                     return new EntryResponse(true, _term, _server.getLogIndex());
                 }
             }
@@ -70,45 +82,59 @@ namespace Server {
         public delegate bool voteDelegate(int term, string leaderUrl);
 
         public void requestVote() {
+            if (timerThreadBlock) {
+                return;
+            }
             _term++;
-            Console.WriteLine("NEW ELECTION BITCHES, MY TERM IS " + _term);
+            Console.WriteLine("Started election in term " + _term);
             int votes = 1;
-            //randomize the election timeout each iteration
-            WaitHandle[] handles = new WaitHandle[_numServers];
-            IAsyncResult[] asyncResults = new IAsyncResult[_numServers];
+            if (_server.fd.changed()) {
+                _view = _server.fd.getView();
+                _numServers = _view.Count();
+                foreach (string url in _view) {
+                    Console.WriteLine(url);
+                }
+            }
+            WaitHandle[] handles = new WaitHandle[_numServers-1];
+            IAsyncResult[] asyncResults = new IAsyncResult[_numServers-1];
             try {
                 int i = 0;
-                foreach (KeyValuePair<string, IServerService> remoteObjectpair in _serverRemoteObjects) {
-                    ServerService remoteObject = (ServerService)remoteObjectpair.Value;
+                foreach (string url in _view) {
+                    if (url == _url) {
+                        continue;
+                    }
+                    ServerService remoteObject = (ServerService)_serverRemoteObjects[url];
                     voteDelegate voteDel = new voteDelegate(remoteObject.vote);
                     IAsyncResult ar = voteDel.BeginInvoke(_term, _url, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 5000)) { //TODO
+                if (!WaitHandle.WaitAll(handles, 4000)) {
                     requestVote();
                 }
                 else {
-                    for (i = 0; i < _numServers; i++) {
+                    for (i = 0; i < _numServers-1; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
                         voteDelegate voteDel = (voteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         bool response = voteDel.EndInvoke(asyncResult);
-                        //Console.WriteLine(i + " voted " + response);
                         if (response) {
                             votes++;
-                        }
+                        } 
                     }
-                    if (votes > ((_numServers + 1)/2) ) {
+                    if (votes > (_numServers /2)) {
                         electionTimeout.Stop();
+                        timerThreadBlock = true;
                         _server.updateState("leader", _term, _url);
+                        return;
                     }
                     else {
                         Console.WriteLine("Finished elections without sucess");
                     }
                 }
-                wait = rnd.Next(350, 450);
+                wait = rnd.Next(1000, 1200);
                 electionTimeout.Interval = wait;
+                electionTimeout.Enabled = true;
             }
             catch (SocketException) {
                 //TODO
@@ -119,30 +145,33 @@ namespace Server {
             if (term > _term) {
                 _term = term;
             }
+            timerThreadBlock = false;
             requestVote();
             electionTimeout.Start();
         }
         private void SetTimer() {
-            //TODO usually entre 150 300
-            wait = rnd.Next(500, 700);
+            //usually entre 150 300
+            wait = rnd.Next(200, 400);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
-            electionTimeout.AutoReset = true;
-            electionTimeout.Enabled = true;
-            electionTimeout.Stop();
+            electionTimeout.AutoReset = false;
+            electionTimeout.Enabled = false;
         }
         public override bool vote(int term, string candidateID) {
-            lock (vote_heartbeat_Lock) {
+            lock (vote_heartbeat_Lock)
+            {
                 if (term > _term)
                 {
+                    Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
+                    Console.WriteLine("He was in term: " + term + " i was in " + _term);
                     _term = term;
-                    Console.WriteLine("I CHANGED WHEN I WAS ASKED A VOTE WITH TERM " + term);
+                    timerThreadBlock = true;
                     _server.updateState("follower", _term, candidateID);
                     return true;
                 }
-                return false;
             }
+            return false;
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
             requestVote();

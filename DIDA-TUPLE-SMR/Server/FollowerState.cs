@@ -26,8 +26,11 @@ namespace Server {
         private bool voted = false;
         private readonly Object vote_heartbeat_Lock = new object();
 
-        public FollowerState(Server server, int numServers) : base(server, numServers) {
+        private bool timerThreadBlock = false;
+
+        public FollowerState(Server server) : base(server) {
             SetTimer();
+            Console.WriteLine("Created follower");
         }
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
@@ -45,8 +48,16 @@ namespace Server {
                     electionTimeout.Interval = wait;
                     if (entryPacket.Count == 0)
                     {
+                        if (leaderID != _leaderUrl)
+                        {
+
+                            _leaderUrl = leaderID;
+                            _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                            //Console.WriteLine("Follower: Leader is now: " + leaderID);
+                        }
                         return new EntryResponse(true, _term, _server.getLogIndex());
                     }
+                    Console.WriteLine("UPDATE TERM IN APPEND ENTRY");
                     _term = term;                           //pode ser != mas visto que se tiver desatualizado e para tras
                     if ((_server.getLogIndex() - 1 + entryPacket.Count) == entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
                     {
@@ -84,21 +95,18 @@ namespace Server {
         }
 
         public override bool vote(int term, string candidateID) {
-            lock (vote_heartbeat_Lock)
-            {
-                if (term > _term)
-                {
+            lock (vote_heartbeat_Lock) {
+                if (term > _term) {
+                    electionTimeout.Interval = wait;
+                    Console.WriteLine("UPDATE TERM IN VOTE from:" + _term +" to " + term);
                     _term = term;
                     voted = true;
-                    electionTimeout.Interval = wait;
                     return true;
                 }
-                else if (term == _term)
-                {
-                    if (!voted)
-                    {
-                        voted = true;
+                else if(term == _term) {
+                    if (!voted) {
                         electionTimeout.Interval = wait;
+                        voted = true;
                         return true;
                     }
                 }
@@ -107,15 +115,16 @@ namespace Server {
         }
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(350, 450);//usually entre 150 300
+            wait = rnd.Next(400, 800);//usually entre 150 300
+            Console.WriteLine(wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
-            electionTimeout.AutoReset = true;
+            electionTimeout.AutoReset = false;
             electionTimeout.Enabled = true;
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            Console.WriteLine("I CHANGED BECAUSE OF ON TIMED EVENT ON FOLLOWER");
-            _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
+            Console.WriteLine("Follower -> candidate : ontimedevent");
+            _server.updateState("candidate", _term, ""); //sends empty string because there is no leader   
         }
         public override void ping() {
             Console.WriteLine("Follower State pinged");
@@ -124,13 +133,17 @@ namespace Server {
             electionTimeout.Stop();
         }
         public override void startClock(int term, string url) {
+            Console.WriteLine("Started clock on Follower");
             //quando vem de candidato
+            Console.WriteLine("UPDATE TERM IN START");
             if (term > _term) {
                 _term = term;
             }
+            electionTimeout.Interval = wait;
+            electionTimeout.Enabled = true;
             _leaderUrl = url;
             _leaderRemote = _serverRemoteObjects[url];
-            electionTimeout.Start();
+            
         }
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             try {
