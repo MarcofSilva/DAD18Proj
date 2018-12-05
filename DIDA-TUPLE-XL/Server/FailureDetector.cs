@@ -48,20 +48,19 @@ namespace Server {
                             } 
                         }
                     }
-                    else {
-                        for (i = 0; i < allServers.Count; i++) {
-                            try {
+                    for (i = 0; i < allServers.Count; i++) {
+                        try {
+                            if (responses[i] != -1) { //responses with -1 already timed out, we don't want to endinvoke them
                                 IAsyncResult asyncResult = asyncResults[i];
                                 pingDelegate pingDel = (pingDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                                 responses[i] = pingDel.EndInvoke(asyncResult);
-                                //Console.WriteLine(response);
                             }
-                            catch (SocketException e) {
-                                responses[i] = -1;
-                            }
-                            catch (NullReferenceException e) {
-                                responses[i] = -1;
-                            }
+                        }
+                        catch (SocketException e) {
+                            responses[i] = -1;
+                        }
+                        catch (NullReferenceException e) {
+                            responses[i] = -1;
                         }
                     }
                     lock (view) {
@@ -70,9 +69,12 @@ namespace Server {
                             if (responses[j] != -1) {
                                 view.Add(allServers[j]);
                             }
+                            else {
+                                Console.WriteLine(j.ToString() + " is down");
+                            }
                         }
+                        Console.WriteLine("view count: " + view.Count);
                     }
-                    Console.WriteLine("view count: " + view.Count);
                 }
                 catch (Exception e) {
                     Console.WriteLine(e.StackTrace);
