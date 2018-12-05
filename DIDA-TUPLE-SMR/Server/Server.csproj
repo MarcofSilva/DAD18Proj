@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CandidateState.cs" />
+    <Compile Include="FailureDetector.cs" />
     <Compile Include="Entry.cs" />
     <Compile Include="EntryPacket.cs" />
     <Compile Include="EntryResponse.cs" />
@@ -74,7 +75,9 @@
     <Compile Include="WriteEntry.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ClassLibrary\ClassLibrary.csproj">

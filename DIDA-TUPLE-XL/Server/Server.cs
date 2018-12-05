@@ -206,7 +206,7 @@ namespace Server{
             frozen = false;
         }
 
-        public int ping() {
+        public int ping() { //TODO put this only on serverservice?
             checkFrozen();
             return 1;
         }

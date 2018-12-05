@@ -109,5 +109,14 @@ namespace Server
         public void Unfreeze() {
             _server.Unfreeze();
         }
+
+        public int Ping() {
+            _server.checkFrozen();
+            return _server.ping();
+        }
+
+        public List<string> ViewRequest() {
+            return _server.viewRequest();
+        }
     }
 }
