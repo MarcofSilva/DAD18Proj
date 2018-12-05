@@ -20,6 +20,7 @@ using ExceptionLibrary;
 namespace Server {
     public class Server {
 
+        private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
         private List<TupleClass> tupleSpace = new List<TupleClass>();
 
         private CandidateState candidate;
@@ -34,7 +35,7 @@ namespace Server {
         //public so state leader can acess it,
         //alternative: send it in constructor of leader
         public string _url = "tcp://localhost:8086/S";
-        public string _name = "Server";
+        public string _name = "S";
         private int _port = 8086;
         private TcpChannel channel;
         private ServerService myRemoteObject;
@@ -115,24 +116,46 @@ namespace Server {
             return _state.appendEntryTake(takeEntry, term, leaderID);
         }
 
+        //Enters write mode in the tupleSpaceLock
         public void writeLeader(TupleClass tuple) {
+            tupleSpaceLock.EnterWriteLock();
             tupleSpace.Add(tuple);
+            tupleSpaceLock.ExitWriteLock();
             Console.WriteLine("Operation: Added" + tuple.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
         }
+        //Enters reader mode and if it found same valid tuple it enters write mode to remove it
         public TupleClass takeLeader(TupleClass tuple) {
-            TupleClass res = new TupleClass();
-            foreach (TupleClass el in tupleSpace) {
-                if (el.Matches(tuple)) {
-                    res = el;
-                    tupleSpace.Remove(el);
-                    Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
-                    return res;
+            tupleSpaceLock.EnterUpgradeableReadLock();  
+            try {
+                TupleClass res = new TupleClass();
+                foreach (TupleClass el in tupleSpace)
+                {
+                    if (el.Matches(tuple))
+                    {
+                        tupleSpaceLock.EnterWriteLock();
+                        try {
+                            res = el;
+                            tupleSpace.Remove(el);
+                            Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
+                            return res;
+                        }
+                        finally {
+                            tupleSpaceLock.ExitWriteLock();
+                        }
+                    }
                 }
+
+                Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
+                return res; //no match
             }
-            Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
-            return res; //no match
+            finally
+            {
+                tupleSpaceLock.ExitUpgradeableReadLock();
+            }
         }
+        //reader mode of tupleSpaceLock
         public List<TupleClass> readLeader(TupleClass tuple, bool verbose) {
+            tupleSpaceLock.EnterReadLock();
             //verbose esta aqui porque no take, utilizamos, e n queremos que faca print de read
             if (verbose) {
                 Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
@@ -143,6 +166,7 @@ namespace Server {
                     res.Add(el);
                 }
             }
+            tupleSpaceLock.ExitReadLock();
             return res;
         }
         public void updateState(string state, int term, string url) {
