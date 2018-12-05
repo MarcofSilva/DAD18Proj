@@ -12,7 +12,7 @@ namespace Client
     public class Script_Client
     {
         private API_SMR _tupleSpaceAPI;
-        private string defaultURL = "tcp://localhost:8080/c1";
+        private string defaultURL = "tcp://localhost:8080/C";
 
         public Script_Client() {
             _tupleSpaceAPI = new API_SMR(defaultURL);
@@ -78,7 +78,7 @@ namespace Client
         {
             StreamReader reader;
             try {
-                reader = File.OpenText(scriptName);
+                reader = File.OpenText("../../../Client/bin/debug/" + scriptName);
             }
             catch (FileNotFoundException f) {
                 Console.WriteLine("File not found!");

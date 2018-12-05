@@ -29,90 +29,55 @@ namespace Server {
             SetTimer();
         }
 
-        public override EntryResponse appendEntryWrite(WriteEntry writeEntry, int term, string leaderID) {
-            Console.WriteLine("Follower: appendEntryWrite from: " + leaderID);
-            electionTimeout.Interval = wait;
-            //Considers requests from old entry
-            if (term > _term ) {
-                //posso atualizar primeiro, porque apesar de na response nao mostrar que estava atrasado, devido ao logindex da para ver 
-                _term = term;
-                return new EntryResponse(false, _term, _server.getLogIndex()); ;
-            }
-            //Treasts case of leader changed
-            if (leaderID != _leaderUrl) {
-                _leaderUrl = leaderID;
-                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                Console.WriteLine("Follower: Leader is now: " + leaderID);
-
-                // verfifica se a posicao para onde vai o a entry e menor que onde era suposto ela ficar
-                // nao verificamos se e maior, porque e impossivel
-                // verificamos so aqui, porque so e impossivel isto acontecer se o lider mudou
-                // se o lider nunca mudou, o follower acompanhou sempre
-                //TODO acham que isto e verdade? ^
-                if (_server.getLogIndex() < writeEntry.LogIndex) {
-                    return new EntryResponse(false, _term, _server.getLogIndex());
-                }
-            }
-            _server.addEntrytoLog(writeEntry);
-            _server.writeLeader(writeEntry.Tuple);
-            return new EntryResponse(true, _term, _server.getLogIndex()-1);
-        }
-
-        public override EntryResponse appendEntryTake(TakeEntry takeEntry, int term, string leaderID) {
-            Console.WriteLine("Follower: appendEntryTake from: " + leaderID);
-            electionTimeout.Interval = wait;
-            //Considers requests from old entry
-            if (term > _term) {
-                _term = term;
-                return new EntryResponse(false, _term, _server.getLogIndex()); ;
-            }
-            //Treasts case of leader changed
-            if (leaderID != _leaderUrl) {
-                _leaderUrl = leaderID;
-                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                Console.WriteLine("Follower: Leader is now: " + leaderID);
-
-                // verfifica se a posicao para onde vai o a entry e menor que onde era suposto ela ficar
-                // nao verificamos se e maior, porque e impossivel
-                // verificamos so aqui, porque so e impossivel isto acontecer se o lider mudou
-                // se o lider nunca mudou, o follower acompanhou sempre
-                //TODO acham que isto e verdade? ^
-                if ( _server.getLogIndex() < takeEntry.LogIndex) {
-                    return new EntryResponse(false, _term, _server.getLogIndex());
-                }
-            }
-            _server.addEntrytoLog(takeEntry);
-            _server.takeLeader(takeEntry.Tuple);
-            return new EntryResponse(true, _term, _server.getLogIndex()-1);
-        }
-
-        public override EntryResponse heartBeat(int term, string leaderID) {
-            //Considers requests from old entry
-            electionTimeout.Interval = wait;
-            if (term > _term) {
-                _term = term;
+        public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
+            if (term < _term) {
+                //o pedido que recebi e de um lider que ficou para tras
+                //apenas no unperfect
+                Console.WriteLine("Returned false because term of leader is lower");
                 return new EntryResponse(false, _term, _server.getLogIndex());
             }
-            //Treasts case of leader changed
-            if (leaderID != _leaderUrl) {
-                _leaderUrl = leaderID;
-                _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                Console.WriteLine("Follower: Leader is now: " + leaderID);
+            else {
+                electionTimeout.Interval = wait;
+                if (entryPacket.Count == 0) {
+                    return new EntryResponse(true, _term, _server.getLogIndex());
+                }
+                _term = term;                           //pode ser != mas visto que se tiver desatualizado e para tras
+                if ((_server.getLogIndex() - 1 + entryPacket.Count) == entryPacket.Entrys[entryPacket.Count - 1].LogIndex) {
+                    //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                    //Treasts case of leader changed
+                    if (leaderID != _leaderUrl) {
+                        _leaderUrl = leaderID;
+                        _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
+                        Console.WriteLine("Follower: Leader is now: " + leaderID);
+                    }
+                    foreach (Entry entry in entryPacket.Entrys) {
+                        _server.addEntrytoLog(entry);
+                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                        if (entry.Type == "write") {
+                            _server.writeLeader(entry.Tuple);
+                        }
+                        else {
+                            _server.takeLeader(entry.Tuple);
+                        }
+                    }
+                    return new EntryResponse(true, _term, _server.getLogIndex());
+                }
+                else {
+                    Console.WriteLine("Rejected entry because i am not up do date");
+                    //manda apenas o log index porque assim o server vai saber quantas entrys no log do follower estao
+                    return new EntryResponse(false, _term, _server.getLogIndex());
+                }
             }
-            //ter em atencao se do outro lado no heartbeat response verificamos isto
-            return new EntryResponse(true, _term, _server.getLogIndex());
         }
 
         public override bool vote(int term, string candidateID) {
             if (term > _term) {
                 _term = term;
                 voted = true;
-                electionTimeout.Interval = wait;
                 return true;
             }
             if (!voted) {
                 voted = true;
-                electionTimeout.Interval = wait;
                 return true;
             }
             electionTimeout.Interval = wait;
@@ -120,7 +85,7 @@ namespace Server {
         }
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(400, 600);//usually entre 150 300
+            wait = rnd.Next(350, 450);//usually entre 150 300
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = true;

@@ -9,7 +9,7 @@ namespace Server {
     [Serializable]
     public class TakeEntry : Entry {
 
-        public TakeEntry(TupleClass tuple, int term, int logIndex) : base(tuple, term, logIndex) {
+        public TakeEntry(TupleClass tuple, int term, int logIndex, string type) : base(tuple, term, logIndex, type) {
 
         }
     }

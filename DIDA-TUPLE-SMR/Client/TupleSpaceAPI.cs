@@ -53,7 +53,7 @@ namespace Client {
 
             Console.WriteLine("Hello! I'm a Client at port " + urlSplit[2]);
 
-            //TODO nao usar allkeys
+            //TODO nao usar allkeys (problema se este servidor em especifico nao tiver sido iniciado
             string url = ConfigurationManager.AppSettings.AllKeys[0];
 
             IServerService serverRemoteObject = ((IServerService)Activator.GetObject(typeof(IServerService), url));

@@ -81,7 +81,7 @@ namespace Client {
                 else {//TODO se o retorno for nulo temos de ir ver outra resposta
                     IAsyncResult asyncResult = asyncResults[indxAsync];
                     readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    TupleClass resTuple = readDel.EndInvoke(asyncResult);
+                    TupleClass resTuple = readDel.EndInvoke(asyncResult); //TODO ou mudar no smr receber tuple ou aqui para receber list
                     nonce++;
                     return resTuple;
                 }
