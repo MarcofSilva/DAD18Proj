@@ -47,6 +47,9 @@ namespace ProcessCreationService {
         public void Crash(string id) {
             Console.WriteLine("Crashing " + id);
             processes[id].Kill();
+            processes.Remove(id);
+            if (serverUrl.ContainsKey(id)) serverUrl.Remove(id); //TODO add this to SMR
+            if (clientUrl.ContainsKey(id)) clientUrl.Remove(id);
         }
 
         public void Freeze(string id) {

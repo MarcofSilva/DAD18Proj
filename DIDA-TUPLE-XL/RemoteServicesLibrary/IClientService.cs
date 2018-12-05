@@ -13,5 +13,6 @@ namespace RemoteServicesLibrary {
         void Freeze();
 
         void Unfreeze();
+
     }
 }
