@@ -132,7 +132,8 @@ namespace Server{
                     Console.WriteLine("-> " + x.ToString());
                 }
                 foreach (TupleClass el in tupleSpace) {
-                    if (el.Matches(tuple) && !allTuples.Contains(el)) {
+                    Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
+                    if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
                         res.Add(el);
                     }
                 }
@@ -206,6 +207,7 @@ namespace Server{
         }
 
         public int ping() {
+            checkFrozen();
             return 1;
         }
 
