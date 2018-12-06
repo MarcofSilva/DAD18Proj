@@ -174,7 +174,7 @@ namespace Server{
                     Console.WriteLine(tuple.ToString() + " -- " + el.ToString());
                     //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
                     lock (tupleSpace) {
-                        tupleSpace.Remove(tuple);
+                        tupleSpace.Remove(el);
                     }
                     //Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success); TODO
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
