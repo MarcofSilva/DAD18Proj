@@ -42,9 +42,9 @@ namespace Server {
                         i++;
                     }
                     if (!WaitHandle.WaitAll(handles, 300)) {
-                        Console.WriteLine("TIMEOUT");
+                        //Console.WriteLine("TIMEOUT");
                         for (int k = 0; k < numServers; k++) {
-                            Console.WriteLine(handles[k].WaitOne(0));
+                            //Console.WriteLine(handles[k].WaitOne(0));
                             if(handles[k].WaitOne(0) == false) {
                                 responses[k] = -1;
                             } 
@@ -72,7 +72,7 @@ namespace Server {
                                 view.Add(allServers[j]);
                             }
                             else {
-                                Console.WriteLine(j.ToString() + " is down");
+                                //Console.WriteLine(j.ToString() + " is down");
                             }
                         }
                         //Console.WriteLine("view count: " + view.Count);
@@ -98,9 +98,9 @@ namespace Server {
         }
 
         public List<string> getView() {
-            Console.WriteLine("view request - count: " + view.Count());
+            //Console.WriteLine("view request - count: " + view.Count());
             foreach (string bla in view) {
-                Console.WriteLine("-->" + bla);
+                //Console.WriteLine("-->" + bla);
             }
             return view;
         }
