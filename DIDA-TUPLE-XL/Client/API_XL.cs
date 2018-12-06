@@ -47,7 +47,7 @@ namespace Client {
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                if (!WaitHandle.WaitAll(handles, 3000)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
+                if (!WaitHandle.WaitAll(handles, 1000)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
                     Write(tuple);
                 }
                 else {
@@ -207,11 +207,10 @@ namespace Client {
         }
 
         public void setView() {
-            if (view == null) view = new List<IServerService>();
+            if (view == null)
+                view = new List<IServerService>();
             view = getView(view);
-            if (view == null || view.Count == 0) setView();
             numServers = view.Count;
-
         }
     }
 }

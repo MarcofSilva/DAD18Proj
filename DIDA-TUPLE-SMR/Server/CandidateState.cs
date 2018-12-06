@@ -82,6 +82,7 @@ namespace Server {
         public delegate bool voteDelegate(int term, string leaderUrl);
 
         public void requestVote() {
+            Console.WriteLine("request_vote --t " + Thread.CurrentThread.ManagedThreadId);
             if (timerThreadBlock) {
                 return;
             }
@@ -110,7 +111,7 @@ namespace Server {
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 4000)) {
+                if (!WaitHandle.WaitAll(handles, 4000)) {//TODO
                     requestVote();
                 }
                 else {
@@ -147,11 +148,11 @@ namespace Server {
             }
             timerThreadBlock = false;
             requestVote();
-            electionTimeout.Start();
+            //electionTimeout.Start();
+            SetTimer();
         }
         private void SetTimer() {
-            //usually entre 150 300
-            wait = rnd.Next(200, 400);
+            wait = rnd.Next(150, 300);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
@@ -181,6 +182,7 @@ namespace Server {
         }
         public override void stopClock() {
             electionTimeout.Stop();
+            electionTimeout.Dispose();
         }
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             throw new ElectionException("Election going on, try later");

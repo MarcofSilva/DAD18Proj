@@ -15,10 +15,6 @@ namespace Client {
             _clientAPI = clientAPI;
         }
 
-        public TupleClass TakeRemove(List<TupleClass> tupleSubset) {
-            throw new NotImplementedException();
-        }
-
         public void Freeze() {
             _clientAPI.freeze();
         }

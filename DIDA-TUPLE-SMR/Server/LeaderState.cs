@@ -200,11 +200,12 @@ namespace Server {
 
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
+            //Console.WriteLine("pulse heartbeat");
             pulseHeartbeat();
         }
 
         private void SetTimer() {
-            wait = rnd.Next(200, 300);
+            wait = rnd.Next(50, 100);
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = false;
@@ -213,6 +214,7 @@ namespace Server {
 
         public override void stopClock() {
             timer.Stop();
+            timer.Dispose();
         }
 
         public override void startClock(int term, string url) {
@@ -221,7 +223,8 @@ namespace Server {
             }
             timerThreadBlock = false;
             pulseHeartbeat();
-            timer.Start();
+            //timer.Start();
+            SetTimer();
             //TODO redundante porque o url recebido e o dele proprio
             _leaderUrl = url;
         }
