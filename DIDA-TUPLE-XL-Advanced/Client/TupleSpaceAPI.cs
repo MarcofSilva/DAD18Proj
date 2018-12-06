@@ -84,7 +84,7 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                int indxAsync = WaitHandle.WaitAny(handles, 1000); //Wait for the first answer from the servers
+                int indxAsync = WaitHandle.WaitAny(handles, 300); //Wait for the first answer from the servers
                 if (indxAsync == WaitHandle.WaitTimeout) {
                     Console.WriteLine("timeout with " + numServers.ToString());
                     getView(view);
