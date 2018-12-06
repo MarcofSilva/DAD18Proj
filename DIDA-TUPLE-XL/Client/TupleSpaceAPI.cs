@@ -104,7 +104,7 @@ namespace Client {
                         }
                         else {
                             Console.WriteLine("Empty view");
-                            return getView(view); //TODO? I dont like this
+                            return getView(view); 
                         }
                     }
                     catch (SocketException) {

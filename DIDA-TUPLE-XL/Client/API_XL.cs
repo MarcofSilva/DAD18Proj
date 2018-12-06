@@ -89,8 +89,8 @@ namespace Client {
             }
             catch (SocketException e) {
                 //TODO
-                Console.WriteLine(e.StackTrace);
-                return null;
+                Console.WriteLine("Error in read. Trying again...");
+                return Read(tuple);
             }
         }
 
@@ -126,7 +126,6 @@ namespace Client {
                         if (firstiteration) {
                             firstiteration = false;
                             response = tupleSet;
-                            //Console.WriteLine("doooneee");
                         }
                         else {
                             response = listIntersection(response, tupleSet);
@@ -144,8 +143,8 @@ namespace Client {
                 }
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                Console.WriteLine("Error in take. Trying again...");
+                return Take(tuple);
             }
         }
 
