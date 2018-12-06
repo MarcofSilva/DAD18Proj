@@ -24,10 +24,6 @@ namespace Server {
         private int wait;
         private bool timerThreadBlock = false;
 
-        private List<Entry> requestStorage = new List<Entry>();
-        private List<Entry> answerStorage = new List<Entry>();
-        
-        
         public LeaderState(Server server) : base(server) {
             _leaderUrl = server._url;
             SetTimer();
@@ -79,8 +75,7 @@ namespace Server {
         }
 
         public void pulseHeartbeat() {
-            EntryPacket entryPacket = new EntryPacket();
-            pulseAppendEntry(entryPacket);
+            pulseAppendEntry();
         }
 
         public override TupleClass take(TupleClass tuple, string url, long nonce) {
@@ -89,12 +84,8 @@ namespace Server {
             //arranjar lock para o log e tuplespace(?)
             _server.addEntrytoLog(entry);
 
-            List<Entry> packet = new List<Entry>();
-            packet.Add(entry);
-            EntryPacket entryPacket = new EntryPacket(packet);
-
             timer.Interval = wait;
-            pulseAppendEntry(entryPacket);
+            pulseAppendEntry();
 
             return _server.takeLeader(tuple);
         }
@@ -106,12 +97,8 @@ namespace Server {
                 //arranjar lock para o log
                 _server.addEntrytoLog(entry);
 
-                List<Entry> packet = new List<Entry>();
-                packet.Add(entry);
-                EntryPacket entryPacket = new EntryPacket(packet);
-
                 timer.Interval = wait;
-                pulseAppendEntry(entryPacket);
+                pulseAppendEntry();
                 _server.writeLeader(tuple);
             }
             catch (ElectionException e) {
@@ -122,18 +109,17 @@ namespace Server {
         //TODO falta utilizar nounce
         public delegate EntryResponse appendEntryDelegate(EntryPacket entryPacket, int term, string leaderID);
 
-        public void pulseAppendEntry(EntryPacket entryPacket) {
-            
+        public void pulseAppendEntry() {
             if (timerThreadBlock) {
                 return;
             }
-            
             int sucess = 1;
             timer.Enabled = true;
             if (_server.fd.changed()) {
                 _view = _server.fd.getView();
                 _numServers = _view.Count();
             }
+            Dictionary<int, string> i_url_map = new Dictionary<int, string>();
             WaitHandle[] handles = new WaitHandle[_numServers-1];
             IAsyncResult[] asyncResults = new IAsyncResult[_numServers-1];
             try {
@@ -142,19 +128,28 @@ namespace Server {
                     if (url == _url) {
                         continue;
                     }
+                    EntryPacket entryPacket = new EntryPacket();
+                    int theirIndex = _server.matchIndexMap[url];
+                    int myindex = _server.getLogIndex();
+                    if (myindex != theirIndex ) {
+                        for (int k = theirIndex; k < myindex; k++) {
+                            entryPacket.Add(_server.entryLog[k]);
+                        }
+                    }
                     ServerService remoteObject = (ServerService)_serverRemoteObjects[url];
                     appendEntryDelegate appendEntryDel = new appendEntryDelegate(remoteObject.appendEntry);
                     IAsyncResult ar = appendEntryDel.BeginInvoke(entryPacket, _term, _url, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
+                    i_url_map.Add(i, url);
                     i++;
                 }
                 if (!WaitHandle.WaitAll(handles, 5000)) {//TODO esta desoncronizado
                     pulseHeartbeat();
                 }
                 else {
-                    for (i = 0; i < _numServers-1; i++) {
-                        IAsyncResult asyncResult = asyncResults[i];
+                    foreach (KeyValuePair<int, string> entry in i_url_map) {
+                        IAsyncResult asyncResult = asyncResults[entry.Key];
                         appendEntryDelegate appendEntryDel = (appendEntryDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         EntryResponse response = appendEntryDel.EndInvoke(asyncResult);
                         if (!response.Sucess) {//foi false
@@ -163,19 +158,19 @@ namespace Server {
                                 timerThreadBlock = true;
                                 _server.updateState("follower", _term, response.Leader);
                             }
-                            else {//o meu log esta mais avancado que o dele
-                                //ter um set dos servidores que estao up to date
-                                //no proximo append entry vemos se algum servidor esta para tras e dps e enviar tudo
-                                //ele na resposta envia o log index dele  = quantas packets ele tem, logo temos de enviar
-                                //as ultimas nosso log - log da resposta entradas
-                            }
+                            //nao estou a tratar quando da false por causa do log aqui especificamente
+                            //trato tudo da mesma maneira
                         }
+                        //se tiver ter dado true e porque os 2 estao up to date, logo atualizo o dele para o bem
+                        //se tiver dado false, meto no mapa nao contando para os sucessos,
+                        //depois no heartbeat a seguir deve sincronizar teoricamente :)
+                        _server.matchIndexMap[entry.Value] = response.MatchIndex;
                         if (response.Sucess) {
                             sucess++;
                         }
                     }
                     if (!(sucess > (_numServers / 2))) {
-                        pulseAppendEntry(entryPacket);
+                        pulseAppendEntry();
                     }
 
                 }

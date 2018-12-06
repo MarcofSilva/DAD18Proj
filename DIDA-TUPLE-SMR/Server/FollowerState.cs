@@ -54,6 +54,7 @@ namespace Server {
                 Console.WriteLine("UPDATE TERM IN APPEND ENTRY");
                 _term = term;                           //pode ser != mas visto que se tiver desatualizado e para tras
                 if ((_server.getLogIndex() - 1 + entryPacket.Count) == entryPacket.Entrys[entryPacket.Count - 1].LogIndex) {
+                    
                     //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
                     //Treasts case of leader changed
                     if (leaderID != _leaderUrl) {
