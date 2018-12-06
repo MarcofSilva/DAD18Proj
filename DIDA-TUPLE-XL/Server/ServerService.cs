@@ -20,12 +20,17 @@ namespace Server
         private int _min_delay;
         private int _max_delay;
         private Random random = new Random();
+        bool askingView = false;
+        bool ready = false;
+        object dummy = new Object();
+        int numRequests = 0;
 
         public ServerService(Server server, int min_delay, int max_delay) {
             _server = server;
             _min_delay = min_delay;
             _max_delay = max_delay;
-            Console.WriteLine("min : " + min_delay.ToString() + " max: " + max_delay.ToString());
+            Thread t = new Thread(() => checkAskUpdate());
+            t.Start();
         }
 
         private bool validRequest(string clientUrl, long nonce) {
@@ -47,6 +52,7 @@ namespace Server
 
         public void Write(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
+            Interlocked.Increment(ref numRequests);
             if (validRequest(clientUrl, nonce)) {//success
                 int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("Write Network Delay: " + r.ToString());
@@ -55,16 +61,19 @@ namespace Server
                 _server.write(tuple);
                 Console.WriteLine("It's written!");
             }
+            Interlocked.Decrement(ref numRequests);
         }
 
         public TupleClass Read(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
+            Interlocked.Increment(ref numRequests);
             //if (validRequest(clientUrl, nonce)) { TODO all threads are stuck here or not?
-                int r = random.Next(_min_delay, _max_delay);
+            int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("Read Network Delay: " + r.ToString());
                 Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
-                return _server.read(tuple);
+            //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
+            Interlocked.Decrement(ref numRequests);
+            return _server.read(tuple);
             //}//Update nonce info
             Console.WriteLine("empty read");
             return null; //TODO what to do
@@ -72,23 +81,52 @@ namespace Server
 
         public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl) {
             _server.checkFrozen();
+            Interlocked.Increment(ref numRequests);
             List<TupleClass> responseTuple = new List<TupleClass>();
             int r = random.Next(_min_delay, _max_delay);
             Console.WriteLine("TakeRead Network Delay: " + r.ToString());
             Thread.Sleep(r);
             //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
             responseTuple = _server.takeRead(tuple, clientUrl);
+            Interlocked.Decrement(ref numRequests);
             return responseTuple;
        }
 
         public void TakeRemove(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
+            Interlocked.Increment(ref numRequests);
             if (validRequest(clientUrl, nonce)) {//success
                 int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("TakeRemove Network Delay: " + r.ToString());
                 Thread.Sleep(r);
                 //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRemove Request");
                 _server.takeRemove(tuple, clientUrl);
+            }
+            Interlocked.Decrement(ref numRequests);
+        }
+
+        public List<TupleClass> askUpdate() {
+            if (numRequests > 0) {
+                askingView = true;
+                lock (dummy) {
+                    while (askingView) {
+                        Console.WriteLine("Waiting...");
+                        Monitor.Wait(dummy);
+                    }
+                }
+            }
+            Console.WriteLine(_server.tupleSpace.Count());
+            return _server.tupleSpace;
+        }
+
+        public void checkAskUpdate() {
+            while (true) {
+                if (numRequests <= 0) {
+                    lock (dummy) {
+                        Monitor.PulseAll(dummy);
+                    }
+                    askingView = false;
+                }
             }
         }
 

@@ -39,7 +39,7 @@ namespace Client {
             
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {

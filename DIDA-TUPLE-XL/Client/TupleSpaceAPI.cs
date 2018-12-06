@@ -123,7 +123,7 @@ namespace Client {
                 return getView(serverRemoteObjects); //TODO? isto acho que nao precisa de estar aqui (este catch)
             }
             Console.WriteLine("you shouldnt be here");
-            return null;
+            return getView(serverRemoteObjects);
         }
     }
 }

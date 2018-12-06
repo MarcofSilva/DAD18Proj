@@ -16,7 +16,7 @@ using System.Collections.Concurrent;
 namespace Server{
     public class Server{
         private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
-        private List<TupleClass> tupleSpace;
+        public List<TupleClass> tupleSpace;
 
         private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
         private Object dummyObjForTakeRead = new object();
@@ -35,7 +35,8 @@ namespace Server{
         public Server(){
             tupleSpaceLock = new ReaderWriterLockSlim();
             prepareRemoting(defaultPort, defaultname, defaultDelay, defaultDelay);
-            fd = new FailureDetector();
+            fd = new FailureDetector(url);
+            tupleSpace = fd.updateTS();
         }
 
         public Server(string URL, string min_delay, string max_delay) {
@@ -47,9 +48,12 @@ namespace Server{
             Int32.TryParse(max_delay, out imax_delay);
 
             prepareRemoting(port, urlSplit[3], imin_delay, imax_delay);
-            fd = new FailureDetector();
+            fd = new FailureDetector(url);
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
-            
+            tupleSpace = fd.updateTS();
+            foreach(TupleClass t in tupleSpace) {
+                Console.WriteLine(t.ToString());
+            }
         }
 
         private void prepareRemoting(int port, string name, int min_delay, int max_delay) {
