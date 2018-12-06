@@ -25,9 +25,9 @@ namespace Client {
         public API_XL(string URL) {
             url = URL;
             prepareForRemoting(ref channel, URL);
-            Console.WriteLine("Requesting available servers...");
+            //Console.WriteLine("Requesting available servers...");
             setView();
-            Console.WriteLine("Done!");
+            Console.WriteLine("Finished requesting servers!");
         }
 
         public delegate void writeDelegate(TupleClass tuple, string url, long nonce);
@@ -39,7 +39,7 @@ namespace Client {
             
             checkFrozen();
             setView();
-            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -64,7 +64,7 @@ namespace Client {
         public override TupleClass Read(TupleClass tuple) {
             checkFrozen();
             setView();
-            Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
+            //Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
@@ -89,15 +89,15 @@ namespace Client {
             }
             catch (SocketException e) {
                 //TODO
-                Console.WriteLine(e.StackTrace);
-                return null;
+                Console.WriteLine("Error in read. Trying again...");
+                return Read(tuple);
             }
         }
 
         public override TupleClass Take(TupleClass tuple) {
             checkFrozen();
             setView();
-            Console.WriteLine("----->DEBUG_API_XL: Begin Take");
+            //Console.WriteLine("----->DEBUG_API_XL: Begin Take");
             //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
@@ -126,7 +126,6 @@ namespace Client {
                         if (firstiteration) {
                             firstiteration = false;
                             response = tupleSet;
-                            Console.WriteLine("doooneee");
                         }
                         else {
                             response = listIntersection(response, tupleSet);
@@ -144,8 +143,8 @@ namespace Client {
                 }
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                Console.WriteLine("Error in take. Trying again...");
+                return Take(tuple);
             }
         }
 

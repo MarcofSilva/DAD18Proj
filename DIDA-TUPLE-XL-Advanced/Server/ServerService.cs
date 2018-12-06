@@ -106,6 +106,7 @@ namespace Server
         }
 
         public List<string> ViewRequest() {
+            _server.checkFrozen(); //TODO put  in normal XL
             return _server.viewRequest();
         }
     }

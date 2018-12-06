@@ -73,13 +73,13 @@ namespace Client {
                 numServers = view.Count;
             }
             WaitHandle[] handles = new WaitHandle[numServers];
-            Console.WriteLine("Broadcasting to " + numServers + " servers...");
+            //Console.WriteLine("Broadcasting to " + numServers + " servers...");
             IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = view[i];
                     requestViewDelegate viewDel = new requestViewDelegate(remoteObject.ViewRequest);
-                    Console.WriteLine(i);
+                    //Console.WriteLine(i);
                     IAsyncResult ar = viewDel.BeginInvoke(null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
@@ -97,14 +97,14 @@ namespace Client {
                         if (servers.Count() != 0) {
                             List<IServerService> serverobjs = new List<IServerService>();
                             for (int j = 0; j < servers.Count; j++) {
-                                Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
+                                //Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
                                 serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), servers[j]));
                             }
                             return serverobjs;
                         }
                         else {
                             Console.WriteLine("Empty view");
-                            return getView(view); //TODO? I dont like this
+                            return getView(view); 
                         }
                     }
                     catch (SocketException) {

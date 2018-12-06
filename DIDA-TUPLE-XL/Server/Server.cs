@@ -122,10 +122,10 @@ namespace Server{
                 if (toTakeSubset.ContainsKey(clientURL)) {
                     toTakeSubset.Remove(clientURL);
                 }
-                Console.WriteLine("totakesubset -> ");
+                //Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
                     foreach (var y in list) {
-                        Console.WriteLine("->" + y);
+                        //Console.WriteLine("->" + y);
                         allTuples.Add(y);
                     }
                 }
@@ -135,7 +135,7 @@ namespace Server{
                 }*/
                 lock (tupleSpace) {
                     foreach (TupleClass el in tupleSpace.ToList()) {
-                        Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
+                        //Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
                         if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
                             res.Add(el);
                         }
@@ -145,10 +145,10 @@ namespace Server{
                     }
                 }
                 
-                Console.WriteLine("totakesubset -> ");
+                //Console.WriteLine("totakesubset -> ");
                 foreach (var x in toTakeSubset.Values) {
                     foreach (var y in x) {
-                        Console.WriteLine("->" + y);
+                        //Console.WriteLine("->" + y);
                     }
                 }
             }
@@ -161,7 +161,7 @@ namespace Server{
             }
             else {
                 foreach (TupleClass t in res) {
-                    Console.WriteLine("res -> " + t.ToString());
+                    //Console.WriteLine("res -> " + t.ToString());
                 }
                 return res;
             }

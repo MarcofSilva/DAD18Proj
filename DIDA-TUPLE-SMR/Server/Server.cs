@@ -43,14 +43,16 @@ namespace Server {
         // public so states can acess it, 
         // alternative: send the map to states or even the map being created in the states
         public Dictionary<string, IServerService> serverRemoteObjects;
+        public Dictionary<string, int> matchIndexMap;
         private int _numServers = 0;
         
-        private List<Entry> entryLog = new List<Entry>();
+        public List<Entry> entryLog = new List<Entry>();
         public FailureDetector fd;
 
 
         private void selfPrepare(int min_delay, int max_delay) {
             serverRemoteObjects = new Dictionary<string, IServerService>();
+            matchIndexMap = new Dictionary<string, int>();
 
             channel = new TcpChannel(_port);
             Console.WriteLine(_port.ToString());
@@ -68,7 +70,9 @@ namespace Server {
                 //not to connect to himself
                 if (portOut != _port) {
                     serverRemoteObjects.Add(url, (ServerService)Activator.GetObject(typeof(ServerService), url));
+                    matchIndexMap.Add(url, 0);
                 }
+                
             }
             _numServers = serverRemoteObjects.Count;
 

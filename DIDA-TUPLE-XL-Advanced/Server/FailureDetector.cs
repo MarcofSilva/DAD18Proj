@@ -14,6 +14,7 @@ namespace Server {
 
         private List<string> allServers = new List<string>();
         private List<string> view = new List<string>();
+        private List<string> suspects = new List<string>();
         private int numServers;
         private Dictionary<string, IServerService> serverRemoteObjects = new Dictionary<string, IServerService>();
         public delegate int pingDelegate();
@@ -44,22 +45,24 @@ namespace Server {
                     if (!WaitHandle.WaitAll(handles, 300)) {
                         Console.WriteLine("TIMEOUT");
                         for (int k = 0; k < numServers; k++) {
-                            Console.WriteLine(handles[k].WaitOne(0));
-                            if(handles[k].WaitOne(0) == false) {
-                                responses[k] = -1;
-                            } 
+                            if (handles[k].WaitOne(0) == false) {
+                                responses[k] = -2;
+                                if (!suspects.Contains(allServers[k])) { //timeout e ainda não era suspeito
+                                    suspects.Add(allServers[k]);
+                                }
+                            }
                         }
                     }
                     for (i = 0; i < numServers; i++) {
                         try {
-                            if (responses[i] != -1) { //responses with -1 already timed out, we don't want to endinvoke them
+                            if (responses[i] != -2) { //responses with -2 already timed out, we don't want to endinvoke them
                                 IAsyncResult asyncResult = asyncResults[i];
                                 pingDelegate pingDel = (pingDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                                 responses[i] = pingDel.EndInvoke(asyncResult);
                             }
                         }
                         catch (SocketException e) {
-                            responses[i] = -1;
+                            responses[i] = -1;  // -1 means they are dead
                         }
                         catch (NullReferenceException e) {
                             responses[i] = -1;
@@ -71,15 +74,19 @@ namespace Server {
                             if (responses[j] != -1) {
                                 view.Add(allServers[j]);
                             }
-                            else {
-                                Console.WriteLine(j.ToString() + " is down");
+                            if (responses[j] != -2 && suspects.Contains(allServers[j])) {
+                                suspects.Remove(allServers[j]);
                             }
-                        }
+                         }
                         //Console.WriteLine("view count: " + view.Count);
                     }
+                    
                 }
                 catch (Exception e) {
                     Console.WriteLine(e.StackTrace);
+                }
+                foreach (string a in suspects) {
+                    //Console.WriteLine("suspect -> " + a);
                 }
 
                 bool isChanged = false;
@@ -98,9 +105,9 @@ namespace Server {
         }
 
         public List<string> getView() {
-            Console.WriteLine("view request - count: " + view.Count());
+            //Console.WriteLine("view request - count: " + view.Count());
             foreach (string bla in view) {
-                Console.WriteLine("-->" + bla);
+                //Console.WriteLine("-->" + bla);
             }
             return view;
         }

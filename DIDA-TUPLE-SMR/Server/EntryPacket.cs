@@ -21,6 +21,10 @@ namespace Server {
             Count = entrys.Count;
         }
 
+        public void Add(Entry entry) {
+            Entrys.Add(entry);
+            Count = Count + 1;
+        }
 
     }
 }
