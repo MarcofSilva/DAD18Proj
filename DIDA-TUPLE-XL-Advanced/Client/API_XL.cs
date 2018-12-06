@@ -88,9 +88,8 @@ namespace Client {
                 }
             }
             catch (SocketException e) {
-                //TODO
-                Console.WriteLine(e.StackTrace);
-                return null;
+                Console.WriteLine("Error in read. Trying again...");
+                return Read(tuple);
             }
         }
 
@@ -110,7 +109,7 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                bool allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
+                bool allcompleted = WaitHandle.WaitAll(handles, 10000); //Wait for the first answer from the servers
 
                 if (!allcompleted) {
                     Console.WriteLine("timeout");
@@ -126,7 +125,6 @@ namespace Client {
                         if (firstiteration) {
                             firstiteration = false;
                             response = tupleSet;
-                            Console.WriteLine("doooneee");
                         }
                         else {
                             response = listIntersection(response, tupleSet);
@@ -144,8 +142,8 @@ namespace Client {
                 }
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                Console.WriteLine("Error in take. Trying again...");
+                return Take(tuple);
             }
         }
 
