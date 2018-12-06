@@ -25,5 +25,7 @@ namespace RemoteServicesLibrary
         int Ping();
 
         List<string> ViewRequest();
+
+        void releaseLocks(string clientUrl);
     }
 }

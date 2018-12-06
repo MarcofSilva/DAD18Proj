@@ -105,6 +105,10 @@ namespace Server
             Interlocked.Decrement(ref numRequests);
         }
 
+        public void releaseLocks(string clientUrl) {
+            _server.releaseLocks(clientUrl);
+        }
+
         public List<TupleClass> askUpdate() {
             if (numRequests > 0) {
                 askingView = true;

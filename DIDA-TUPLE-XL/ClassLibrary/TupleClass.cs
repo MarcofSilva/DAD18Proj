@@ -174,7 +174,7 @@ namespace ClassLibrary {
                     //Console.WriteLine("asked for type DADTestC and there is one");
                 }
                 else if (tuple[i].GetType() == typeof(DADTestA) && _tuple[i].GetType() == typeof(DADTestA)) {
-                    Console.WriteLine("------------------> DADTestA");
+                    //Console.WriteLine("------------------> DADTestA");
                     DADTestA tuplei = (DADTestA)tuple[i];
                     DADTestA eli = (DADTestA)_tuple[i];
                     if (!tuplei.Equals(eli)) {
@@ -183,7 +183,7 @@ namespace ClassLibrary {
                     }
                 }
                 else if (tuple[i].GetType() == typeof(DADTestB) && _tuple[i].GetType() == typeof(DADTestB)) {
-                    Console.WriteLine("------------------> DADTestB");
+                    //Console.WriteLine("------------------> DADTestB");
                     DADTestB tuplei = (DADTestB)tuple[i];
                     DADTestB eli = (DADTestB)_tuple[i];
                     if (!tuplei.Equals(eli)) {
@@ -192,7 +192,7 @@ namespace ClassLibrary {
                     }
                 }
                 else if (tuple[i].GetType() == typeof(DADTestC) && _tuple[i].GetType() == typeof(DADTestC)) {
-                    Console.WriteLine("------------------> DADTestC");
+                    //Console.WriteLine("------------------> DADTestC");
                     DADTestC tuplei = (DADTestC)tuple[i];
                     DADTestC eli = (DADTestC)_tuple[i];
                     if (!tuplei.Equals(eli)) {
