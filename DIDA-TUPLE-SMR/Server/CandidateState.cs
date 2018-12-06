@@ -23,54 +23,66 @@ namespace Server {
         private int wait;
         private Random rnd = new Random(Guid.NewGuid().GetHashCode());
         private bool timerThreadBlock = false;
+        private readonly Object vote_heartbeat_Lock = new object();
 
         public CandidateState(Server server) : base(server) {
             SetTimer();
         }
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
-            Console.WriteLine("heartbeat");
-            //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
-            if (term < _term) {
-                //TODO
-                return new EntryResponse(false, _term, _server.getLogIndex());
-            }
-            else {
-                _term = term;
-                Console.WriteLine("Leader changed to: " + leaderID);
-                if (entryPacket.Count == 0) {
+            lock (vote_heartbeat_Lock)
+            {
+                Console.WriteLine("heartbeat");
+                //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
+                if (term < _term)
+                {
+                    //TODO
+                    return new EntryResponse(false, _term, _server.getLogIndex());
+                }
+                else
+                {
+                    _term = term;
+                    Console.WriteLine("Leader changed to: " + leaderID);
+                    if (entryPacket.Count == 0)
+                    {
+                        timerThreadBlock = true;
+                        _server.updateState("follower", _term, leaderID); ;
+                        return new EntryResponse(true, _term, _server.getLogIndex());
+                    }
+
+                    if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    {
+                        //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        Console.WriteLine("Candidate -> Follower : appendEntry ");
+                        timerThreadBlock = true;
+                        _server.updateState("follower", _term, leaderID);
+                        return new EntryResponse(false, _term, _server.getLogIndex());
+                    }
+                    foreach (Entry entry in entryPacket.Entrys)
+                    {
+                        _server.addEntrytoLog(entry);
+                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                        if (entry.Type == "write")
+                        {
+                            _server.writeLeader(entry.Tuple);
+                        }
+                        else
+                        {
+                            _server.takeLeader(entry.Tuple);
+                        }
+                    }
+                    Console.WriteLine("Candidate -> Follower : append Entry");
                     timerThreadBlock = true;
                     _server.updateState("follower", _term, leaderID); ;
                     return new EntryResponse(true, _term, _server.getLogIndex());
                 }
-
-                if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex) {
-                    //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
-                    Console.WriteLine("Candidate -> Follower : appendEntry ");
-                    timerThreadBlock = true;
-                    _server.updateState("follower", _term, leaderID);
-                    return new EntryResponse(false, _term, _server.getLogIndex());
-                }
-                foreach (Entry entry in entryPacket.Entrys) {
-                    _server.addEntrytoLog(entry);
-                    //TODO, matilde queres meter a comparacao de strings como gostas? xD
-                    if (entry.Type == "write") {
-                        _server.writeLeader(entry.Tuple);
-                    }
-                    else {
-                        _server.takeLeader(entry.Tuple);
-                    }
-                }
-                Console.WriteLine("Candidate -> Follower : append Entry");
-                timerThreadBlock = true;
-                _server.updateState("follower", _term, leaderID);;
-                return new EntryResponse(true, _term, _server.getLogIndex());
             }
         }
 
         public delegate bool voteDelegate(int term, string leaderUrl);
 
         public void requestVote() {
+            Console.WriteLine("request_vote --t " + Thread.CurrentThread.ManagedThreadId);
             if (timerThreadBlock) {
                 return;
             }
@@ -99,7 +111,7 @@ namespace Server {
                     handles[i] = ar.AsyncWaitHandle;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 4000)) {
+                if (!WaitHandle.WaitAll(handles, 4000)) {//TODO
                     requestVote();
                 }
                 else {
@@ -136,11 +148,11 @@ namespace Server {
             }
             timerThreadBlock = false;
             requestVote();
-            electionTimeout.Start();
+            //electionTimeout.Start();
+            SetTimer();
         }
         private void SetTimer() {
-            //usually entre 150 300
-            wait = rnd.Next(200, 400);
+            wait = rnd.Next(150, 300);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
@@ -148,13 +160,17 @@ namespace Server {
             electionTimeout.Enabled = false;
         }
         public override bool vote(int term, string candidateID) {
-            if (term > _term) {
-                Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
-                Console.WriteLine("He was in term: " + term + " i was in " + _term);
-                _term = term;
-                timerThreadBlock = true;
-                _server.updateState("follower", _term, candidateID);
-                return true;
+            lock (vote_heartbeat_Lock)
+            {
+                if (term > _term)
+                {
+                    Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
+                    Console.WriteLine("He was in term: " + term + " i was in " + _term);
+                    _term = term;
+                    timerThreadBlock = true;
+                    _server.updateState("follower", _term, candidateID);
+                    return true;
+                }
             }
             return false;
         }
@@ -166,6 +182,7 @@ namespace Server {
         }
         public override void stopClock() {
             electionTimeout.Stop();
+            electionTimeout.Dispose();
         }
         public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
             throw new ElectionException("Election going on, try later");
