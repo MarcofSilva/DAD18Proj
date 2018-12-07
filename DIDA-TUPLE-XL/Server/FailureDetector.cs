@@ -8,6 +8,7 @@ using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ClassLibrary;
 
 namespace Server {
     class FailureDetector {
@@ -17,9 +18,11 @@ namespace Server {
         private int numServers;
         private Dictionary<string, IServerService> serverRemoteObjects = new Dictionary<string, IServerService>();
         public delegate int pingDelegate();
+        private string _url;
 
-        public FailureDetector() {
+        public FailureDetector(string serverUrl) {
             configure();
+            _url = serverUrl;
             Thread t = new Thread(() => pingLoop());
             t.Start();
         }
@@ -103,6 +106,70 @@ namespace Server {
                 //Console.WriteLine("-->" + bla);
             }
             return view;
+        }
+
+        public delegate List<TupleClass> askUpdateDelegate();
+        public List<TupleClass> updateTS() {
+            while(view.Count == 0) {
+                Thread.Sleep(100);
+            }
+            WaitHandle[] handles = new WaitHandle[view.Count-1];
+            IAsyncResult[] asyncResults = new IAsyncResult[view.Count-1];
+            try {
+                int i = 0;
+                List<TupleClass> result = new List<TupleClass>();
+                foreach (string url in view) {
+                    if (url == _url)
+                        continue;
+                    ServerService remoteObject = (ServerService)serverRemoteObjects[url];
+                    askUpdateDelegate askUpdateDel = new askUpdateDelegate(remoteObject.askUpdate);
+                    IAsyncResult ar = askUpdateDel.BeginInvoke(null, null);
+                    asyncResults[i] = ar;
+                    handles[i] = ar.AsyncWaitHandle;
+                    i++;
+                }
+                if (!WaitHandle.WaitAll(handles, 3000)) {
+                    return updateTS(); //TODO
+                }
+                List<TupleClass> localRes = new List<TupleClass>();
+                for (i = 0; i < view.Count-1; i++) {
+                    try {
+                        IAsyncResult asyncResult = asyncResults[i];
+                        askUpdateDelegate askUpdateDel = (askUpdateDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                        localRes = askUpdateDel.EndInvoke(asyncResult);
+                    }
+                    catch (SocketException e) {
+                    }
+                    if (i == 0) {
+                        result = localRes;
+                    }
+                    else {
+                        if (!compareList(result, localRes)) {
+                            Thread.Sleep(300);//if the servers we asked are not the same, we need to wait for them to sync
+                            return updateTS();
+                        }
+                    }
+                }
+                return result;
+            }
+            catch (Exception e) {
+                Console.WriteLine(e.StackTrace);
+                return null;
+            }
+        }
+
+        private bool compareList(List<TupleClass> l1, List<TupleClass> l2) {
+            if (l1.Count != l2.Count) {
+                return false;
+            }
+            else {
+                for(int i = 0; i < l1.Count; i++) {
+                    if (!l1[i].Equals( l2[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         public void configure() {

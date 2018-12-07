@@ -16,7 +16,7 @@ using System.Collections.Concurrent;
 namespace Server{
     public class Server{
         private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
-        private List<TupleClass> tupleSpace;
+        public List<TupleClass> tupleSpace;
 
         private Object dummyObjForLock = new Object(); //dummy object for lock and wait and lock and pulse in read and write.
         private Object dummyObjForTakeRead = new object();
@@ -35,7 +35,8 @@ namespace Server{
         public Server(){
             tupleSpaceLock = new ReaderWriterLockSlim();
             prepareRemoting(defaultPort, defaultname, defaultDelay, defaultDelay);
-            fd = new FailureDetector();
+            fd = new FailureDetector(url);
+            tupleSpace = fd.updateTS();
         }
 
         public Server(string URL, string min_delay, string max_delay) {
@@ -47,9 +48,12 @@ namespace Server{
             Int32.TryParse(max_delay, out imax_delay);
 
             prepareRemoting(port, urlSplit[3], imin_delay, imax_delay);
-            fd = new FailureDetector();
+            fd = new FailureDetector(url);
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
-            
+            tupleSpace = fd.updateTS();
+            foreach(TupleClass t in tupleSpace) {
+                Console.WriteLine(t.ToString());
+            }
         }
 
         private void prepareRemoting(int port, string name, int min_delay, int max_delay) {
@@ -134,17 +138,21 @@ namespace Server{
                 foreach (var x in allTuples) {
                     Console.WriteLine("-> " + x.ToString());
                 }*/
-                lock (tupleSpace) {
+
+                //lock (tupleSpace) {
                     foreach (TupleClass el in tupleSpace.ToList()) {
                         //Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
                         if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
                             res.Add(el);
                         }
+                        else if(el.Matches(tuple) && allTuples.Contains(el)) {
+                            return new List<TupleClass>();
+                        }
                     }
                     if (res.Count != 0) {
                         toTakeSubset.Add(clientURL, res);
                     }
-                }
+                //}
                 
                 //Console.WriteLine("totakesubset -> ");
                 foreach (var x in toTakeSubset.Values) {
@@ -155,10 +163,7 @@ namespace Server{
             }
             if (res.Count == 0) {
                 Console.WriteLine("empty res");
-                lock (dummyObjForLock) {
-                    Monitor.Wait(dummyObjForLock);
-                } //no match
-                return takeRead(tuple, clientURL);
+                return new List<TupleClass>();
             }
             else {
                 foreach (TupleClass t in res) {
@@ -193,6 +198,13 @@ namespace Server{
             }
         }
 
+        public void releaseLocks(string clientUrl) {
+            Console.WriteLine("Releasing locks");
+            lock (toTakeSubset) {
+                toTakeSubset.Remove(clientUrl);
+            }
+        }
+
         public void Freeze() {
             Console.WriteLine("I'm freezing");
             frozen = true;
@@ -216,6 +228,10 @@ namespace Server{
                 Monitor.PulseAll(this);
             }
             frozen = false;
+            tupleSpace = fd.updateTS();
+            foreach (TupleClass t in tupleSpace) {
+                Console.WriteLine(t.ToString());
+            }
         }
 
         public int ping() { //TODO put this only on serverservice?

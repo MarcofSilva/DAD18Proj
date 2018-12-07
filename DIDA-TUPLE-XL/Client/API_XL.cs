@@ -21,6 +21,7 @@ namespace Client {
         private bool frozen = false;
         private string url;
         private List<IServerService> view = new List<IServerService>();
+        private Random random = new Random();
 
         public API_XL(string URL) {
             url = URL;
@@ -34,12 +35,14 @@ namespace Client {
         public delegate TupleClass readDelegate(TupleClass tuple, string url, long nonce);
         public delegate List<TupleClass> takeReadDelegate(TupleClass tuple, string url);
         public delegate void takeRemoveDelegate(TupleClass tuple, string url, long nonce);
+        public delegate void releaseLocksDelegate(string url);
+
 
         public override void Write(TupleClass tuple) {
             
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -102,6 +105,7 @@ namespace Client {
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
+            int nFaults = 0;
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = view[i];
@@ -110,36 +114,61 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                bool allcompleted = WaitHandle.WaitAll(handles, 3000); //Wait for the first answer from the servers
+                bool allcompleted = WaitHandle.WaitAll(handles, random.Next(2000,3000)); //Wait for the first answer from the servers
 
                 if (!allcompleted) {
                     Console.WriteLine("timeout");
-                    return Take(tuple);
+                    return Take(tuple); //TODO return?
                 }
                 else { //all have completed
-                    List<TupleClass> response = new List<TupleClass>();
-                    bool firstiteration = true;
-                    
-                    foreach (IAsyncResult asyncResult in asyncResults) {
-                        takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        List<TupleClass> tupleSet = takeReadDel.EndInvoke(asyncResult);
-                        if (firstiteration) {
-                            firstiteration = false;
-                            response = tupleSet;
-                        }
-                        else {
-                            response = listIntersection(response, tupleSet);
-                            if (response.Count == 0) {
-                                Console.WriteLine("No possible intersection. Repeating...");
-                                return Take(tuple);
-                            }
-                        }
+                    List<List<TupleClass>> responses = new List<List<TupleClass>>();
+                    for (int j = 0; j < numServers; j++) {
+                        takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResults[j]).AsyncDelegate;
+                        List<TupleClass> res = takeReadDel.EndInvoke(asyncResults[j]);
+                        responses.Add(res);
+                        if (res.Count == 0) nFaults++;
                     }
+
+                    Console.WriteLine("numfaults: " + nFaults);
+                    if (nFaults != 0 && nFaults <= numServers / 2) {
+                        Console.WriteLine("Majority of accepts");
+                        return Take(tuple);
+                    }
+                    else if (nFaults > numServers / 2) {
+                        Console.WriteLine("Minority of accepts");
+                        for (int i = 0; i < numServers; i++) {
+                            IServerService remoteObject = view[i];
+                            releaseLocksDelegate releaseLocksDelegate = new releaseLocksDelegate(remoteObject.releaseLocks);
+                            IAsyncResult ar = releaseLocksDelegate.BeginInvoke(url, null, null);
+                            asyncResults[i] = ar;
+                            handles[i] = ar.AsyncWaitHandle;
+                        }
+                        return Take(tuple); //TODO not sure se aqui ou no servidor
+                    }
+                    else {
+                        List<TupleClass> response = new List<TupleClass>();
+                        bool firstiteration = true;
+                        foreach(List<TupleClass> list in responses) {
+                            if (firstiteration) {
+                                firstiteration = false;
+                                response = list;
+                            }
+                            else {
+                                response = listIntersection(response, list);
+                                if (response.Count == 0) {
+                                    Console.WriteLine("No possible intersection. Repeating...");
+                                    return Take(tuple);
+                                }
+                            }
+                    
+                        }
+                    
                     TupleClass tupleToDelete = response[0];
                     //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
                     takeRemove(tupleToDelete);
                     nonce++;
-                    return tupleToDelete; 
+                    return tupleToDelete;
+                    }
                 }
             }
             catch (SocketException) {
