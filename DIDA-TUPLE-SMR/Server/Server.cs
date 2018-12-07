@@ -122,7 +122,7 @@ namespace Server {
             tupleSpaceLock.ExitWriteLock();
         }
         //Enters reader mode and if it found same valid tuple it enters write mode to remove it
-        public TupleClass takeLeader(TupleClass tuple) {
+        public TupleClass takeLeader(TupleClass tuple, int term) {
             tupleSpaceLock.EnterUpgradeableReadLock();  
             try {
                 TupleClass res = new TupleClass();
@@ -132,6 +132,8 @@ namespace Server {
                     {
                         tupleSpaceLock.EnterWriteLock();
                         try {
+                            TakeEntry entry = new TakeEntry(tuple, term, getLogIndex(), "take");
+                            addEntrytoLog(entry);
                             res = el;
                             tupleSpace.Remove(el);
                             Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
@@ -235,7 +237,6 @@ namespace Server {
         }
 
         public int ping() { //TODO put this only on serverservice?
-            checkFrozen();
             return 1;
         }
 

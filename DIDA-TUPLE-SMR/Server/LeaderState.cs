@@ -55,15 +55,16 @@ namespace Server {
                     }
                     foreach (Entry entry in entryPacket.Entrys)
                     {
-                        _server.addEntrytoLog(entry);
+                        
                         //TODO, matilde queres meter a comparacao de strings como gostas? xD
                         if (entry.Type == "write")
                         {
+                            _server.addEntrytoLog(entry);
                             _server.writeLeader(entry.Tuple);
                         }
                         else
                         {
-                            _server.takeLeader(entry.Tuple);
+                            _server.takeLeader(entry.Tuple, entry.Term);
                         }
                     }
                     Console.WriteLine("Leader -> Follower : appendEntry");
@@ -96,14 +97,12 @@ namespace Server {
 
         public override TupleClass take(TupleClass tuple, string url, long nonce) {
             TupleClass realTuple = _server.readLeader(tuple, false)[0];
-            TakeEntry entry = new TakeEntry(tuple, _term, _server.getLogIndex(), "take");
-            //arranjar lock para o log e tuplespace(?)
-            _server.addEntrytoLog(entry);
-
+            
             timer.Interval = wait;
+            TupleClass res = _server.takeLeader(tuple, _term);
             pulseAppendEntry();
 
-            return _server.takeLeader(tuple);
+            return res;
         }
 
         //TODO falta utilizar nounce
