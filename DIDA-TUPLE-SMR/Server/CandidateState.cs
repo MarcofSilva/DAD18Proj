@@ -195,7 +195,7 @@ namespace Server {
 
         private int setWait()
         {
-            return wait = rnd.Next(200, 500);
+            return wait = rnd.Next(1000, 2000);
         }
 
         private void SetTimer() {
