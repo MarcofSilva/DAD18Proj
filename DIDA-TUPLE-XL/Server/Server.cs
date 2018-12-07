@@ -89,12 +89,10 @@ namespace Server{
                 try {
                     //Console.WriteLine("initial read " + tupleContainer.Count + " container");
                     Regex capital = new Regex(@"[A-Z]");
-                    lock (tupleSpace) {
-                        foreach (TupleClass t in tupleSpace) {
-                            if (t.Matches(tuple)) {
-                                resTuple = t;
-                                break;
-                            }
+                    foreach (TupleClass t in tupleSpace) {
+                        if (t.Matches(tuple)) {
+                            resTuple = t;
+                            break;
                         }
                     }
                     //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
@@ -122,11 +120,12 @@ namespace Server{
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
             List<TupleClass> allTuples = new List<TupleClass>();
-            if (toTakeSubset.ContainsKey(clientURL))
-            {
-                toTakeSubset.Remove(clientURL);
-            }
+            
             lock (toTakeSubset) { //Prevent a take to search for tuples when another take is already doing it
+                if (toTakeSubset.ContainsKey(clientURL))
+                {
+                    toTakeSubset.Remove(clientURL);
+                }
                 //Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
                     foreach (var y in list) {
@@ -179,16 +178,13 @@ namespace Server{
                 if(tuple.Equals(el)) {
                     Console.WriteLine(tuple.ToString() + " -- " + el.ToString());
                     //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
-                    lock (tupleSpace) {
+                    tupleSpaceLock.EnterWriteLock();
                         tupleSpace.Remove(el);
-                    }
+                    tupleSpaceLock.ExitWriteLock();
                     //Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success); TODO
                     //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     lock (toTakeSubset) {
                         toTakeSubset.Remove(clientURL);
-                    }
-                    lock (dummyObjForLock) {
-                        Monitor.PulseAll(dummyObjForLock);
                     }
                     break;
                 }
