@@ -157,7 +157,7 @@ namespace Server {
                     i_url_map.Add(i, url);
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 5000)) {//TODO esta desoncronizado
+                if (!WaitHandle.WaitAll(handles, 250)) {//TODO esta desoncronizado
                     pulseHeartbeat();
                 }
                 else {
