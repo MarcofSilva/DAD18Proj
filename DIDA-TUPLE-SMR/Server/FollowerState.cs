@@ -196,6 +196,15 @@ namespace Server {
             _leaderRemote = _serverRemoteObjects[url];
             
         }
+
+        public override void playClock() {
+            electionTimeout.Start();
+        }
+
+        public override void pauseClock() {
+            electionTimeout.Stop();
+        }
+
         public override TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
             try {
                 Console.WriteLine("Read in follower");

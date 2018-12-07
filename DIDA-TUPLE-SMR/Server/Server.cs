@@ -219,6 +219,7 @@ namespace Server {
         }
         public void Freeze() {
             frozen = true;
+            _state.pauseClock();
         }
         public void checkFrozen() {
             if (frozen) {

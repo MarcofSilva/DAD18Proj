@@ -220,6 +220,16 @@ namespace Server {
             pulseVote.Enabled = true;
         }
 
+        public override void playClock() {
+            electionTimeout.Start();
+            pulseVote.Start();
+        }
+
+        public override void pauseClock() {
+            electionTimeout.Stop();
+            pulseVote.Stop();
+        }
+
         private void pulseVoteEvent(Object source, ElapsedEventArgs e) {
             requestVote();
         }
