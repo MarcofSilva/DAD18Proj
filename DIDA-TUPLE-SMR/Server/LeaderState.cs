@@ -158,7 +158,7 @@ namespace Server {
                     i_url_map.Add(i, url);
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 250)) {//TODO esta desoncronizado
+                if (!WaitHandle.WaitAll(handles, 80)) {//TODO esta desoncronizado
                     pulseHeartbeat();
                 }
                 else {
@@ -207,7 +207,7 @@ namespace Server {
         }
 
         private void SetTimer() {
-            wait = rnd.Next(50, 100);
+            wait = 60;
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = false;
