@@ -165,12 +165,11 @@ namespace Server {
 
         private int setWait()
         {
-            return wait = rnd.Next(1500, 3000);//usually entre 150 300
+            return wait = rnd.Next(300, 900);//usually entre 150 300
         }
 
         private void SetTimer() {
-            //TODO
-            wait = rnd.Next(300, 700);//usually entre 150 300
+            setWait();
             Console.WriteLine(wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;

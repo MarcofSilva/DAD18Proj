@@ -205,7 +205,7 @@ namespace Server {
                     }
                     else {
                         Console.WriteLine("Finished elections without sucess");
-                        pulseVote.Interval = 1000;
+                        pulseVote.Interval = 1000; //TODO
                     }
                 }
 
@@ -227,11 +227,11 @@ namespace Server {
 
         private int setWait()
         {
-            return wait = rnd.Next(1500, 3000);
+            return wait = rnd.Next(500, 800);
         }
 
         private void SetTimer() {
-            wait = rnd.Next(500, 800);
+            setWait();
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
