@@ -130,6 +130,7 @@ namespace PuppetMaster {
 
             if (scriptArgs.Length == 1) {
                 while ((line = reader.ReadLine()) != null) {
+                    Console.WriteLine(line);
                     executeCommand(line);
                 }
             }
@@ -137,6 +138,7 @@ namespace PuppetMaster {
                 while ((line = reader.ReadLine()) != null) {
                     Console.WriteLine("Enter for next step");
                     Console.ReadLine();
+                    Console.WriteLine(line);
                     executeCommand(line);
                 }
             }
