@@ -48,7 +48,7 @@ namespace ProcessCreationService {
             Console.WriteLine("Crashing " + id);
             processes[id].Kill();
             processes.Remove(id);
-            if (serverUrl.ContainsKey(id)) serverUrl.Remove(id); //TODO add this to SMR
+            if (serverUrl.ContainsKey(id)) serverUrl.Remove(id);
             if (clientUrl.ContainsKey(id)) clientUrl.Remove(id);
         }
 
@@ -66,9 +66,10 @@ namespace ProcessCreationService {
             Console.WriteLine(id.ToString() + " frozen");
         }
 
-        public void PrintStatus() { //TODO falta fazer o status
-            foreach (Process proc in processes.Values){
-                Console.WriteLine(proc.Responding);
+        public void PrintStatus() {
+            foreach (KeyValuePair<string, string> entry in serverUrl) {
+                IServerService serverService = (IServerService)Activator.GetObject(typeof(IServerService), entry.Value);
+                serverService.Status();
             }
         }
 

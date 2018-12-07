@@ -62,68 +62,73 @@ namespace Client {
             return serverRemoteObjects;
         }
 
+        private List<string> union(List<string> l1, List<string> l2) {
+            List<string> res = new List<string>();
+            res = l1.Union(l2).ToList();
+            return res;
+        }
+
         public List<IServerService> getView(List<IServerService> view) {
             int numServers;
             if (view.Count == 0) {
                 Console.WriteLine("No connections found. Broadcasting...");
                 view = serverRemoteObjects;
-                numServers = ConfigurationManager.AppSettings.AllKeys.Count(); //TODO use same file for client and server!!
+                numServers = ConfigurationManager.AppSettings.AllKeys.Count();
             }
             else {
                 numServers = view.Count;
             }
             WaitHandle[] handles = new WaitHandle[numServers];
-            Console.WriteLine("Broadcasting to " + numServers + " servers...");
-            IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
+            IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = view[i];
                     requestViewDelegate viewDel = new requestViewDelegate(remoteObject.ViewRequest);
-                    Console.WriteLine(i);
                     IAsyncResult ar = viewDel.BeginInvoke(null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                int indxAsync = WaitHandle.WaitAny(handles, 300); //Wait for the first answer from the servers
-                if (indxAsync == WaitHandle.WaitTimeout) {
-                    Console.WriteLine("timeout with " + numServers.ToString());
+                if (!WaitHandle.WaitAll(handles, 1000)) {
+                    Console.WriteLine("Timeout with " + numServers.ToString());
                     getView(view);
                 }
                 else {
-                    IAsyncResult asyncResult = asyncResults[indxAsync];
-                    requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    try {
-                        List<string> servers = viewDel.EndInvoke(asyncResult);
-                        if (servers.Count() != 0) {
-                            List<IServerService> serverobjs = new List<IServerService>();
-                            for (int j = 0; j < servers.Count; j++) {
-                                Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
-                                serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), servers[j]));
-                            }
-                            return serverobjs;
+                    List<string> viewUnion = new List<string>();
+                    int i = 0;
+                    foreach (IAsyncResult asyncResult in asyncResults) {
+                        try {
+                            requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                            List<string> servers = viewDel.EndInvoke(asyncResult);
+                            viewUnion = union(servers, viewUnion);
+                            i++;
                         }
-                        else {
-                            Console.WriteLine("Empty view");
-                            return getView(view); //TODO? I dont like this
+                        catch (SocketException) {
+                            List<IServerService> newView = view;
+                            //If there is a socket exception, it is because he is down
+                            //Therefore we remove it from view
+                            newView.RemoveAt(i);
+                            return getView(newView);
                         }
                     }
-                    catch (SocketException) {
-                        Console.WriteLine("ERROR: view is " + view.Count());
-                        Console.WriteLine("Server " + indxAsync + " is down. Restarting...");
-                        List<IServerService> newView = view;
-                        
-                        newView.RemoveAt(indxAsync);
-                        Console.WriteLine("Trying again with " + newView.Count);
-                        return getView(newView);
+                    if (viewUnion.Count() != 0) {
+                        List<IServerService> serverobjs = new List<IServerService>();
+                        for (int j = 0; j < viewUnion.Count; j++) {
+                            serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), viewUnion[j]));
+                        }
+                        return serverobjs;
                     }
-                    
+                    else {
+                        //View is empty, try again
+                        return getView(view);
+                    }
+
                 }
-            } catch (SocketException e) {
-                Console.WriteLine("Connection error. Restarting...");
-                return getView(serverRemoteObjects); //TODO? isto acho que nao precisa de estar aqui (este catch)
             }
-            Console.WriteLine("you shouldnt be here");
-            return null;
+            catch (SocketException) {
+                Console.WriteLine("Connection error. Restarting...");
+                return getView(serverRemoteObjects);
+            }
+            return getView(serverRemoteObjects);
         }
     }
 }

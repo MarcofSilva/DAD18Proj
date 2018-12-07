@@ -52,7 +52,7 @@ namespace Client {
                     Write(tuple);
                 }
                 else {
-                    nonce ++;
+                    nonce++;
                 }
             }
             catch (SocketException) {
@@ -76,12 +76,13 @@ namespace Client {
                 }
                 int indxAsync = WaitHandle.WaitAny(handles, 1000);
                 if (indxAsync == WaitHandle.WaitTimeout) {
+                    Thread.Sleep(200);
                     return Read(tuple);
                 }
                 else {//TODO se o retorno for nulo temos de ir ver outra resposta
                     IAsyncResult asyncResult = asyncResults[indxAsync];
                     readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    TupleClass resTuple = readDel.EndInvoke(asyncResult); 
+                    TupleClass resTuple = readDel.EndInvoke(asyncResult);
                     nonce++;
                     return resTuple;
                 }
@@ -108,12 +109,13 @@ namespace Client {
                     handles[i] = ar.AsyncWaitHandle;
                 }
                 //Wait for the first answer from the servers
-                bool allcompleted = WaitHandle.WaitAll(handles, random.Next(1000,2000)); 
+                bool allcompleted = WaitHandle.WaitAll(handles, random.Next(1000, 2000));
                 if (!allcompleted) {
                     Console.WriteLine("Timed out");
+                    Thread.Sleep(200);
                     return Take(tuple);
                 }
-                else { 
+                else {
                     List<List<TupleClass>> responses = new List<List<TupleClass>>();
                     for (int j = 0; j < numServers; j++) {
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResults[j]).AsyncDelegate;
@@ -123,29 +125,27 @@ namespace Client {
                             nAccepts++;
                     }
 
-                    Console.WriteLine("numAccepts: " + nAccepts);
-                    if (nAccepts != numServers && nAccepts > numServers / 2)
-                    {
-                        Console.WriteLine("Majority of accepts");
+                    if (nAccepts != numServers && nAccepts > numServers / 2) {
+                        //Majority of accepts
+                        Thread.Sleep(200);
                         return Take(tuple);
                     }
-                    else if (nAccepts <= numServers / 2 && numServers != 1)
-                    {
-                        Console.WriteLine("Minority of accepts");
-                        for (int i = 0; i < numServers; i++)
-                        {
+                    else if (nAccepts <= numServers / 2 && numServers != 1) {
+                        //Minority of accepts
+                        for (int i = 0; i < numServers; i++) {
                             IServerService remoteObject = view[i];
                             releaseLocksDelegate releaseLocksDelegate = new releaseLocksDelegate(remoteObject.releaseLocks);
                             IAsyncResult ar = releaseLocksDelegate.BeginInvoke(url, null, null);
                             asyncResults[i] = ar;
                             handles[i] = ar.AsyncWaitHandle;
                         }
+                        Thread.Sleep(200);
                         return Take(tuple);
                     }
                     else {
                         List<TupleClass> response = new List<TupleClass>();
                         bool firstiteration = true;
-                        foreach(List<TupleClass> list in responses) {
+                        foreach (List<TupleClass> list in responses) {
                             if (firstiteration) {
                                 firstiteration = false;
                                 response = list;
@@ -153,17 +153,18 @@ namespace Client {
                             else {
                                 response = listIntersection(response, list);
                                 if (response.Count == 0) {
-                                    //In case intersection of all takeReads is empty
+                                    //In case where intersection of all takeRead responses is empty
+                                    Thread.Sleep(200);
                                     return Take(tuple);
                                 }
                             }
-                    
+
                         }
-                    
-                    TupleClass tupleToDelete = response[0];
-                    takeRemove(tupleToDelete);
-                    nonce++;
-                    return tupleToDelete;
+
+                        TupleClass tupleToDelete = response[0];
+                        takeRemove(tupleToDelete);
+                        nonce++;
+                        return tupleToDelete;
                     }
                 }
             }
@@ -235,10 +236,7 @@ namespace Client {
             if (view == null)
                 view = new List<IServerService>();
             view = getView(view);
-            //if (view == null || view.Count == 0) setView();
             numServers = view.Count;
-            //Console.WriteLine("got view");
-
         }
     }
 }

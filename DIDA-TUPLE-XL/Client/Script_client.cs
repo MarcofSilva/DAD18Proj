@@ -7,14 +7,12 @@ using System.Text;
 using System.Threading.Tasks;
 using ClassLibrary;
 
-namespace Client
-{
-    class Script_Client
-    {
+namespace Client {
+    class Script_Client {
         private API_XL _tupleSpaceAPI;
         private string defaultURL = "tcp://localhost:60000/C";
 
-        public Script_Client(){
+        public Script_Client() {
             _tupleSpaceAPI = new API_XL(defaultURL);
         }
 
@@ -22,15 +20,13 @@ namespace Client
             _tupleSpaceAPI = new API_XL(URL);
         }
 
-        private void executeOperation(string commandLine)
-        {
+        private void executeOperation(string commandLine) {
             TupleClass tuple;
             TupleClass response;
 
             string[] commandItems = commandLine.Split(new char[] { ' ' }, 2);
 
-            switch (commandItems[0])
-            {
+            switch (commandItems[0]) {
                 case "add":
                     tuple = new TupleClass(commandItems[1]);
                     Console.WriteLine("Operation: " + commandLine + "\n");
@@ -44,17 +40,7 @@ namespace Client
                     Console.WriteLine("Operation: " + commandLine);
 
                     response = _tupleSpaceAPI.Read(tuple);
-                    Console.Write("Response: ");
-                    try {
-                        if (response.Size == 0) {
-                            Console.WriteLine("No match found\n");
-                        }
-                        else {
-                            Console.WriteLine(response.ToString() + "\n");
-                        }
-                    } catch (Exception e) {
-                        //do nothing
-                    }
+                    Console.WriteLine("Response: " + response.ToString() + "\n");
 
                     break;
 
@@ -63,13 +49,7 @@ namespace Client
                     Console.WriteLine("Operation: " + commandLine);
 
                     response = _tupleSpaceAPI.Take(tuple);
-                    Console.Write("Response: ");
-                    if (response.Size == 0) {
-                        Console.WriteLine("No match found\n");
-                    }
-                    else {
-                        Console.WriteLine(response.ToString() + "\n");
-                    }
+                    Console.WriteLine("Response: " + response.ToString() + "\n");
                     break;
 
                 case "wait":
@@ -79,8 +59,7 @@ namespace Client
             }
         }
 
-        private void executeScript(string scriptName)
-        {
+        private void executeScript(string scriptName) {
             StreamReader reader = null;
 
             try {
@@ -92,41 +71,32 @@ namespace Client
             }
 
             string line;
-
-            //Repeat auxs
             int repeatIterations = 0;
             ArrayList commandsInRepeat = new ArrayList();
 
-            while ((line = reader.ReadLine()) != null)
-            {
+            while ((line = reader.ReadLine()) != null) {
                 string[] items = line.Split(new char[] { ' ' }, 2);
 
-                if (items[0].Equals("begin-repeat"))
-                {
+                if (items[0].Equals("begin-repeat")) {
                     repeatIterations = int.Parse(items[1]);
-                    while (!(line = reader.ReadLine()).Equals("end-repeat"))
-                    {
+                    while (!(line = reader.ReadLine()).Equals("end-repeat")) {
                         commandsInRepeat.Add(line);
                     }
-                    while (repeatIterations > 0)
-                    {
-                        foreach (string commandLine in commandsInRepeat)
-                        {
+                    while (repeatIterations > 0) {
+                        foreach (string commandLine in commandsInRepeat) {
                             executeOperation(commandLine);
                         }
                         repeatIterations--;
                     }
                 }
-                else
-                {
+                else {
                     executeOperation(line);
                 }
             }
             reader.Close();
         }
 
-        static void Main(string[] args)
-        {
+        static void Main(string[] args) {
             Script_Client client;
             if (args.Length == 0) {
                 client = new Script_Client();

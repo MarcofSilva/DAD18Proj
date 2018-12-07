@@ -33,7 +33,6 @@ namespace PuppetMaster {
             ChannelServices.RegisterChannel(_channel, false);
             configure();
         }
-        //TODO otimizacao: localhost nao precisa de ter PCS
         private void configure() {
             foreach (string url in ConfigurationManager.AppSettings) {
                 string[] urlSplit = url.Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
@@ -47,9 +46,7 @@ namespace PuppetMaster {
             Int32.TryParse(items[4], out n4);
             string[] urlServer = items[2].Split(new Char[] { '/', ':' }, StringSplitOptions.RemoveEmptyEntries);
             idToPcs.Add(items[1], pcsList[urlServer[1]]);
-            //Console.WriteLine("1"); TODO
             pcsList[urlServer[1]].CreateServer(items[1], items[2], n3, n4);
-            //Console.WriteLine("-");
         }
 
         private void createClient(String[] items) {
@@ -109,7 +106,7 @@ namespace PuppetMaster {
                     Console.Write("wait" + items[1]);
                     System.Threading.Thread.Sleep(int.Parse(items[1]));
                     break;
-                default:    //script
+                default:
                     executeScript(items);
                     break;
             }
