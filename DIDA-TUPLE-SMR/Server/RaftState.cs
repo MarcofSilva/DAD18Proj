@@ -46,5 +46,9 @@ namespace Server {
         public abstract TupleClass take(TupleClass tuple, string clientUrl, long nonce);
 
         public abstract void write(TupleClass tuple, string clientUrl, long nonce);
+
+        public abstract void pauseClock();
+
+        public abstract void playClock();
     }
 }

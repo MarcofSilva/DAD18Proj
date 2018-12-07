@@ -97,10 +97,12 @@ namespace Server
         }
 
         public  EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
+            _server.checkFrozen();
             return _server.appendEntry(entryPacket, term, leaderID);
         }
 
         public bool vote(int term, string candidateID) {
+            _server.checkFrozen();
             return _server.vote(term, candidateID);
         }
         public void Freeze() {

@@ -157,7 +157,7 @@ namespace Server {
                     i_url_map.Add(i, url);
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 5000)) {//TODO esta desoncronizado
+                if (!WaitHandle.WaitAll(handles, 250)) {//TODO esta desoncronizado
                     pulseHeartbeat();
                 }
                 else {
@@ -229,7 +229,15 @@ namespace Server {
             //TODO redundante porque o url recebido e o dele proprio
             _leaderUrl = url;
         }
-      
+
+        public override void playClock() {
+            timer.Start();
+        }
+
+        public override void pauseClock() {
+            timer.Stop();
+        }
+
         public override void ping() {
             Console.WriteLine("Leader State pinged ");
         }
