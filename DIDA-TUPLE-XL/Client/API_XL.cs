@@ -105,7 +105,7 @@ namespace Client {
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
-            int nFaults = 0;
+            int nAccepts = 0;
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = view[i];
@@ -126,17 +126,21 @@ namespace Client {
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResults[j]).AsyncDelegate;
                         List<TupleClass> res = takeReadDel.EndInvoke(asyncResults[j]);
                         responses.Add(res);
-                        if (res.Count == 0) nFaults++;
+                        if (res.Count != 0)
+                            nAccepts++;
                     }
 
-                    Console.WriteLine("numfaults: " + nFaults);
-                    if (nFaults != 0 && nFaults <= numServers / 2) {
+                    Console.WriteLine("numAccepts: " + nAccepts);
+                    if (nAccepts != numServers && nAccepts > numServers / 2)
+                    {
                         Console.WriteLine("Majority of accepts");
                         return Take(tuple);
                     }
-                    else if (nFaults > numServers / 2) {
+                    else if (nAccepts <= numServers / 2 && numServers != 1)
+                    {
                         Console.WriteLine("Minority of accepts");
-                        for (int i = 0; i < numServers; i++) {
+                        for (int i = 0; i < numServers; i++)
+                        {
                             IServerService remoteObject = view[i];
                             releaseLocksDelegate releaseLocksDelegate = new releaseLocksDelegate(remoteObject.releaseLocks);
                             IAsyncResult ar = releaseLocksDelegate.BeginInvoke(url, null, null);
