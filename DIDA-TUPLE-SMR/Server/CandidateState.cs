@@ -26,6 +26,8 @@ namespace Server {
         private bool timerThreadBlock = false;
         private readonly Object vote_heartbeat_Lock = new object();
         private Dictionary<string, bool> votemap = new Dictionary<string, bool>();
+        private bool voteClockWasRunning = true;
+        private bool electionClockWasRunning = true;
         
         private int votes = 1;
         public CandidateState(Server server, int term) : base(server, term) {
@@ -221,13 +223,26 @@ namespace Server {
         }
 
         public override void playClock() {
-            electionTimeout.Start();
-            pulseVote.Start();
+            if (electionClockWasRunning) {
+                electionTimeout.Start();
+            }
+            if (voteClockWasRunning) {
+                pulseVote.Start();
+            }
         }
 
         public override void pauseClock() {
-            electionTimeout.Stop();
-            pulseVote.Stop();
+            if (electionTimeout.Enabled) {
+                electionClockWasRunning = true;
+                electionTimeout.Stop();
+            }
+            else electionClockWasRunning = false;
+
+            if (pulseVote.Enabled) {
+                voteClockWasRunning = true;
+                pulseVote.Stop();
+            }
+            else electionClockWasRunning = false;
         }
 
         private void pulseVoteEvent(Object source, ElapsedEventArgs e) {

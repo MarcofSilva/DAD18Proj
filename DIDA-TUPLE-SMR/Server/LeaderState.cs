@@ -23,6 +23,7 @@ namespace Server {
         private System.Timers.Timer timer;
         private int wait;
         private bool timerThreadBlock = false;
+        private bool clockWasRunning = true;
 
         
         private readonly Object vote_heartbeat_Lock = new object();
@@ -231,11 +232,17 @@ namespace Server {
         }
 
         public override void playClock() {
-            timer.Start();
+            if (clockWasRunning) {
+                timer.Start();
+            }
         }
 
         public override void pauseClock() {
-            timer.Stop();
+            if (timer.Enabled) {
+                clockWasRunning = true;
+                timer.Stop();
+            }
+            else clockWasRunning = false;
         }
 
         public override void ping() {
