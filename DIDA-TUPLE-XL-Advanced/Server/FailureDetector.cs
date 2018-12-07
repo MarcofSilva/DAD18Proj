@@ -17,9 +17,12 @@ namespace Server {
         private List<string> suspects = new List<string>();
         private int numServers;
         private Dictionary<string, IServerService> serverRemoteObjects = new Dictionary<string, IServerService>();
+        private int[] timeouts;
+        private Server _server;
         public delegate int pingDelegate();
 
-        public FailureDetector() {
+        public FailureDetector(Server server) {
+            _server = server;
             configure();
             Thread t = new Thread(() => pingLoop());
             t.Start();
@@ -27,79 +30,86 @@ namespace Server {
 
         public void pingLoop() {
             while (true) {
-                List<string> oldView = view;
-                WaitHandle[] handles = new WaitHandle[numServers];
-                IAsyncResult[] asyncResults = new IAsyncResult[numServers];
-                try {
-                    int i = 0;
-                    int[] responses = new int[numServers];
-                    foreach (KeyValuePair<string, IServerService> remoteObjectpair in serverRemoteObjects) {
-                        ServerService remoteObject = (ServerService)remoteObjectpair.Value;
-                        pingDelegate pingDel = new pingDelegate(remoteObject.Ping);
-                        IAsyncResult ar = pingDel.BeginInvoke(null, null);
-                        
-                        asyncResults[i] = ar;
-                        handles[i] = ar.AsyncWaitHandle;
-                        i++;
-                    }
-                    if (!WaitHandle.WaitAll(handles, 300)) {
-                        Console.WriteLine("TIMEOUT");
-                        for (int k = 0; k < numServers; k++) {
-                            if (handles[k].WaitOne(0) == false) {
-                                responses[k] = -2;
-                                if (!suspects.Contains(allServers[k])) { //timeout e ainda não era suspeito
-                                    suspects.Add(allServers[k]);
+                if (!_server.frozen) {
+                    List<string> oldView = view;
+                    WaitHandle[] handles = new WaitHandle[numServers];
+                    IAsyncResult[] asyncResults = new IAsyncResult[numServers];
+                    try {
+                        int i = 0;
+                        int[] responses = new int[numServers];
+                        foreach (KeyValuePair<string, IServerService> remoteObjectpair in serverRemoteObjects) {
+                            ServerService remoteObject = (ServerService)remoteObjectpair.Value;
+                            pingDelegate pingDel = new pingDelegate(remoteObject.Ping);
+                            IAsyncResult ar = pingDel.BeginInvoke(null, null);
+
+                            asyncResults[i] = ar;
+                            handles[i] = ar.AsyncWaitHandle;
+                            i++;
+                        }
+                        if (!WaitHandle.WaitAll(handles, 300)) {
+                            for (int k = 0; k < numServers; k++) {
+                                if (handles[k].WaitOne(timeouts[k]) == false) {
+                                    responses[k] = -2;
+                                    if (!suspects.Contains(allServers[k])) { //timeout e ainda não era suspeito
+                                        suspects.Add(allServers[k]);
+                                    }
                                 }
                             }
                         }
-                    }
-                    for (i = 0; i < numServers; i++) {
-                        try {
-                            if (responses[i] != -2) { //responses with -2 already timed out, we don't want to endinvoke them
-                                IAsyncResult asyncResult = asyncResults[i];
-                                pingDelegate pingDel = (pingDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                                responses[i] = pingDel.EndInvoke(asyncResult);
+                        for (i = 0; i < numServers; i++) {
+                            try {
+                                if (responses[i] != -2) { //responses with -2 already timed out, we don't want to endinvoke them
+                                    IAsyncResult asyncResult = asyncResults[i];
+                                    pingDelegate pingDel = (pingDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                                    responses[i] = pingDel.EndInvoke(asyncResult);
+                                }
+                            }
+                            catch (SocketException e) {
+                                responses[i] = -1;  // -1 means they are dead
+                            }
+                            catch (NullReferenceException e) {
+                                responses[i] = -1;
                             }
                         }
-                        catch (SocketException e) {
-                            responses[i] = -1;  // -1 means they are dead
-                        }
-                        catch (NullReferenceException e) {
-                            responses[i] = -1;
-                        }
-                    }
-                    lock (view) {
-                        view = new List<string>();
-                        for (int j = 0; j < numServers; j++) {
-                            if (responses[j] != -1) {
-                                view.Add(allServers[j]);
+                        lock (view) {
+                            view = new List<string>();
+                            for (int j = 0; j < numServers; j++) {
+                                if (responses[j] != -1) {
+                                    view.Add(allServers[j]);
+                                }
+                                if (responses[j] != -2 && suspects.Contains(allServers[j])) {
+                                    suspects.Remove(allServers[j]);
+                                    timeouts[j] += 100;
+                                    Console.WriteLine("Increased timeout (" + allServers[j] + " - " + timeouts[j].ToString() + ")");
+                                }
                             }
-                            if (responses[j] != -2 && suspects.Contains(allServers[j])) {
-                                suspects.Remove(allServers[j]);
-                            }
-                         }
-                        //Console.WriteLine("view count: " + view.Count);
-                    }
-                    
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e.StackTrace);
-                }
-                foreach (string a in suspects) {
-                    //Console.WriteLine("suspect -> " + a);
-                }
+                            //Console.WriteLine("view count: " + view.Count);
+                        }
 
-                bool isChanged = false;
-                if (oldView.Count != view.Count) isChanged = true;
-                
-                foreach (string bla in view) {
-                    //Console.WriteLine("-> " + bla);
-                    if (!oldView.Contains(bla)) {
-                        isChanged = true;
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e.StackTrace);
+                    }
+                    foreach (string a in suspects) {
+                        Console.WriteLine("suspect -> " + a);
+                    }
+
+                    bool isChanged = false;
+                    if (oldView.Count != view.Count) isChanged = true;
+
+                    foreach (string bla in view) {
+                        //Console.WriteLine("-> " + bla);
+                        if (!oldView.Contains(bla)) {
+                            isChanged = true;
+                        }
+                    }
+                    if (isChanged) {
+                        Console.WriteLine("view changed!!!");
                     }
                 }
-                if (isChanged) {
-                    Console.WriteLine("view changed!!!");
+                else {
+                    Console.WriteLine("no ping");
+                    Thread.Sleep(100);
                 }
             }
         }
@@ -119,6 +129,7 @@ namespace Server {
                 serverRemoteObjects.Add(url, obj);
             }
             numServers = serverRemoteObjects.Count();
+            timeouts = new int[numServers]; //all 0;
         }
 
        

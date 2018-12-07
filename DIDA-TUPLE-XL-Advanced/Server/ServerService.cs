@@ -99,6 +99,7 @@ namespace Server
         }
 
         public void Unfreeze() {
+            Console.WriteLine("bla");
             _server.Unfreeze();
         }
 

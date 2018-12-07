@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using RemoteServicesLibrary;
+using System.Threading;
 
 namespace ProcessCreationService {
     class PCS_Service : MarshalByRefObject, I_PCS_Service {
@@ -27,6 +28,7 @@ namespace ProcessCreationService {
             proc.StartInfo.Arguments = URL + " " + script_file;
             Console.WriteLine(proc.StartInfo.Arguments);
             proc.Start();
+            Thread.Sleep(100);
             processes.Add(id, proc);
             clientUrl.Add(id, URL);
         }
@@ -39,6 +41,7 @@ namespace ProcessCreationService {
             proc.StartInfo.Arguments = URL + " " + min_delay.ToString() + " " + max_delay.ToString();
             Console.WriteLine(proc.StartInfo.Arguments);
             proc.Start();
+            Thread.Sleep(100);
             processes.Add(id, proc);
             serverUrl.Add(id, URL);
 

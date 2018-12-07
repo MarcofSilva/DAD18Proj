@@ -66,7 +66,9 @@ namespace Server {
                                 electionTimeout.Stop();
                             }
                             electionTimeout.Interval = wait;
-                            _server.updateState("follower", _term, leaderID); ;
+                            _server.updateState("follower", _term, leaderID);
+                            _server = null;
+                            electionTimeout.Dispose();
                             return new EntryResponse(true, _term, _server.getLogIndex());
                         }
 
@@ -84,6 +86,8 @@ namespace Server {
                             }
                             electionTimeout.Interval = wait;
                             _server.updateState("follower", _term, leaderID);
+                            _server = null;
+                            electionTimeout.Dispose();
                             return new EntryResponse(false, _term, _server.getLogIndex());
                         }
                         foreach (Entry entry in entryPacket.Entrys)
@@ -109,7 +113,9 @@ namespace Server {
                             electionTimeout.Stop();
                         }
                         electionTimeout.Interval = wait;
-                        _server.updateState("follower", _term, leaderID); ;
+                        _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        electionTimeout.Dispose();
                         return new EntryResponse(true, _term, _server.getLogIndex());
                     }
                     finally
@@ -172,8 +178,9 @@ namespace Server {
                     requestId[i] = entry.Key;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 4000)) {//TODO
+                if (!WaitHandle.WaitAll(handles, 800)) {//TODO
                     Console.WriteLine("candidate timeout waiting for votes");
+
                     requestVote();
                 }
                 else {
@@ -217,6 +224,12 @@ namespace Server {
             SetTimer();
             electionTimeout.Start();
         }
+
+        private int setWait()
+        {
+            return wait = rnd.Next(1500, 3000);
+        }
+
         private void SetTimer() {
             wait = rnd.Next(500, 800);
             //Console.WriteLine("Election timeout: " + wait);
@@ -277,6 +290,8 @@ namespace Server {
                         Console.WriteLine("He was in term: " + term + " i was in " + _term);
                         _term = term;
                         _server.updateState("follower", _term, candidateID);
+                        _server = null;
+                        electionTimeout.Dispose();
                         return true;
                     }
                     finally

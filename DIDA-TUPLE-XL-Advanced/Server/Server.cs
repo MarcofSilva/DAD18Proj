@@ -35,7 +35,7 @@ namespace Server{
         public Server(){
             tupleSpaceLock = new ReaderWriterLockSlim();
             prepareRemoting(defaultPort, defaultname, defaultDelay, defaultDelay);
-            fd = new FailureDetector();
+            fd = new FailureDetector(this);
         }
 
         public Server(string URL, string min_delay, string max_delay) {
@@ -47,7 +47,7 @@ namespace Server{
             Int32.TryParse(max_delay, out imax_delay);
 
             prepareRemoting(port, urlSplit[3], imin_delay, imax_delay);
-            fd = new FailureDetector();
+            fd = new FailureDetector(this);
             Console.WriteLine("Hello! I'm a Server at port " + urlSplit[2]);
             
         }
@@ -236,6 +236,7 @@ namespace Server{
                 Monitor.PulseAll(this);
             }
             frozen = false;
+            Console.WriteLine(frozen);
         }
 
         public int ping() { //TODO put this only on serverservice?
