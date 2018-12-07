@@ -62,7 +62,13 @@ namespace Client {
             return serverRemoteObjects;
         }
 
-        public List<IServerService> getView(List<IServerService> view) {
+        private List<string> union(List<string> l1 , List<string> l2) {
+            List<string> res = new List<string>();
+            res = l1.Union(l2).ToList();
+            return res;
+        }
+
+    public List<IServerService> getView(List<IServerService> view) {
             int numServers;
             if (view.Count == 0) {
                 Console.WriteLine("No connections found. Broadcasting...");
@@ -84,37 +90,41 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                int indxAsync = WaitHandle.WaitAny(handles, 1000); //Wait for the first answer from the servers
-                if (indxAsync == WaitHandle.WaitTimeout) {
+                if (!WaitHandle.WaitAll(handles, 1000)) {//TODO diminuir isto?
                     Console.WriteLine("timeout with " + numServers.ToString());
                     getView(view);
                 }
                 else {
-                    IAsyncResult asyncResult = asyncResults[indxAsync];
-                    requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    try {
-                        List<string> servers = viewDel.EndInvoke(asyncResult);
-                        if (servers.Count() != 0) {
-                            List<IServerService> serverobjs = new List<IServerService>();
-                            for (int j = 0; j < servers.Count; j++) {
-                                //Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
-                                serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), servers[j]));
-                            }
-                            return serverobjs;
+                    List<string> viewUnion = new List<string>();
+                    int i = 0;
+                    foreach (IAsyncResult asyncResult in asyncResults) {
+                        try {
+                            requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                            List<string> servers = viewDel.EndInvoke(asyncResult);
+                            viewUnion = union(servers, viewUnion);
+                            i++;
                         }
-                        else {
-                            Console.WriteLine("Empty view");
-                            return getView(view); 
+                        catch (SocketException) {
+                            Console.WriteLine("ERROR: view is " + view.Count());
+                            Console.WriteLine("Server " + i + " is down. Restarting...");
+                            List<IServerService> newView = view;
+
+                            newView.RemoveAt(i);
+                            Console.WriteLine("Trying again with " + newView.Count);
+                            return getView(newView);
                         }
                     }
-                    catch (SocketException) {
-                        Console.WriteLine("ERROR: view is " + view.Count());
-                        Console.WriteLine("Server " + indxAsync + " is down. Restarting...");
-                        List<IServerService> newView = view;
-                        
-                        newView.RemoveAt(indxAsync);
-                        Console.WriteLine("Trying again with " + newView.Count);
-                        return getView(newView);
+                    if (viewUnion.Count() != 0) {
+                        List<IServerService> serverobjs = new List<IServerService>();
+                        for (int j = 0; j < viewUnion.Count; j++) {
+                            //Console.WriteLine("answer from " + indxAsync + ": " + servers[j] + "(" + servers.Count + ")");
+                            serverobjs.Add((IServerService)Activator.GetObject(typeof(IServerService), viewUnion[j]));
+                        }
+                        return serverobjs;
+                    }
+                    else {
+                        Console.WriteLine("Empty view");
+                        return getView(view);
                     }
                     
                 }
