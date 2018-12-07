@@ -109,61 +109,60 @@ namespace Server{
 
         //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> takeRead(TupleClass tuple, string clientURL) {
-            Console.WriteLine("Operation: Take" + tuple.ToString() + " from " + clientURL + "\n");
-            Console.WriteLine("Antes -> ");
+            Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
+            /*Console.WriteLine("Antes -> ");
             foreach (var x in tupleSpace) {
                 Console.WriteLine("-> " + x.ToString());
-            }
+            }*/
+            List<TupleClass> res = new List<TupleClass>();
+            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
+            Regex capital = new Regex(@"[A-Z]");
+            List<TupleClass> allTuples = new List<TupleClass>();
             if (toTakeSubset.ContainsKey(clientURL)) {
                 toTakeSubset.Remove(clientURL);
             }
-
-            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
-            Regex capital = new Regex(@"[A-Z]");
-            List<TupleClass> res = new List<TupleClass>();
             lock (toTakeSubset) { //Prevent a take to search for tuples when another take is already doing it
-                List<TupleClass> allTuples = new List<TupleClass>();
-                
-                Console.WriteLine("totakesubset1 -> ");
-                foreach (var x in toTakeSubset) {
-                    Console.WriteLine(x.Key + "->" + x.Value.ToString());
-                }
+                //Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
                     foreach (var y in list) {
+                        //Console.WriteLine("->" + y);
                         allTuples.Add(y);
                     }
                 }
-                Console.WriteLine("alltuples -> ");
+                /*Console.WriteLine("alltuples -> ");
                 foreach (var x in allTuples) {
                     Console.WriteLine("-> " + x.ToString());
-                }
-                lock (tupleSpace) {
-                    foreach (TupleClass el in tupleSpace.ToList()) {
-                        //Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
-                        if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
-                            res.Add(el);
-                        }
+                }*/
+
+                //lock (tupleSpace) {
+                foreach (TupleClass el in tupleSpace.ToList()) {
+                    //Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
+                    if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
+                        res.Add(el);
                     }
-                    if (res.Count != 0) {
-                        toTakeSubset.Add(clientURL, res);
+                    else if (el.Matches(tuple) && allTuples.Contains(el)) {
+                        return new List<TupleClass>();
                     }
                 }
-                
-                Console.WriteLine("totakesubset2 -> ");
-                foreach (var x in toTakeSubset) {
-                    Console.WriteLine(x.Key + "->" + x.Value.ToString());
+                if (res.Count != 0) {
+                    toTakeSubset.Add(clientURL, res);
+                }
+                //}
+
+                //Console.WriteLine("totakesubset -> ");
+                foreach (var x in toTakeSubset.Values) {
+                    foreach (var y in x) {
+                        //Console.WriteLine("->" + y);
+                    }
                 }
             }
             if (res.Count == 0) {
                 Console.WriteLine("empty res");
-                lock (dummyObjForLock) {
-                    Monitor.Wait(dummyObjForLock);
-                } //no match
-                return takeRead(tuple, clientURL);
+                return new List<TupleClass>();
             }
             else {
                 foreach (TupleClass t in res) {
-                    Console.WriteLine("res -> " + t.ToString());
+                    //Console.WriteLine("res -> " + t.ToString());
                 }
                 return res;
             }
@@ -197,6 +196,13 @@ namespace Server{
         public void Freeze() {
             Console.WriteLine("I'm freezing");
             frozen = true;
+        }
+
+        public void releaseLocks(string clientURL) {
+            Console.WriteLine("Releasing locks");
+            lock (toTakeSubset) {
+                toTakeSubset.Remove(clientURL);
+            }
         }
 
         public void checkFrozen() {

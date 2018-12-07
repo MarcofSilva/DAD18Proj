@@ -42,7 +42,7 @@ namespace Client {
             
             checkFrozen();
             setView();
-            Console.WriteLine("----->DEBUG_API_XL: Begin Write");
+            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -203,7 +203,6 @@ namespace Client {
             frozen = true;
         }
 
-        
         private List<TupleClass> listIntersection(List<TupleClass> tl1, List<TupleClass> tl2) {
             int i;
             bool remove;
@@ -248,7 +247,7 @@ namespace Client {
             view = getView(view);
             //if (view == null || view.Count == 0) setView();
             numServers = view.Count;
-            Console.WriteLine("got view");
+            //Console.WriteLine("got view");
 
         }
     }
