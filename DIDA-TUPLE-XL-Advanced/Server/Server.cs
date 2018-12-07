@@ -1,17 +1,12 @@
-﻿using RemoteServicesLibrary;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Collections;
 using System.Linq;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
-using System.Text;
-using System.Threading.Tasks;
 using ClassLibrary;
 using System.Threading;
-using System.Collections.Concurrent;
 
 namespace Server{
     public class Server{
@@ -29,7 +24,6 @@ namespace Server{
         private const string defaultname = "S";
         private const int defaultDelay = 0;
         public string url;
-        //readonly object _Key = new object();
         public bool frozen = false;
 
         public Server(){
@@ -60,19 +54,21 @@ namespace Server{
             RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
         }
 
+        public List<TupleClass> getTupleSpace() {
+            return tupleSpace;
+        }
+
         public void write(TupleClass tuple){
             Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
-
             tupleSpaceLock.EnterWriteLock();
             try {
                 tupleSpace.Add(tuple);
-                //Console.WriteLine("Wrote: " + printTuple(tuple) + "\n");
             }
             finally {
                 tupleSpaceLock.ExitWriteLock();
             }
-            lock (dummyObjForLock) {//TODO sera necessario contador com numero de readers em wait para ir decrementando quando se faz pulse isto se se fizer apenas pulse no write e no read e take read se fizer tbm pulse até que se acordem todos os readers em wait de forma ordenada
-                Monitor.PulseAll(dummyObjForLock);//TODO secalhar e melhor ir fazendo pulse um a um, para manter a ordem?
+            lock (dummyObjForLock) {
+                Monitor.PulseAll(dummyObjForLock);
             }
         }
 
@@ -83,7 +79,6 @@ namespace Server{
 
                 tupleSpaceLock.EnterReadLock(); // TODO can you read blocked tuples (by take)?
                 try {
-                    //Console.WriteLine("initial read " + tupleContainer.Count + " container");
                     Regex capital = new Regex(@"[A-Z]");
                     lock (tupleSpace) {
                         foreach (TupleClass t in tupleSpace) {
@@ -93,7 +88,6 @@ namespace Server{
                             }
                         }
                     }
-                    //Console.WriteLine("Server : Read TupleSpace Size: " + tupleSpace.Count + "\n");
                 }
                 finally {
                     tupleSpaceLock.ExitReadLock();
@@ -110,33 +104,20 @@ namespace Server{
         //e basicamente igual ao read mas com locks nas estruturas
         public List<TupleClass> takeRead(TupleClass tuple, string clientURL) {
             Console.WriteLine("Operation: Take" + tuple.ToString() + "\n");
-            /*Console.WriteLine("Antes -> ");
-            foreach (var x in tupleSpace) {
-                Console.WriteLine("-> " + x.ToString());
-            }*/
             List<TupleClass> res = new List<TupleClass>();
-            //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
             List<TupleClass> allTuples = new List<TupleClass>();
             if (toTakeSubset.ContainsKey(clientURL)) {
                 toTakeSubset.Remove(clientURL);
             }
             lock (toTakeSubset) { //Prevent a take to search for tuples when another take is already doing it
-                //Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
                     foreach (var y in list) {
-                        //Console.WriteLine("->" + y);
                         allTuples.Add(y);
                     }
                 }
-                /*Console.WriteLine("alltuples -> ");
-                foreach (var x in allTuples) {
-                    Console.WriteLine("-> " + x.ToString());
-                }*/
 
-                //lock (tupleSpace) {
                 foreach (TupleClass el in tupleSpace.ToList()) {
-                    //Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
                     if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
                         res.Add(el);
                     }
@@ -147,23 +128,11 @@ namespace Server{
                 if (res.Count != 0) {
                     toTakeSubset.Add(clientURL, res);
                 }
-                //}
-
-                //Console.WriteLine("totakesubset -> ");
-                foreach (var x in toTakeSubset.Values) {
-                    foreach (var y in x) {
-                        //Console.WriteLine("->" + y);
-                    }
-                }
             }
             if (res.Count == 0) {
-                Console.WriteLine("empty res");
                 return new List<TupleClass>();
             }
             else {
-                foreach (TupleClass t in res) {
-                    //Console.WriteLine("res -> " + t.ToString());
-                }
                 return res;
             }
         }
@@ -172,13 +141,9 @@ namespace Server{
             //Console.WriteLine("----->DEBUG_Server: tuple to delete " + tuple.ToString());
             foreach (TupleClass el in tupleSpace) {
                 if(tuple.Equals(el)) {
-                    Console.WriteLine(tuple.ToString() + " -- " + el.ToString());
-                    //Console.WriteLine("----->DEBUG_Server: deleted " + printTuple(el));
                     lock (tupleSpace) {
                         tupleSpace.Remove(el);
                     }
-                    //Console.WriteLine(Thread.CurrentThread.ManagedThreadId + " " + success); TODO
-                    //Console.WriteLine("Deleted Size: " + tupleSpace.Count + "\n");
                     lock (toTakeSubset) {
                         toTakeSubset.Remove(clientURL);
                     }
@@ -188,9 +153,6 @@ namespace Server{
                     break;
                 }
             }
-            /*foreach(var x in tupleSpace) {
-                Console.WriteLine("Depois -> " + x.ToString());
-            }*/
         }
 
         public void status() {
@@ -203,16 +165,19 @@ namespace Server{
             foreach (string s in fd.getView()) {
                 Console.WriteLine(s);
             }
-            //TODO lista de suspeitos
+
+            Console.WriteLine("--Suspects--");
+            foreach (string suspect in fd.getSuspects()) {
+                Console.WriteLine(suspect);
+            }
         }
 
         public void Freeze() {
-            Console.WriteLine("I'm freezing");
             frozen = true;
+            Console.WriteLine("I'm frozen");
         }
 
         public void releaseLocks(string clientURL) {
-            Console.WriteLine("Releasing locks");
             lock (toTakeSubset) {
                 toTakeSubset.Remove(clientURL);
             }
@@ -220,10 +185,9 @@ namespace Server{
 
         public void checkFrozen() {
             if (frozen) {
-                Console.WriteLine("Cant do anything, im frozen");
+                Console.WriteLine("Can't do anything, I'm frozen");
                 lock (this) {
                     while (frozen) {
-                        Console.WriteLine("Waiting...");
                         Monitor.Wait(this);
                     }
                 }
@@ -236,11 +200,9 @@ namespace Server{
                 Monitor.PulseAll(this);
             }
             frozen = false;
-            Console.WriteLine(frozen);
         }
 
         public int ping() { //TODO put this only on serverservice?
-            checkFrozen();
             return 1;
         }
 

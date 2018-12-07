@@ -88,26 +88,36 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
+                int[] timeouts = new int[numServers];
                 if (!WaitHandle.WaitAll(handles, 1000)) {
-                    Console.WriteLine("Timeout with " + numServers.ToString());
+                    for (int k = 0; k < numServers; k++) {
+                        if (handles[k].WaitOne(0) == false) {
+                            timeouts[k]++;
+                        }
+                    }
+                }
+                if (timeouts.Sum() > numServers / 2) {
+                    //Majority of timeouts
                     getView(view);
                 }
+                
                 else {
                     List<string> viewUnion = new List<string>();
                     int i = 0;
-                    foreach (IAsyncResult asyncResult in asyncResults) {
-                        try {
-                            requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                            List<string> servers = viewDel.EndInvoke(asyncResult);
-                            viewUnion = union(servers, viewUnion);
-                            i++;
-                        }
-                        catch (SocketException) {
-                            List<IServerService> newView = view;
-                            //If there is a socket exception, it is because he is down
-                            //Therefore we remove it from view
-                            newView.RemoveAt(i);
-                            return getView(newView);
+                    for(; i < numServers; i++) { //dont invoke timeouts
+                        if (timeouts[i] != 1) {
+                            try {
+                                requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResults[i]).AsyncDelegate;
+                                List<string> servers = viewDel.EndInvoke(asyncResults[i]);
+                                viewUnion = union(servers, viewUnion);
+                            }
+                            catch (SocketException) {
+                                List<IServerService> newView = view;
+                                //If there is a socket exception, it is because he is down
+                                //Therefore we remove it from view
+                                newView.RemoveAt(i);
+                                return getView(newView);
+                            }
                         }
                     }
                     if (viewUnion.Count() != 0) {

@@ -48,18 +48,17 @@ namespace Client {
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
                 }
+                int ntimeouts = 0;
                 if (!WaitHandle.WaitAll(handles, 3000)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
-                    int ntimeouts = 0;
                     for (int k = 0; k < numServers; k++) {
                         if (handles[k].WaitOne(0) == false) {
                             ntimeouts++;
                         }
                     }
-                    if (ntimeouts >= numServers / 2) {
-                        Console.WriteLine("Majority of timeouts");
-                        Write(tuple);
-                    }
-
+                }
+                if (ntimeouts > numServers / 2) {
+                    //Majority of timeouts
+                    Write(tuple);
                 }
                 else {
                     nonce++;
@@ -108,7 +107,6 @@ namespace Client {
             setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
-            //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
             int nAccepts = 0;
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -120,29 +118,39 @@ namespace Client {
                 }
                 //Wait for the first answer from the servers
                 bool allcompleted = WaitHandle.WaitAll(handles, random.Next(1000, 2000));
+                int[] ntimeouts = new int[numServers];
                 if (!allcompleted) {
-                    Console.WriteLine("Timed out");
+                    for (int k = 0; k < numServers; k++) {
+                        if (handles[k].WaitOne(0) == false) {
+                            ntimeouts[k]++;
+                        }
+                    }
+                }
+                if (ntimeouts.Sum() > numServers / 2) {
+                    //Majority of timeouts
                     Thread.Sleep(200);
                     return Take(tuple);
                 }
                 else {
                     List<List<TupleClass>> responses = new List<List<TupleClass>>();
                     for (int j = 0; j < numServers; j++) {
-                        takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResults[j]).AsyncDelegate;
-                        List<TupleClass> res = takeReadDel.EndInvoke(asyncResults[j]);
-                        responses.Add(res);
-                        if (res.Count != 0)
-                            nAccepts++;
+                        if (ntimeouts[j] != 1) {
+                            takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResults[j]).AsyncDelegate;
+                            List<TupleClass> res = takeReadDel.EndInvoke(asyncResults[j]);
+                            responses.Add(res);
+                            if (res.Count != 0)
+                                nAccepts++;
+                        }
                     }
-
-                    if (nAccepts != numServers && nAccepts > numServers / 2) {
+                    int realServers = numServers - ntimeouts.Sum();
+                    if (nAccepts != realServers && nAccepts > realServers / 2) {
                         //Majority of accepts
                         Thread.Sleep(200);
                         return Take(tuple);
                     }
-                    else if (nAccepts <= numServers / 2 && numServers != 1) {
+                    else if (nAccepts <= realServers / 2 && realServers != 1) {
                         //Minority of accepts
-                        for (int i = 0; i < numServers; i++) {
+                        for (int i = 0; i < realServers; i++) {
                             IServerService remoteObject = view[i];
                             releaseLocksDelegate releaseLocksDelegate = new releaseLocksDelegate(remoteObject.releaseLocks);
                             IAsyncResult ar = releaseLocksDelegate.BeginInvoke(url, null, null);
@@ -165,12 +173,11 @@ namespace Client {
                                 if (response.Count == 0) {
                                     //In case where intersection of all takeRead responses is empty
                                     Thread.Sleep(200);
-                                    return Take(tuple);
+                                    return (tuple);
                                 }
                             }
 
                         }
-
                         TupleClass tupleToDelete = response[0];
                         takeRemove(tupleToDelete);
                         nonce++;
@@ -196,7 +203,15 @@ namespace Client {
                 asyncResults[i] = ar;
                 handles[i] = ar.AsyncWaitHandle;
             }
+            int ntimeouts = 0;
             if (!WaitHandle.WaitAll(handles, 1000)) {
+                for (int k = 0; k < numServers; k++) {
+                    if (handles[k].WaitOne(0) == false) {
+                        ntimeouts++;
+                    }
+                }
+            }
+            if (ntimeouts > numServers / 2) {
                 takeRemove(tupleToDelete);
             }
         }
@@ -232,10 +247,9 @@ namespace Client {
 
         public void checkFrozen() {
             if (frozen) {
-                Console.WriteLine("Cant do anything, im frozen");
+                Console.WriteLine("Can't do anything, I'mm frozen");
                 lock (this) {
                     while (frozen) {
-                        Console.WriteLine("Waiting...");
                         Monitor.Wait(this);
                     }
                 }
