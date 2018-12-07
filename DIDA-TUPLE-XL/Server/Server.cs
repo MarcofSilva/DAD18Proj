@@ -122,10 +122,11 @@ namespace Server{
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
             List<TupleClass> allTuples = new List<TupleClass>();
+            if (toTakeSubset.ContainsKey(clientURL))
+            {
+                toTakeSubset.Remove(clientURL);
+            }
             lock (toTakeSubset) { //Prevent a take to search for tuples when another take is already doing it
-                if (toTakeSubset.ContainsKey(clientURL)) {
-                    toTakeSubset.Remove(clientURL);
-                }
                 //Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
                     foreach (var y in list) {
@@ -137,17 +138,21 @@ namespace Server{
                 foreach (var x in allTuples) {
                     Console.WriteLine("-> " + x.ToString());
                 }*/
-                lock (tupleSpace) {
+
+                //lock (tupleSpace) {
                     foreach (TupleClass el in tupleSpace.ToList()) {
                         //Console.WriteLine(el.ToString() + " ----- " + tuple.ToString());
                         if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
                             res.Add(el);
                         }
+                        else if(el.Matches(tuple) && allTuples.Contains(el)) {
+                            return new List<TupleClass>();
+                        }
                     }
                     if (res.Count != 0) {
                         toTakeSubset.Add(clientURL, res);
                     }
-                }
+                //}
                 
                 //Console.WriteLine("totakesubset -> ");
                 foreach (var x in toTakeSubset.Values) {
@@ -158,10 +163,7 @@ namespace Server{
             }
             if (res.Count == 0) {
                 Console.WriteLine("empty res");
-                lock (dummyObjForLock) {
-                    Monitor.Wait(dummyObjForLock);
-                } //no match
-                return takeRead(tuple, clientURL);
+                return new List<TupleClass>();
             }
             else {
                 foreach (TupleClass t in res) {
@@ -196,6 +198,13 @@ namespace Server{
             }
         }
 
+        public void releaseLocks(string clientUrl) {
+            Console.WriteLine("Releasing locks");
+            lock (toTakeSubset) {
+                toTakeSubset.Remove(clientUrl);
+            }
+        }
+
         public void Freeze() {
             Console.WriteLine("I'm freezing");
             frozen = true;
@@ -219,6 +228,10 @@ namespace Server{
                 Monitor.PulseAll(this);
             }
             frozen = false;
+            tupleSpace = fd.updateTS();
+            foreach (TupleClass t in tupleSpace) {
+                Console.WriteLine(t.ToString());
+            }
         }
 
         public int ping() { //TODO put this only on serverservice?

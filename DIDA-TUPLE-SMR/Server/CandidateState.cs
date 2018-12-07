@@ -112,6 +112,7 @@ namespace Server {
                     i++;
                 }
                 if (!WaitHandle.WaitAll(handles, 4000)) {//TODO
+                    Console.WriteLine("candidate timeout waiting for votes");
                     requestVote();
                 }
                 else {
@@ -157,7 +158,7 @@ namespace Server {
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = false;
-            electionTimeout.Enabled = false;
+            electionTimeout.Enabled = true;
         }
         public override bool vote(int term, string candidateID) {
             lock (vote_heartbeat_Lock)

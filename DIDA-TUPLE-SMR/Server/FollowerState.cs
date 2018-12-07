@@ -175,6 +175,7 @@ namespace Server {
                 if (!timerThreadBlock)
                 {
                     Console.WriteLine("Follower -> candidate : ontimedevent");
+                    // TODO variavel para controlar negaçao de heartbeat ou vote que chegue dps do timer acabar
                     _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
                 }
                 else
