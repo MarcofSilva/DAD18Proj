@@ -51,7 +51,17 @@ namespace Client {
                     handles[i] = ar.AsyncWaitHandle;
                 }
                 if (!WaitHandle.WaitAll(handles, 3000)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
-                    Write(tuple);
+                    int ntimeouts = 0;
+                    for (int k = 0; k < numServers; k++) {
+                        if (handles[k].WaitOne(0) == false) {
+                            ntimeouts++;
+                        }
+                    }
+                    if (ntimeouts >= numServers / 2) {
+                        Console.WriteLine("Majority of timeouts");
+                        Write(tuple);
+                    }
+
                 }
                 else {
                     nonce ++;
