@@ -26,7 +26,6 @@ namespace Client {
         public API_XL(string URL) {
             url = URL;
             prepareForRemoting(ref channel, URL);
-            //Console.WriteLine("Requesting available servers...");
             setView();
             Console.WriteLine("Finished requesting servers!");
         }
@@ -39,10 +38,8 @@ namespace Client {
 
 
         public override void Write(TupleClass tuple) {
-            
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL: Begin Write");
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -51,7 +48,7 @@ namespace Client {
                     IAsyncResult ar = writeDel.BeginInvoke(tuple, url, nonce, null, null);
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                if (!WaitHandle.WaitAll(handles, 1000)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
+                if (!WaitHandle.WaitAll(handles, 1000)) {
                     Write(tuple);
                 }
                 else {
@@ -59,17 +56,16 @@ namespace Client {
                 }
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                Console.WriteLine("Error in write. Trying again...");
+                Write(tuple);
             }
         }
 
         public override TupleClass Read(TupleClass tuple) {
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL alkjsdkajsd: Begin Read");
             WaitHandle[] handles = new WaitHandle[numServers];
-            IAsyncResult[] asyncResults = new IAsyncResult[numServers]; //used when want to access IAsyncResult in index of handled that give the signal
+            IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
                     IServerService remoteObject = view[i];
@@ -78,20 +74,19 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                int indxAsync = WaitHandle.WaitAny(handles, 3000); //Wait for the first answer from the servers
-                if (indxAsync == WaitHandle.WaitTimeout) { //if we have a timeout, due to no answer received with repeat the multicast TODO sera que querem isto
+                int indxAsync = WaitHandle.WaitAny(handles, 1000);
+                if (indxAsync == WaitHandle.WaitTimeout) {
                     return Read(tuple);
                 }
                 else {//TODO se o retorno for nulo temos de ir ver outra resposta
                     IAsyncResult asyncResult = asyncResults[indxAsync];
                     readDelegate readDel = (readDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                    TupleClass resTuple = readDel.EndInvoke(asyncResult); //TODO ou mudar no smr receber tuple ou aqui para receber list
+                    TupleClass resTuple = readDel.EndInvoke(asyncResult); 
                     nonce++;
                     return resTuple;
                 }
             }
-            catch (SocketException e) {
-                //TODO
+            catch (SocketException) {
                 Console.WriteLine("Error in read. Trying again...");
                 return Read(tuple);
             }
@@ -100,11 +95,8 @@ namespace Client {
         public override TupleClass Take(TupleClass tuple) {
             checkFrozen();
             setView();
-            //Console.WriteLine("----->DEBUG_API_XL: Begin Take");
-            //Console.Write("take in API_XL: ");
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
-            //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
             int nFaults = 0;
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -114,13 +106,13 @@ namespace Client {
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
                 }
-                bool allcompleted = WaitHandle.WaitAll(handles, random.Next(2000,3000)); //Wait for the first answer from the servers
-
+                //Wait for the first answer from the servers
+                bool allcompleted = WaitHandle.WaitAll(handles, random.Next(1000,2000)); 
                 if (!allcompleted) {
-                    Console.WriteLine("timeout");
-                    return Take(tuple); //TODO return?
+                    Console.WriteLine("Timed out");
+                    return Take(tuple);
                 }
-                else { //all have completed
+                else { 
                     List<List<TupleClass>> responses = new List<List<TupleClass>>();
                     for (int j = 0; j < numServers; j++) {
                         takeReadDelegate takeReadDel = (takeReadDelegate)((AsyncResult)asyncResults[j]).AsyncDelegate;
@@ -129,13 +121,12 @@ namespace Client {
                         if (res.Count == 0) nFaults++;
                     }
 
-                    Console.WriteLine("numfaults: " + nFaults);
                     if (nFaults != 0 && nFaults <= numServers / 2) {
-                        Console.WriteLine("Majority of accepts");
+                        //Majority of accepts
                         return Take(tuple);
                     }
                     else if (nFaults > numServers / 2) {
-                        Console.WriteLine("Minority of accepts");
+                        //Minority of accepts
                         for (int i = 0; i < numServers; i++) {
                             IServerService remoteObject = view[i];
                             releaseLocksDelegate releaseLocksDelegate = new releaseLocksDelegate(remoteObject.releaseLocks);
@@ -143,7 +134,7 @@ namespace Client {
                             asyncResults[i] = ar;
                             handles[i] = ar.AsyncWaitHandle;
                         }
-                        return Take(tuple); //TODO not sure se aqui ou no servidor
+                        return Take(tuple);
                     }
                     else {
                         List<TupleClass> response = new List<TupleClass>();
@@ -156,7 +147,7 @@ namespace Client {
                             else {
                                 response = listIntersection(response, list);
                                 if (response.Count == 0) {
-                                    Console.WriteLine("No possible intersection. Repeating...");
+                                    //In case intersection of all takeReads is empty
                                     return Take(tuple);
                                 }
                             }
@@ -164,7 +155,6 @@ namespace Client {
                         }
                     
                     TupleClass tupleToDelete = response[0];
-                    //Console.WriteLine("----->DEBUG_API_XL: tuple to delete " + printTuple(tupletoDelete));
                     takeRemove(tupleToDelete);
                     nonce++;
                     return tupleToDelete;
@@ -188,9 +178,8 @@ namespace Client {
                 IAsyncResult ar = takeRemDel.BeginInvoke(tupleToDelete, url, nonce, null, null);
                 asyncResults[i] = ar;
                 handles[i] = ar.AsyncWaitHandle;
-                //Console.WriteLine("----->DEBUG_API_XL: asked to remove server " + i);
             }
-            if (!WaitHandle.WaitAll(handles, 3000)) { //TODO check this timeout...waits for n milliseconds to receives acknoledgement of the writes, after that resends all writes
+            if (!WaitHandle.WaitAll(handles, 1000)) {
                 takeRemove(tupleToDelete);
             }
         }
@@ -200,7 +189,6 @@ namespace Client {
         }
 
         private List<TupleClass> listIntersection(List<TupleClass> tl1, List<TupleClass> tl2) {
-            int i;
             bool remove;
             foreach (TupleClass t1 in tl1) {
                 remove = true;
