@@ -98,10 +98,9 @@ namespace Client {
 
         public void checkFrozen() {
             if (frozen) {
-                Console.WriteLine("Cant do anything, im frozen");
+                Console.WriteLine("Can't do anything, I'm frozen");
                 lock (this) {
                     while (frozen) {
-                        Console.WriteLine("Waiting...");
                         Monitor.Wait(this);
                     }
                 }

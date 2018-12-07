@@ -25,6 +25,7 @@ namespace Server {
         private int wait;
         private bool voted = false;
         private readonly Object vote_heartbeat_Lock = new object();
+        private bool clockWasRunning = true;
 
         //private Dictionary<string, bool> voteMap = new Dictionary<string, bool>();
 
@@ -198,11 +199,17 @@ namespace Server {
         }
 
         public override void playClock() {
-            electionTimeout.Start();
+            if (clockWasRunning) {
+                electionTimeout.Start();
+            }
         }
 
         public override void pauseClock() {
-            electionTimeout.Stop();
+            if (electionTimeout.Enabled) {
+                clockWasRunning = true;
+                electionTimeout.Stop();
+            }
+            else clockWasRunning = false;
         }
 
         public override TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
