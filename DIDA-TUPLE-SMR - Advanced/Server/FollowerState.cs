@@ -36,7 +36,7 @@ namespace Server {
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
             lock (vote_heartbeat_Lock)
             {
-                Console.WriteLine("heartbeat");
+                //Console.WriteLine("heartbeat");
                 if (term < _term)
                 {
                     //o pedido que recebi e de um lider que ficou para tras
@@ -149,7 +149,6 @@ namespace Server {
                             voted = true;
                             return true;
                         }
-                        Console.WriteLine("já votei noutro");
                     }
                 }
                 finally
@@ -161,7 +160,7 @@ namespace Server {
         }
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(1500, 3000);//usually entre 150 300
+            wait = rnd.Next(150, 300);//usually entre 150 300
             Console.WriteLine(wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;

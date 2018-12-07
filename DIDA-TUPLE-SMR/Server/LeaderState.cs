@@ -27,7 +27,7 @@ namespace Server {
         
         private readonly Object vote_heartbeat_Lock = new object();
 
-        public LeaderState(Server server) : base(server) {
+        public LeaderState(Server server, int term) : base(server, term) {
             _leaderUrl = server._url;
             SetTimer();
         }
@@ -48,6 +48,8 @@ namespace Server {
                         Console.WriteLine("Leader -> Follower : appendEntry");
 
                         _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        timer.Dispose();
                         timerThreadBlock = true;
                         return new EntryResponse(false, _term, _server.getLogIndex());
                     }
@@ -67,6 +69,8 @@ namespace Server {
                     Console.WriteLine("Leader -> Follower : appendEntry");
                     timerThreadBlock = true;
                     _server.updateState("follower", _term, leaderID);
+                    _server = null;
+                    timer.Dispose();
                     //envio o server log index porque quando o servidor me enviar isto ele ja vai ter adicionado ao log dele
                     //logo na resposta vou comparar _server.logIndex do lado de lado com o deste
                     //na verdade o que estao a ver e: se deu true, entao eu tenho tantas packets como quem me respondeu
@@ -169,6 +173,8 @@ namespace Server {
                                 Console.WriteLine("Leader -> Follower : pulseappendEntry");
                                 timerThreadBlock = true;
                                 _server.updateState("follower", _term, response.Leader);
+                                _server = null;
+                                timer.Dispose();
                             }
                             //nao estou a tratar quando da false por causa do log aqui especificamente
                             //trato tudo da mesma maneira
@@ -242,6 +248,8 @@ namespace Server {
                     Console.WriteLine("Leader -> Follower : vote for " + candidateID);
                     timerThreadBlock = true;
                     _server.updateState("follower", _term, candidateID);
+                    _server = null;
+                    timer.Dispose();
                     return true;
                 }
                 //the system doesnt alow it to come here

@@ -41,71 +41,46 @@ namespace Server {
                 }
                 else
                 {
-                    try
+                    _term = term;
+                    Console.WriteLine("Leader changed to: " + leaderID);
+                    if (entryPacket.Count == 0)
                     {
-                        _term = term;
-                        Console.WriteLine("Leader changed to: " + leaderID);
-                        if (entryPacket.Count == 0)
-                        {
-                            if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                            {
-                                timerThreadBlock = true;
-                            }
-                            else
-                            {
-                                electionTimeout.Stop();
-                            }
-                            electionTimeout.Interval = wait;
-                            _server.updateState("follower", _term, leaderID); ;
-                            return new EntryResponse(true, _term, _server.getLogIndex());
-                        }
+                        timerThreadBlock = true;
+                        _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        electionTimeout.Dispose();
+                        return new EntryResponse(true, _term, _server.getLogIndex());
+                    }
 
-                        if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    {
+                        //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        Console.WriteLine("Candidate -> Follower : appendEntry ");
+                        timerThreadBlock = true;
+                        _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        electionTimeout.Dispose();
+                        return new EntryResponse(false, _term, _server.getLogIndex());
+                    }
+                    foreach (Entry entry in entryPacket.Entrys)
+                    {
+                        _server.addEntrytoLog(entry);
+                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
+                        if (entry.Type == "write")
                         {
-                            //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
-                            Console.WriteLine("Candidate -> Follower : appendEntry ");
-                            if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                            {
-                                timerThreadBlock = true;
-                            }
-                            else
-                            {
-                                electionTimeout.Stop();
-                            }
-                            electionTimeout.Interval = wait;
-                            _server.updateState("follower", _term, leaderID);
-                            return new EntryResponse(false, _term, _server.getLogIndex());
-                        }
-                        foreach (Entry entry in entryPacket.Entrys)
-                        {
-                            _server.addEntrytoLog(entry);
-                            //TODO, matilde queres meter a comparacao de strings como gostas? xD
-                            if (entry.Type == "write")
-                            {
-                                _server.writeLeader(entry.Tuple);
-                            }
-                            else
-                            {
-                                _server.takeLeader(entry.Tuple);
-                            }
-                        }
-                        Console.WriteLine("Candidate -> Follower : append Entry");
-                        if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                        {
-                            timerThreadBlock = true;
+                            _server.writeLeader(entry.Tuple);
                         }
                         else
                         {
-                            electionTimeout.Stop();
+                            _server.takeLeader(entry.Tuple);
                         }
-                        electionTimeout.Interval = wait;
-                        _server.updateState("follower", _term, leaderID); ;
-                        return new EntryResponse(true, _term, _server.getLogIndex());
                     }
-                    finally
-                    {
-                        electionTimeout.Start();
-                    }
+                    Console.WriteLine("Candidate -> Follower : append Entry");
+                    timerThreadBlock = true;
+                    _server.updateState("follower", _term, leaderID);
+                    _server = null;
+                    electionTimeout.Dispose();
+                    return new EntryResponse(true, _term, _server.getLogIndex());
                 }
             }
         }
@@ -185,59 +160,36 @@ namespace Server {
             timerThreadBlock = false;
             requestVote();
             SetTimer();
-            electionTimeout.Start();
+            electionTimeout.Enabled = false;
         }
         private void SetTimer() {
-            wait = rnd.Next(1500, 3000);
+            wait = rnd.Next(150, 300);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = false;
-            electionTimeout.Enabled = false;
+            electionTimeout.Enabled = true;
         }
         public override bool vote(int term, string candidateID) {
             lock (vote_heartbeat_Lock)
             {
                 if (term > _term)
                 {
-                    try
-                    {
-                        if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                        {
-                            timerThreadBlock = true;
-                        }
-                        else
-                        {
-                            electionTimeout.Stop();
-                        }
-                        electionTimeout.Interval = wait;
-                        Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
-                        Console.WriteLine("He was in term: " + term + " i was in " + _term);
-                        _term = term;
-                        _server.updateState("follower", _term, candidateID);
-                        return true;
-                    }
-                    finally
-                    {
-                        electionTimeout.Start();
-                    }
+                    Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
+                    Console.WriteLine("He was in term: " + term + " i was in " + _term);
+                    _term = term;
+                    timerThreadBlock = true;
+                    _server.updateState("follower", _term, candidateID);
+                    _server = null;
+                    electionTimeout.Dispose();
+                    return true;
                 }
             }
             return false;
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            lock (vote_heartbeat_Lock)
-            {
-                Console.WriteLine("timeevent in Candidate->>" + timerThreadBlock);
-                if (!timerThreadBlock)
-                {
-                    requestVote();
-                }
-                else
-                {
-                    timerThreadBlock = false;
-                }
-            }
+            Console.WriteLine("on timed event election");
+            requestVote();
         }
         public override void ping() {
             Console.WriteLine("Candidate State pinged");
