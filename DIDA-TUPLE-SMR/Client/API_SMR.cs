@@ -11,26 +11,27 @@ using System.Threading;
 using System.Threading.Tasks;
 using ClassLibrary;
 using ExceptionLibrary;
-//TODO apagar usings desnecessarios
+
 namespace Client {
     class API_SMR : TupleSpaceAPI {
 
         private const int defaultPort = 8085;
         private TcpChannel channel;
-        private IServerService serverRemoteObject;
+        private List<IServerService> _view;
         private bool frozen = false;
         private string url;
 
         public API_SMR(string URL) {
-            serverRemoteObject = prepareForRemoting(ref channel, URL);
-
+            _view = prepareForRemoting(ref channel, URL);
+            _view = getView(_view);
             url = URL;
         }
 
         public override void write(TupleClass tuple) {
             checkFrozen();
+            _view = getView(_view);
             try {
-                serverRemoteObject.write(tuple,url, nonce);
+                _view[0].write(tuple,url, nonce);
                 nonce++;
             }
             catch (ElectionException) {
@@ -38,32 +39,40 @@ namespace Client {
                 write(tuple);
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                write(tuple);
             }
         }
         public override TupleClass read(TupleClass tuple) {
             checkFrozen();
+            _view = getView(_view);
             try {
-                List<TupleClass> res = serverRemoteObject.read(tuple, url, nonce);
+                TupleClass res = _view[0].read(tuple, url, nonce);
                 nonce++;
-                return res[0];
+                if(res.tuple.Count == 0) {
+                    Thread.Sleep(500);
+                    return read(tuple);
+                }
+                return res;
             }
             catch (ElectionException) {
                 Thread.Sleep(500);
                 return read(tuple);
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                return read(tuple);
             }
         }
 
         public override TupleClass take(TupleClass tuple) {
             checkFrozen();
+            _view = getView(_view);
             try {
-                TupleClass res = serverRemoteObject.take(tuple, url, nonce);
+                TupleClass res = _view[0].take(tuple, url, nonce);
                 nonce++;
+                if (res.tuple.Count == 0) {
+                    Thread.Sleep(500);
+                    return take(tuple);
+                }
                 return res;
             }
             catch (ElectionException) {
@@ -71,8 +80,7 @@ namespace Client {
                 return take(tuple);
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                return take(tuple);
             }
         }
 

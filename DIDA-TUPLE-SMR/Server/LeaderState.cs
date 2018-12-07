@@ -82,7 +82,7 @@ namespace Server {
             }
         }
 
-        public override List<TupleClass> read(TupleClass tuple, string url, long nonce) {
+        public override TupleClass read(TupleClass tuple, string url, long nonce) {
             try {
                 return _server.readLeader(tuple, true);
             }
@@ -96,13 +96,16 @@ namespace Server {
         }
 
         public override TupleClass take(TupleClass tuple, string url, long nonce) {
-            TupleClass realTuple = _server.readLeader(tuple, false)[0];
-            
-            timer.Interval = wait;
-            TupleClass res = _server.takeLeader(tuple, _term);
-            pulseAppendEntry();
+            TupleClass realTuple = _server.readLeader(tuple, false);
+            if (realTuple.tuple.Count != 0) {//TODO sincronizar para so uma thread entrar dentro disto
+                TakeEntry entry = new TakeEntry(tuple, _term, _server.getLogIndex(), "take");
+                //arranjar lock para o log e tuplespace(?)
+                _server.addEntrytoLog(entry);
 
-            return res;
+                timer.Interval = wait;
+                pulseAppendEntry();
+            }
+            return _server.takeLeader(tuple);
         }
 
         //TODO falta utilizar nounce
@@ -203,7 +206,7 @@ namespace Server {
 
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            Console.WriteLine("pulse heartbeat");
+            //Console.WriteLine("pulse heartbeat");
             pulseHeartbeat();
         }
 

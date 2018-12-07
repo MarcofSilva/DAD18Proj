@@ -99,14 +99,18 @@ namespace Server {
                 }
                 if (isChanged) {
                     modified = true;
-                    //Console.WriteLine("view changed!!! view count " + view.Count);
+                    Console.WriteLine("view changed!!! view count " + view.Count);
                 }
             }
         }
 
+        public List<string> getViewNormal() {
+            //Console.WriteLine("someone got view");
+            return view;
+        }
+
         public List<string> getView() {
             modified = false;
-            //Console.WriteLine("someone got view");
             return view;
         }
 

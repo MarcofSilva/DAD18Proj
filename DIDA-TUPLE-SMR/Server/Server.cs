@@ -154,16 +154,17 @@ namespace Server {
             }
         }
         //reader mode of tupleSpaceLock
-        public List<TupleClass> readLeader(TupleClass tuple, bool verbose) {
+        public TupleClass readLeader(TupleClass tuple, bool verbose) {
             tupleSpaceLock.EnterReadLock();
             //verbose esta aqui porque no take, utilizamos, e n queremos que faca print de read
             if (verbose) {
                 Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
             }
-            List<TupleClass> res = new List<TupleClass>();
+            TupleClass res = new TupleClass();
             foreach (TupleClass el in tupleSpace) {
                 if (el.Matches(tuple)) {
-                    res.Add(el);
+                    res = el;
+                    break;
                 }
             }
             tupleSpaceLock.ExitReadLock();
@@ -173,10 +174,12 @@ namespace Server {
 
         public void updateState(string state, int term, string url) {
             if (state == "follower") {
+                _state.stopClock();
                 Console.WriteLine("I am now a Follower");
                 _state = new FollowerState(this, term);
             }
             else if (state == "candidate") {
+                _state.stopClock();
                 Console.WriteLine("I am now a Candidate");
                 _state = new CandidateState(this, term);
             }
@@ -195,7 +198,7 @@ namespace Server {
                 throw e;
             }
         }
-        public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+        public TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
             try {
                 return _state.read(tuple, clientUrl, nonce);
             }
