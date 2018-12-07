@@ -8,10 +8,8 @@ using System.Threading.Tasks;
 using ClassLibrary;
 using System.Threading;
 
-namespace Server
-{
-    public class ServerService : MarshalByRefObject, IServerService
-    {
+namespace Server {
+    public class ServerService : MarshalByRefObject, IServerService {
         private Server _server;
         private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
         private int _min_delay;
@@ -26,7 +24,6 @@ namespace Server
             _server = server;
             _min_delay = min_delay;
             _max_delay = max_delay;
-            Console.WriteLine("min : " + min_delay.ToString() + " max: " + max_delay.ToString());
         }
 
         private bool validRequest(string clientUrl, long nonce) {
@@ -78,7 +75,7 @@ namespace Server
             responseTuple = _server.takeRead(tuple, clientUrl);
             Interlocked.Decrement(ref numRequests);
             return responseTuple;
-       }
+        }
 
         public void TakeRemove(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
@@ -112,7 +109,6 @@ namespace Server
                 askingView = true;
                 lock (dummy) {
                     while (askingView) {
-                        Console.WriteLine("Waiting...");
                         Monitor.Wait(dummy);
                     }
                 }
@@ -132,7 +128,7 @@ namespace Server
         }
 
         public List<string> ViewRequest() {
-            _server.checkFrozen(); 
+            _server.checkFrozen();
             return _server.viewRequest();
         }
 

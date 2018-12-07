@@ -220,8 +220,10 @@ namespace Server {
         }
         public void checkFrozen() {
             if (frozen) {
+                Console.WriteLine("Cant do anything, im frozen");
                 lock (this) {
                     while (frozen) {
+                        Console.WriteLine("Waiting...");
                         Monitor.Wait(this);
                     }
                 }

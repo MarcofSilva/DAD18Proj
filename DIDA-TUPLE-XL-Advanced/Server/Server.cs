@@ -1,12 +1,17 @@
-﻿using System;
+﻿using RemoteServicesLibrary;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Collections;
 using System.Linq;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Text;
+using System.Threading.Tasks;
 using ClassLibrary;
 using System.Threading;
+using System.Collections.Concurrent;
 
 namespace Server{
     public class Server{
@@ -51,15 +56,12 @@ namespace Server{
             channel = new TcpChannel(port);
             ChannelServices.RegisterChannel(channel, false);
             myRemoteObject = new ServerService(this, min_delay, max_delay);
-            RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService)); //TODO remote object name
-        }
-
-        public List<TupleClass> getTupleSpace() {
-            return tupleSpace;
+            RemotingServices.Marshal(myRemoteObject, name, typeof(ServerService));
         }
 
         public void write(TupleClass tuple){
             Console.WriteLine("Operation: Write" + tuple.ToString() + "\n");
+
             tupleSpaceLock.EnterWriteLock();
             try {
                 tupleSpace.Add(tuple);
@@ -77,7 +79,7 @@ namespace Server{
             while (resTuple == null) {
                 Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
 
-                tupleSpaceLock.EnterReadLock(); // TODO can you read blocked tuples (by take)?
+                tupleSpaceLock.EnterReadLock();
                 try {
                     Regex capital = new Regex(@"[A-Z]");
                     lock (tupleSpace) {
@@ -116,7 +118,6 @@ namespace Server{
                         allTuples.Add(y);
                     }
                 }
-
                 foreach (TupleClass el in tupleSpace.ToList()) {
                     if (el.Matches(tuple) && !allTuples.Contains(el)) { //ignora os bloqueados
                         res.Add(el);
@@ -153,6 +154,7 @@ namespace Server{
                     break;
                 }
             }
+            
         }
 
         public void status() {
@@ -165,16 +167,19 @@ namespace Server{
             foreach (string s in fd.getView()) {
                 Console.WriteLine(s);
             }
-
             Console.WriteLine("--Suspects--");
-            foreach (string suspect in fd.getSuspects()) {
-                Console.WriteLine(suspect);
+            foreach (string str in fd.getSuspects()) {
+                Console.WriteLine(str);
             }
         }
 
+        public List<TupleClass> getTupleSpace() {
+            return tupleSpace;
+        }
+
         public void Freeze() {
-            frozen = true;
             Console.WriteLine("I'm frozen");
+            frozen = true;
         }
 
         public void releaseLocks(string clientURL) {
@@ -202,7 +207,8 @@ namespace Server{
             frozen = false;
         }
 
-        public int ping() { //TODO put this only on serverservice?
+        public int ping() { 
+            checkFrozen();
             return 1;
         }
 

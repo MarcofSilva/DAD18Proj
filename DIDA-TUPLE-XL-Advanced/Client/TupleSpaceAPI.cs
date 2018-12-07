@@ -100,11 +100,11 @@ namespace Client {
                     //Majority of timeouts
                     getView(view);
                 }
-                
+
                 else {
                     List<string> viewUnion = new List<string>();
                     int i = 0;
-                    for(; i < numServers; i++) { //dont invoke timeouts
+                    for (; i < numServers; i++) { //dont invoke timeouts
                         if (timeouts[i] != 1) {
                             try {
                                 requestViewDelegate viewDel = (requestViewDelegate)((AsyncResult)asyncResults[i]).AsyncDelegate;
