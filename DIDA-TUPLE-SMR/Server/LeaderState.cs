@@ -198,7 +198,7 @@ namespace Server {
 
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            //Console.WriteLine("pulse heartbeat");
+            Console.WriteLine("pulse heartbeat");
             pulseHeartbeat();
         }
 
@@ -221,8 +221,8 @@ namespace Server {
             }
             timerThreadBlock = false;
             pulseHeartbeat();
-            //timer.Start();
             SetTimer();
+            //timer.Start();
             //TODO redundante porque o url recebido e o dele proprio
             _leaderUrl = url;
         }

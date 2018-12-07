@@ -184,7 +184,7 @@ namespace Server {
             electionTimeout.Start();
         }
         private void SetTimer() {
-            wait = rnd.Next(150, 300);
+            wait = rnd.Next(1500, 3000);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
