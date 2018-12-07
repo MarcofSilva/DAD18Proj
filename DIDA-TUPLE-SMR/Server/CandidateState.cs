@@ -25,7 +25,7 @@ namespace Server {
         private bool timerThreadBlock = false;
         private readonly Object vote_heartbeat_Lock = new object();
 
-        public CandidateState(Server server) : base(server) {
+        public CandidateState(Server server, int term) : base(server, term) {
             SetTimer();
         }
 
@@ -46,7 +46,9 @@ namespace Server {
                     if (entryPacket.Count == 0)
                     {
                         timerThreadBlock = true;
-                        _server.updateState("follower", _term, leaderID); ;
+                        _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        electionTimeout.Dispose();
                         return new EntryResponse(true, _term, _server.getLogIndex());
                     }
 
@@ -56,6 +58,8 @@ namespace Server {
                         Console.WriteLine("Candidate -> Follower : appendEntry ");
                         timerThreadBlock = true;
                         _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        electionTimeout.Dispose();
                         return new EntryResponse(false, _term, _server.getLogIndex());
                     }
                     foreach (Entry entry in entryPacket.Entrys)
@@ -73,7 +77,9 @@ namespace Server {
                     }
                     Console.WriteLine("Candidate -> Follower : append Entry");
                     timerThreadBlock = true;
-                    _server.updateState("follower", _term, leaderID); ;
+                    _server.updateState("follower", _term, leaderID);
+                    _server = null;
+                    electionTimeout.Dispose();
                     return new EntryResponse(true, _term, _server.getLogIndex());
                 }
             }
@@ -96,6 +102,7 @@ namespace Server {
                     Console.WriteLine(url);
                 }
             }
+            Console.WriteLine("after view change");
             WaitHandle[] handles = new WaitHandle[_numServers-1];
             IAsyncResult[] asyncResults = new IAsyncResult[_numServers-1];
             try {
@@ -128,6 +135,9 @@ namespace Server {
                         electionTimeout.Stop();
                         timerThreadBlock = true;
                         _server.updateState("leader", _term, _url);
+                        _server = null;
+                        electionTimeout.Dispose();
+                        Console.WriteLine("elected in term" + _term);
                         return;
                     }
                     else {
@@ -149,8 +159,8 @@ namespace Server {
             }
             timerThreadBlock = false;
             requestVote();
-            //electionTimeout.Start();
             SetTimer();
+            electionTimeout.Enabled = false;
         }
         private void SetTimer() {
             wait = rnd.Next(150, 300);
@@ -170,12 +180,15 @@ namespace Server {
                     _term = term;
                     timerThreadBlock = true;
                     _server.updateState("follower", _term, candidateID);
+                    _server = null;
+                    electionTimeout.Dispose();
                     return true;
                 }
             }
             return false;
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
+            Console.WriteLine("on timed event election");
             requestVote();
         }
         public override void ping() {

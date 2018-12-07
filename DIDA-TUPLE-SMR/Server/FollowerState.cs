@@ -28,7 +28,7 @@ namespace Server {
 
         private bool timerThreadBlock = false;
 
-        public FollowerState(Server server) : base(server) {
+        public FollowerState(Server server, int term) : base(server, term) {
             SetTimer();
             Console.WriteLine("Created follower");
         }
@@ -171,12 +171,14 @@ namespace Server {
         {
             lock (vote_heartbeat_Lock)
             {
-                Console.WriteLine("timeevent ->>" + timerThreadBlock);
+                //Console.WriteLine("timeevent ->>" + timerThreadBlock);
                 if (!timerThreadBlock)
                 {
                     Console.WriteLine("Follower -> candidate : ontimedevent");
                     // TODO variavel para controlar negaçao de heartbeat ou vote que chegue dps do timer acabar
                     _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
+                    _server = null;
+                    electionTimeout.Dispose();
                 }
                 else
                 {
@@ -192,7 +194,7 @@ namespace Server {
             electionTimeout.Dispose();
         }
         public override void startClock(int term, string url) {
-            Console.WriteLine("Started clock on Follower");
+            //Console.WriteLine("Started clock on Follower");
             //quando vem de candidato
             Console.WriteLine("UPDATE TERM IN START");
             if (term > _term) {

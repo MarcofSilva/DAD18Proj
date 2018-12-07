@@ -22,9 +22,9 @@ namespace Server {
         protected List<string>  _view;
         protected Dictionary<string, IServerService> _serverRemoteObjects;
 
-        public RaftState(Server server) {
+        public RaftState(Server server, int term) {
             _server = server;
-            _term = 0;
+            _term = term;
             _url = _server._url;
             _view = _server.fd.getView();
             _numServers = _view.Count();

@@ -23,9 +23,6 @@ namespace Server {
         private ReaderWriterLockSlim tupleSpaceLock = new ReaderWriterLockSlim();
         private List<TupleClass> tupleSpace = new List<TupleClass>();
 
-        private CandidateState candidate;
-        private FollowerState follower;
-        private LeaderState leader;
         private RaftState _state;
 
         private const int defaultDelay = 0;
@@ -81,10 +78,7 @@ namespace Server {
                 Thread.Sleep(100);
                 view = fd.getView();
             }
-            leader = new LeaderState(this);
-            candidate = new CandidateState(this);
-            follower = new FollowerState(this);
-            _state = follower;
+            _state = new FollowerState(this, 0); ;
             Console.WriteLine("Finished constructing server "+ _port + " with thread " + Thread.CurrentThread.ManagedThreadId);
         }
 
@@ -177,19 +171,17 @@ namespace Server {
 
         public void updateState(string state, int term, string url) {
             if (state == "follower") {
-                _state.stopClock();
                 Console.WriteLine("I am now a Follower");
-                _state = follower;
+                _state = new FollowerState(this, term);
             }
             else if (state == "candidate") {
-                _state.stopClock();
                 Console.WriteLine("I am now a Candidate");
-                _state = candidate;
+                _state = new CandidateState(this, term);
             }
             else if(state == "leader") {
                 _state.stopClock();
                 Console.WriteLine("I am now a Leader");
-                _state = leader;
+                _state = new LeaderState(this, term);
             }
             _state.startClock(term, url);
         }
