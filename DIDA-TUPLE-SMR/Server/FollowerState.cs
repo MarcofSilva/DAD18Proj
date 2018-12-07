@@ -27,6 +27,7 @@ namespace Server {
         private readonly Object vote_heartbeat_Lock = new object();
 
         private bool timerThreadBlock = false;
+        private bool leaveState = false;
 
         public FollowerState(Server server, int term) : base(server, term) {
             SetTimer();
@@ -56,7 +57,7 @@ namespace Server {
                         {
                             electionTimeout.Stop();
                         }
-                        electionTimeout.Interval = wait;
+                        electionTimeout.Interval = setWait();
 
                         if (entryPacket.Count == 0)
                         {
@@ -125,7 +126,7 @@ namespace Server {
                         {
                             electionTimeout.Stop();
                         }
-                        electionTimeout.Interval = wait;
+                        electionTimeout.Interval = setWait();
 
                         Console.WriteLine("UPDATE TERM IN VOTE from:" + _term + " to " + term);
                         _term = term;
@@ -144,7 +145,7 @@ namespace Server {
                             {
                                 electionTimeout.Stop();
                             }
-                            electionTimeout.Interval = wait;
+                            electionTimeout.Interval = setWait();
 
                             voted = true;
                             return true;
@@ -159,9 +160,15 @@ namespace Server {
                 return false;
             }
         }
+
+        private int setWait()
+        {
+            return wait = rnd.Next(1500, 3000);//usually entre 150 300
+        }
+
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(1500, 3000);//usually entre 150 300
+            setWait();
             Console.WriteLine(wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
@@ -175,11 +182,12 @@ namespace Server {
                 //Console.WriteLine("timeevent ->>" + timerThreadBlock);
                 if (!timerThreadBlock)
                 {
-                    Console.WriteLine("Follower -> candidate : ontimedevent");
+                    Console.WriteLine("Follower -> candidate : ontimedevent -- Thread:" + Thread.CurrentThread.ManagedThreadId);
                     // TODO variavel para controlar negaçao de heartbeat ou vote que chegue dps do timer acabar
                     _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
                     _server = null;
                     electionTimeout.Dispose();
+                    leaveState = true;
                 }
                 else
                 {
