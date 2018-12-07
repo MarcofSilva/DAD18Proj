@@ -41,7 +41,6 @@ namespace Server {
                     _term = term;
                     Console.WriteLine("Leader: AppendEntry from: " + leaderID);
 
-                    //TODO PEDIR AO SOUSA PARA EXPLICAR, FOLHA DO MARCO
                     if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
                     {
                         //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
@@ -95,17 +94,13 @@ namespace Server {
             pulseAppendEntry();
         }
 
-        public override TupleClass take(TupleClass tuple, string url, long nonce) {
+        public override TupleClass take(TupleClass tuple, string url, long nonce)
+        {
             TupleClass realTuple = _server.readLeader(tuple, false);
-            if (realTuple.tuple.Count != 0) {//TODO sincronizar para so uma thread entrar dentro disto
-                TakeEntry entry = new TakeEntry(tuple, _term, _server.getLogIndex(), "take");
-                //arranjar lock para o log e tuplespace(?)
-                _server.addEntrytoLog(entry);
-
-                timer.Interval = wait;
-                pulseAppendEntry();
-            }
-            return _server.takeLeader(tuple);
+            timer.Interval = wait;
+            TupleClass res = _server.takeLeader(tuple, _term);
+            pulseAppendEntry();
+            return res;
         }
 
         //TODO falta utilizar nounce
@@ -215,7 +210,7 @@ namespace Server {
             timer = new System.Timers.Timer(wait);
             timer.Elapsed += OnTimedEvent;
             timer.AutoReset = false;
-            timer.Enabled = false;
+            timer.Enabled = true;
         }
 
         public override void stopClock() {

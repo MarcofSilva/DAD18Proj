@@ -51,76 +51,45 @@ namespace Server {
                 }
                 else
                 {
-                    try
+                    _term = term;
+                    Console.WriteLine("Leader changed to: " + leaderID);
+                    if (entryPacket.Count == 0)
                     {
-                        _term = term;
-                        Console.WriteLine("Leader changed to: " + leaderID);
-                        if (entryPacket.Count == 0)
-                        {
-                            if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                            {
-                                timerThreadBlock = true;
-                            }
-                            else
-                            {
-                                electionTimeout.Stop();
-                            }
-                            electionTimeout.Interval = wait;
-                            _server.updateState("follower", _term, leaderID);
-                            _server = null;
-                            electionTimeout.Dispose();
-                            return new EntryResponse(true, _term, _server.getLogIndex());
-                        }
+                        timerThreadBlock = true;
+                        stopClock();
+                        _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        return new EntryResponse(true, _term, _server.getLogIndex());
+                    }
 
-                        if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
+                    {
+                        //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
+                        Console.WriteLine("Candidate -> Follower : appendEntry ");
+                        timerThreadBlock = true;
+                        stopClock();
+                        _server.updateState("follower", _term, leaderID);
+                        _server = null;
+                        return new EntryResponse(false, _term, _server.getLogIndex());
+                    }
+                    foreach (Entry entry in entryPacket.Entrys)
+                    {
+                        if (entry.Type == "write")
                         {
-                            //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
-                            Console.WriteLine("Candidate -> Follower : appendEntry ");
-                            if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                            {
-                                timerThreadBlock = true;
-                            }
-                            else
-                            {
-                                electionTimeout.Stop();
-                            }
-                            electionTimeout.Interval = wait;
-                            _server.updateState("follower", _term, leaderID);
-                            _server = null;
-                            electionTimeout.Dispose();
-                            return new EntryResponse(false, _term, _server.getLogIndex());
-                        }
-                        foreach (Entry entry in entryPacket.Entrys)
-                        {
-                            if (entry.Type == "write")
-                            {
-                                _server.addEntrytoLog(entry);
-                                _server.writeLeader(entry.Tuple);
-                            }
-                            else
-                            {
-                                _server.takeLeader(entry.Tuple, entry.Term);
-                            }
-                        }
-                        Console.WriteLine("Candidate -> Follower : append Entry");
-                        if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                        {
-                            timerThreadBlock = true;
+                            _server.addEntrytoLog(entry);
+                            _server.writeLeader(entry.Tuple);
                         }
                         else
                         {
-                            electionTimeout.Stop();
+                            _server.takeLeader(entry.Tuple, entry.Term);
                         }
-                        electionTimeout.Interval = wait;
-                        _server.updateState("follower", _term, leaderID);
-                        _server = null;
-                        electionTimeout.Dispose();
-                        return new EntryResponse(true, _term, _server.getLogIndex());
                     }
-                    finally
-                    {
-                        electionTimeout.Start();
-                    }
+                    Console.WriteLine("Candidate -> Follower : append Entry");
+                    timerThreadBlock = true;
+                    stopClock();
+                    _server.updateState("follower", _term, leaderID);
+                    _server = null;
+                    return new EntryResponse(true, _term, _server.getLogIndex());
                 }
             }
         }
@@ -194,17 +163,18 @@ namespace Server {
                         } 
                     }
                     if (votes > (_numServers /2)) {
-                        electionTimeout.Stop();
+                        stopClock();
                         timerThreadBlock = true;
                         _server.updateState("leader", _term, _url);
                         _server = null;
-                        electionTimeout.Dispose();
                         Console.WriteLine("elected in term" + _term);
                         return;
                     }
                     else {
                         Console.WriteLine("Finished elections without sucess");
-                        pulseVote.Interval = 1000; //TODO
+                        pulseVote.Stop();
+                        pulseVote.Dispose();
+                        SetVoteTimer();
                     }
                 }
 
@@ -221,7 +191,6 @@ namespace Server {
             timerThreadBlock = false;
             requestVote();
             SetTimer();
-            electionTimeout.Start();
         }
 
         private int setWait()
@@ -237,6 +206,14 @@ namespace Server {
             electionTimeout.AutoReset = false;
             electionTimeout.Enabled = true;
 
+            pulseVote = new System.Timers.Timer(100);
+            pulseVote.Elapsed += pulseVoteEvent;
+            pulseVote.AutoReset = false;
+            pulseVote.Enabled = true;
+        }
+
+        private void SetVoteTimer()
+        {
             pulseVote = new System.Timers.Timer(100);
             pulseVote.Elapsed += pulseVoteEvent;
             pulseVote.AutoReset = false;
@@ -274,29 +251,17 @@ namespace Server {
             {
                 if (term > _term)
                 {
-                    try
-                    {
-                        if (!electionTimeout.Enabled) //caso em que timer acabou durante o processamento de um heartbeat
-                        {
-                            timerThreadBlock = true;
-                        }
-                        else
-                        {
-                            electionTimeout.Stop();
-                        }
-                        electionTimeout.Interval = wait;
-                        Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
-                        Console.WriteLine("He was in term: " + term + " i was in " + _term);
-                        _term = term;
-                        _server.updateState("follower", _term, candidateID);
-                        _server = null;
-                        electionTimeout.Dispose();
-                        return true;
-                    }
-                    finally
-                    {
-                        electionTimeout.Start();
-                    }
+                    timerThreadBlock = true;
+                    stopClock();
+                    Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
+                    Console.WriteLine("He was in term: " + term + " i was in " + _term);
+                    _term = term;
+                    stopClock();
+                    timerThreadBlock = true;
+                    _server.updateState("follower", _term, candidateID);
+                    _server = null;
+                    electionTimeout.Dispose();
+                    return true;
                 }
             }
             return false;
