@@ -46,9 +46,7 @@ namespace Server {
                         i++;
                     }
                     if (!WaitHandle.WaitAll(handles, 300)) {
-                        //Console.WriteLine("TIMEOUT");
                         for (int k = 0; k < numServers; k++) {
-                            //Console.WriteLine(handles[k].WaitOne(0));
                             if (handles[k].WaitOne(0) == false) {
                                 responses[k] = -1;
                             }
@@ -63,11 +61,9 @@ namespace Server {
                             }
                         }
                         catch (SocketException ) {
-                            //Console.WriteLine("SOCKETEXCEPTION");
                             responses[i] = -1;
                         }
                         catch (NullReferenceException ) {
-                            //Console.WriteLine("NULLEXECEPTION");
                             responses[i] = -1;
                         }
                     }
@@ -77,11 +73,7 @@ namespace Server {
                             if (responses[j] != -1) {
                                 view.Add(allServers[j]);
                             }
-                            else {
-                                //Console.WriteLine(j.ToString() + " is down");
-                            }
                         }
-                        //Console.WriteLine("view count: " + view.Count);
                     }
                 }
                 catch (Exception e) {
@@ -92,20 +84,18 @@ namespace Server {
                 if (oldView.Count != view.Count) isChanged = true;
 
                 foreach (string bla in view) {
-                    //Console.WriteLine("-> " + bla);
                     if (!oldView.Contains(bla)) {
                         isChanged = true;
                     }
                 }
                 if (isChanged) {
                     modified = true;
-                    Console.WriteLine("view changed!!! view count " + view.Count);
+                    Console.WriteLine("View Changed. View count: " + view.Count);
                 }
             }
         }
 
         public List<string> getViewNormal() {
-            //Console.WriteLine("someone got view");
             return view;
         }
 
@@ -115,7 +105,6 @@ namespace Server {
         }
 
         public bool changed() {
-            //Console.WriteLine("someone checked view with cout" + view.Count);
             return modified;
         }
 

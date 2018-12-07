@@ -52,7 +52,6 @@ namespace Server {
             matchIndexMap = new Dictionary<string, int>();
 
             channel = new TcpChannel(_port);
-            Console.WriteLine(_port.ToString());
             ChannelServices.RegisterChannel(channel, false);
 
             myRemoteObject = new ServerService(this, min_delay, max_delay);
@@ -79,7 +78,6 @@ namespace Server {
                 view = fd.getView();
             }
             _state = new FollowerState(this, 0); ;
-            Console.WriteLine("Finished constructing server "+ _port + " with thread " + Thread.CurrentThread.ManagedThreadId);
         }
 
         public Server() {
@@ -102,10 +100,8 @@ namespace Server {
 
         public void addEntrytoLog(Entry entry) {
             entryLog.Add(entry);
-            Console.WriteLine("log size: "+ entryLog.Count +" ,Added this to log: "+entry.ToString());
         }
 
-        //TODOOOO
         public int getLogIndex() {
             return entryLog.Count;
         }
@@ -118,7 +114,7 @@ namespace Server {
         public void writeLeader(TupleClass tuple) {
             tupleSpaceLock.EnterWriteLock();
             tupleSpace.Add(tuple);
-            Console.WriteLine("Operation: Added" + tuple.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
+            Console.WriteLine("Operation: Added " + tuple.ToString() + "\n");
             tupleSpaceLock.ExitWriteLock();
         }
         //Enters reader mode and if it found same valid tuple it enters write mode to remove it
@@ -136,7 +132,7 @@ namespace Server {
                             addEntrytoLog(entry);
                             res = el;
                             tupleSpace.Remove(el);
-                            Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
+                            Console.WriteLine("Operation: Took " + res.ToString() + "\n");
                             return res;
                         }
                         finally {
@@ -145,7 +141,7 @@ namespace Server {
                     }
                 }
 
-                Console.WriteLine("Operation: Took " + res.ToString() + " tuple space size: " + tupleSpace.Count + "\n");
+                Console.WriteLine("Operation: Took " + res.ToString() + "\n");
                 return res; //no match
             }
             finally
@@ -158,7 +154,7 @@ namespace Server {
             tupleSpaceLock.EnterReadLock();
             //verbose esta aqui porque no take, utilizamos, e n queremos que faca print de read
             if (verbose) {
-                Console.WriteLine("Operation: Read" + tuple.ToString() + "\n");
+                Console.WriteLine("Operation: Read " + tuple.ToString() + "\n");
             }
             TupleClass res = new TupleClass();
             foreach (TupleClass el in tupleSpace) {
@@ -170,7 +166,6 @@ namespace Server {
             tupleSpaceLock.ExitReadLock();
             return res;
         }
-        bool test = false;
 
         public void updateState(string state, int term, string url) {
             if (state == "follower") {
@@ -223,10 +218,9 @@ namespace Server {
         }
         public void checkFrozen() {
             if (frozen) {
-                Console.WriteLine("Cant do anything, im frozen");
+                Console.WriteLine("Can't do anything, I'm frozen");
                 lock (this) {
                     while (frozen) {
-                        Console.WriteLine("Waiting...");
                         Monitor.Wait(this);
                     }
                 }
@@ -240,7 +234,7 @@ namespace Server {
             frozen = false;
         }
 
-        public int ping() { //TODO put this only on serverservice?
+        public int ping() { 
             return 1;
         }
 

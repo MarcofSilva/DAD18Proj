@@ -44,11 +44,8 @@ namespace Server {
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
             lock (vote_heartbeat_Lock)
             {
-                Console.WriteLine("heartbeat");
-                //Console.WriteLine("Candidate: AppendEntryWrite from: " + leaderID);
                 if (term < _term)
                 {
-                    //TODO
                     return new EntryResponse(false, _term, _server.getLogIndex());
                 }
                 else
@@ -67,7 +64,6 @@ namespace Server {
                     if ((_server.getLogIndex() - 1 + entryPacket.Count) != entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
                     {
                         //envio o server log index e isso diz quantas entrys tem o log, do lado de la, ele ve 
-                        Console.WriteLine("Candidate -> Follower : appendEntry ");
                         timerThreadBlock = true;
                         stopClock();
                         _server.updateState("follower", _term, leaderID);
@@ -86,7 +82,6 @@ namespace Server {
                             _server.takeLeader(entry.Tuple, entry.Term);
                         }
                     }
-                    Console.WriteLine("Candidate -> Follower : append Entry");
                     timerThreadBlock = true;
                     stopClock();
                     _server.updateState("follower", _term, leaderID);
@@ -99,16 +94,12 @@ namespace Server {
         public delegate bool voteDelegate(int term, string leaderUrl);
 
         public void requestVote() {
-            //Console.WriteLine("request_vote --t " + Thread.CurrentThread.ManagedThreadId);
             if (timerThreadBlock) {
                 return;
             }
-            //Console.WriteLine("pulsed vote");
-
             if (_server.fd.changed()) {
                 _view = _server.fd.getView();
                 _numServers = _view.Count();
-                Console.WriteLine("ATUALIZOU A VIEW");
                 foreach(string url in _view) {
                     if (!votemap.ContainsKey(url)) {
                         votemap.Add(url, false);
@@ -121,15 +112,12 @@ namespace Server {
                 }
             }
 
-            Console.WriteLine("after view change THERE ARE SERVERS: " + _numServers);
-
             int howmany = 0;
             foreach (KeyValuePair<string, bool> entry in votemap) {
                 if (!entry.Value) {
                     howmany++;
                 }
             }
-            Console.WriteLine("requesting vote to howmany: " + howmany);
 
             WaitHandle[] handles = new WaitHandle[howmany];
             IAsyncResult[] asyncResults = new IAsyncResult[howmany];
@@ -149,8 +137,6 @@ namespace Server {
                     i++;
                 }
                 if (!WaitHandle.WaitAll(handles, 100)) {
-                    Console.WriteLine("candidate timeout waiting for votes");
-
                     requestVote();
                 }
                 else {
@@ -169,11 +155,11 @@ namespace Server {
                         timerThreadBlock = true;
                         _server.updateState("leader", _term, _url);
                         _server = null;
-                        Console.WriteLine("elected in term" + _term);
+                        Console.WriteLine("Elected in term " + _term);
                         return;
                     }
                     else {
-                        Console.WriteLine("Finished elections without sucess");
+                        Console.WriteLine("Finished elections without success.");
                         pulseVote.Stop();
                         pulseVote.Dispose();
                         SetVoteTimer();
@@ -182,8 +168,7 @@ namespace Server {
 
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                requestVote();
             }
         }
         public override void startClock(int term, string url) {
@@ -250,7 +235,6 @@ namespace Server {
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            Console.WriteLine("INCREMNETOU NOVA ELEICAO");
             _term++;
             votemap = new Dictionary<string, bool>();
             foreach (string url in _server.fd.getViewNormal()) {
@@ -261,7 +245,6 @@ namespace Server {
             }
             votes = 1;
             lock (vote_heartbeat_Lock) {
-                Console.WriteLine("timeevent in Candidate->>" + timerThreadBlock);
                 if (!timerThreadBlock) {
                     requestVote();
                 }
@@ -279,7 +262,6 @@ namespace Server {
                     timerThreadBlock = true;
                     stopClock();
                     Console.WriteLine("Candidate -> Follower : vote for " + candidateID);
-                    Console.WriteLine("He was in term: " + term + " i was in " + _term);
                     _term = term;
                     stopClock();
                     timerThreadBlock = true;
@@ -293,10 +275,8 @@ namespace Server {
         }
         
         public override void ping() {
-            Console.WriteLine("Candidate State pinged");
         }
         public override void stopClock() {
-            Console.WriteLine("stoped clocks");
             electionTimeout.Stop();
             electionTimeout.Dispose();
             pulseVote.Stop();

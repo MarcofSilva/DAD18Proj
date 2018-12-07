@@ -31,7 +31,6 @@ namespace Server
         }
 
         private bool validRequest(string clientURL, long nonce) {
-            //TODO talvez usar concurrentDictionary para o add ser thread safe?
             if (!_nonceStorage.ContainsKey(clientURL)) {
                 _nonceStorage.Add(clientURL, nonce);
                 _remoteStorage.Add(clientURL, (IClientService)Activator.GetObject(typeof(IClientService), clientURL));
@@ -48,7 +47,6 @@ namespace Server
         }
 
         public TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
-            //TODO
             _server.checkFrozen();
             try {
                 TupleClass responseTuple = new TupleClass();

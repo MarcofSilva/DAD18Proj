@@ -27,10 +27,7 @@ namespace Server {
         private readonly Object vote_heartbeat_Lock = new object();
         private bool clockWasRunning = true;
 
-        //private Dictionary<string, bool> voteMap = new Dictionary<string, bool>();
-
         private bool timerThreadBlock = false;
-        private bool leaveState = false;
 
         public FollowerState(Server server, int term) : base(server, term) {
             SetTimer();
@@ -40,12 +37,10 @@ namespace Server {
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
             lock (vote_heartbeat_Lock)
             {
-                //Console.WriteLine("heartbeat");
                 if (term < _term)
                 {
                     //o pedido que recebi e de um lider que ficou para tras
                     //apenas no unperfect
-                    Console.WriteLine("Returned false because term of leader is lower");
                     return new EntryResponse(false, _term, _server.getLogIndex());
                 }
                 else
@@ -65,11 +60,10 @@ namespace Server {
 
                                 _leaderUrl = leaderID;
                                 _leaderRemote = _server.serverRemoteObjects[_leaderUrl];
-                                //Console.WriteLine("Follower: Leader is now: " + leaderID);
+                                Console.WriteLine("Follower: Leader is now: " + leaderID);
                             }
                             return new EntryResponse(true, _term, _server.getLogIndex());
                         }
-                        Console.WriteLine("UPDATE TERM IN APPEND ENTRY");
                         _term = term;                           //pode ser != mas visto que se tiver desatualizado e para tras
                         if ((_server.getLogIndex() - 1 + entryPacket.Count) == entryPacket.Entrys[entryPacket.Count - 1].LogIndex)
                         {
@@ -97,7 +91,6 @@ namespace Server {
                         }
                         else
                         {
-                            Console.WriteLine("Rejected entry because i am not up do date");
                             //manda apenas o log index porque assim o server vai saber quantas entrys no log do follower estao
                             return new EntryResponse(false, _term, _server.getLogIndex());
                         }
@@ -120,7 +113,6 @@ namespace Server {
                     }
                     stopClock();
                     SetTimer();
-                    Console.WriteLine("UPDATE TERM IN VOTE from:" + _term + " to " + term);
                     _term = term;
                     voted = true;
                     return true;
@@ -157,18 +149,14 @@ namespace Server {
         }
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
-            leaveState = true;
             lock (vote_heartbeat_Lock)
             {
-                //Console.WriteLine("timeevent ->>" + timerThreadBlock);
                 if (!timerThreadBlock)
                 {
                     electionTimeout.Dispose();
-                    Console.WriteLine("Follower -> candidate : ontimedevent -- Thread:" + Thread.CurrentThread.ManagedThreadId);
-                    // TODO variavel para controlar negaçao de heartbeat ou vote que chegue dps do timer acabar
+                    Console.WriteLine("Follower -> Candidate");
                     _server.updateState("candidate", _term, ""); //sends empty string because there is no leader
                     _server = null;
-                    leaveState = true;
                 }
                 else
                 {
@@ -177,22 +165,17 @@ namespace Server {
             }
         }
         public override void ping() {
-            Console.WriteLine("Follower State pinged");
         }
         public override void stopClock() {
             electionTimeout.Stop();
             electionTimeout.Dispose();
         }
         public override void startClock(int term, string url) {
-            //Console.WriteLine("Started clock on Follower");
             //quando vem de candidato
-            Console.WriteLine("UPDATE TERM IN START");
             if (term > _term) {
                 _term = term;
             }
             SetTimer();
-            //electionTimeout.Interval = wait;
-            //electionTimeout.Enabled = true;
             _leaderUrl = url;
             _leaderRemote = _serverRemoteObjects[url];
             
@@ -214,15 +197,14 @@ namespace Server {
 
         public override TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
             try {
-                Console.WriteLine("Read in follower");
+                Console.WriteLine("Read called in follower");
                 return _leaderRemote.read(tuple, clientUrl, nonce);
             }
             catch (ElectionException e) {
                 throw e;
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                return read(tuple, clientUrl, nonce);
             }
         }
         public override void write(TupleClass tuple, string clientUrl, long nonce) {
@@ -234,21 +216,19 @@ namespace Server {
                 throw e;
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                write(tuple, clientUrl, nonce);
             }
         }
         public override TupleClass take(TupleClass tuple, string clientUrl, long nonce) {
             try {
-                Console.WriteLine("Take in follower");
+                Console.WriteLine("Take called in follower");
                 return _leaderRemote.take(tuple, clientUrl, nonce);
             }
             catch (ElectionException e) {
                 throw e;
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                return take(tuple, clientUrl, nonce);
             }
         }
     }

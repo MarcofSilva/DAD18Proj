@@ -55,8 +55,6 @@ namespace Server {
                     }
                     foreach (Entry entry in entryPacket.Entrys)
                     {
-                        
-                        //TODO, matilde queres meter a comparacao de strings como gostas? xD
                         if (entry.Type == "write")
                         {
                             _server.addEntrytoLog(entry);
@@ -104,7 +102,6 @@ namespace Server {
             return res;
         }
 
-        //TODO falta utilizar nounce
         public override void write(TupleClass tuple, string url, long nonce) {
             try {
                 WriteEntry entry = new WriteEntry(tuple, _term, _server.getLogIndex(), "write");
@@ -120,7 +117,6 @@ namespace Server {
             }
         }
 
-        //TODO falta utilizar nounce
         public delegate EntryResponse appendEntryDelegate(EntryPacket entryPacket, int term, string leaderID);
 
         public void pulseAppendEntry() {
@@ -192,17 +188,15 @@ namespace Server {
                 }
             }
             catch (ElectionException) {
-                //nao sei se e preciso tratar visto que nao pode existir 1 lider e 1 candidato ao mesmo tempo
+                pulseAppendEntry();
             }
             catch (SocketException) {
-                //TODO
-                throw new NotImplementedException();
+                pulseAppendEntry();
             }
         }
 
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            //Console.WriteLine("pulse heartbeat");
             pulseHeartbeat();
         }
 
@@ -226,8 +220,6 @@ namespace Server {
             timerThreadBlock = false;
             pulseHeartbeat();
             SetTimer();
-            //timer.Start();
-            //TODO redundante porque o url recebido e o dele proprio
             _leaderUrl = url;
         }
 
@@ -246,14 +238,12 @@ namespace Server {
         }
 
         public override void ping() {
-            Console.WriteLine("Leader State pinged ");
         }
 
         public override bool vote(int term, string candidateID)
         {
             lock (vote_heartbeat_Lock)
             {
-                Console.WriteLine("I WAS IN TERM " + _term + " AND THEY ARE IN TERM " + term);
                 if (_term < term)
                 {
                     _term = term;
