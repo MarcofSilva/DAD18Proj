@@ -146,7 +146,7 @@ namespace Server {
                     requestId[i] = entry.Key;
                     i++;
                 }
-                if (!WaitHandle.WaitAll(handles, 800)) {//TODO
+                if (!WaitHandle.WaitAll(handles, 100)) {
                     Console.WriteLine("candidate timeout waiting for votes");
 
                     requestVote();
@@ -195,7 +195,7 @@ namespace Server {
 
         private int setWait()
         {
-            return wait = rnd.Next(500, 800);
+            return wait = rnd.Next(200, 500);
         }
 
         private void SetTimer() {
