@@ -13,10 +13,7 @@ namespace Server
     public class ServerService : MarshalByRefObject, IServerService
     {
         private Server _server;
-        //TODO tem de se fazer lock disto
-        // O mesmo cliente nunca vai fazer dois pedidos concorrentes pois executa os seus pedidos de forma sincrona
         private Dictionary<string, long> _nonceStorage = new Dictionary<string, long>();
-        //todo private Dictionary<string, IClientService> _remoteStorage = new Dictionary<string, IClientService>();
         private int _min_delay;
         private int _max_delay;
         private Random random = new Random();
@@ -34,13 +31,12 @@ namespace Server
         }
 
         private bool validRequest(string clientUrl, long nonce) {
-            //se nunca apareceu vai ser adicionado
+            //if client never appeared, he will be added to nounce storage
             if (!_nonceStorage.ContainsKey(clientUrl)) {
                 _nonceStorage.Add(clientUrl, nonce);
-                //todo _remoteStorage.Add(clientURL, (IClientService)Activator.GetObject(typeof(IClientService), clientURL));
                 return true;
             }
-            else {//ja apareceu
+            else {
                 long o = _nonceStorage[clientUrl];
                 if (nonce > o) {
                     _nonceStorage[clientUrl] = nonce;
@@ -57,9 +53,7 @@ namespace Server
                 int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("Write Network Delay: " + r.ToString());
                 Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received Write Request");
                 _server.write(tuple);
-                Console.WriteLine("It's written!");
             }
             Interlocked.Decrement(ref numRequests);
         }
@@ -67,16 +61,11 @@ namespace Server
         public TupleClass Read(TupleClass tuple, string clientUrl, long nonce) {
             _server.checkFrozen();
             Interlocked.Increment(ref numRequests);
-            //if (validRequest(clientUrl, nonce)) { TODO all threads are stuck here or not?
             int r = random.Next(_min_delay, _max_delay);
-                Console.WriteLine("Read Network Delay: " + r.ToString());
-                Thread.Sleep(r);
-            //Console.WriteLine("----->DEBUG_ServerSerice: Received Read Request");
+            Console.WriteLine("Read Network Delay: " + r.ToString());
+            Thread.Sleep(r);
             Interlocked.Decrement(ref numRequests);
             return _server.read(tuple);
-            //}//Update nonce info
-            Console.WriteLine("empty read");
-            return null; //TODO what to do
         }
 
         public List<TupleClass> TakeRead(TupleClass tuple, string clientUrl) {
@@ -86,7 +75,6 @@ namespace Server
             int r = random.Next(_min_delay, _max_delay);
             Console.WriteLine("TakeRead Network Delay: " + r.ToString());
             Thread.Sleep(r);
-            //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRead Request");
             responseTuple = _server.takeRead(tuple, clientUrl);
             Interlocked.Decrement(ref numRequests);
             return responseTuple;
@@ -99,7 +87,6 @@ namespace Server
                 int r = random.Next(_min_delay, _max_delay);
                 Console.WriteLine("TakeRemove Network Delay: " + r.ToString());
                 Thread.Sleep(r);
-                //Console.WriteLine("----->DEBUG_ServerSerice: Received TakeRemove Request");
                 _server.takeRemove(tuple, clientUrl);
             }
             Interlocked.Decrement(ref numRequests);
@@ -119,7 +106,6 @@ namespace Server
                     }
                 }
             }
-            Console.WriteLine(_server.tupleSpace.Count());
             return _server.tupleSpace;
         }
 
@@ -149,6 +135,10 @@ namespace Server
 
         public List<string> ViewRequest() {
             return _server.viewRequest();
+        }
+
+        public void Status() {
+            _server.status();
         }
     }
 }

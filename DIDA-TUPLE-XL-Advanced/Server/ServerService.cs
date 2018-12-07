@@ -91,7 +91,9 @@ namespace Server
                 _server.takeRemove(tuple, clientUrl);
             }
         }
-
+        public void Status() {
+            _server.status();
+        }
         public void Freeze() {
             _server.Freeze();
         }

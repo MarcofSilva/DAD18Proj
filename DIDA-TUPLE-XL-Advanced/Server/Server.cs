@@ -193,6 +193,19 @@ namespace Server{
             }*/
         }
 
+        public void status() {
+            Console.WriteLine("----------Server status----------");
+            Console.WriteLine("--TupleSpace--");
+            foreach (TupleClass tuple in tupleSpace) {
+                Console.WriteLine(tuple);
+            }
+            Console.WriteLine("--View--");
+            foreach (string s in fd.getView()) {
+                Console.WriteLine(s);
+            }
+            //TODO lista de suspeitos
+        }
+
         public void Freeze() {
             Console.WriteLine("I'm freezing");
             frozen = true;

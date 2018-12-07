@@ -47,6 +47,8 @@ namespace ProcessCreationService {
         public void Crash(string id) {
             Console.WriteLine("Crashing " + id);
             processes[id].Kill();
+            if (serverUrl.ContainsKey(id)) serverUrl.Remove(id); //TODO add this to SMR
+            if (clientUrl.ContainsKey(id)) clientUrl.Remove(id);
         }
         [DllImport("kernel32.dll")]
         static extern IntPtr OpenThread(uint dwDesiredAccess, bool bInheritHandle, uint dwThreadId);

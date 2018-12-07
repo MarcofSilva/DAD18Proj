@@ -45,9 +45,8 @@ namespace Server {
                         i++;
                     }
                     if (!WaitHandle.WaitAll(handles, 300)) {
-                        //Console.WriteLine("TIMEOUT");
+                        //timed out
                         for (int k = 0; k < numServers; k++) {
-                            //Console.WriteLine(handles[k].WaitOne(0));
                             if(handles[k].WaitOne(0) == false) {
                                 responses[k] = -1;
                             } 
@@ -75,10 +74,8 @@ namespace Server {
                                 view.Add(allServers[j]);
                             }
                             else {
-                                //Console.WriteLine(j.ToString() + " is down");
                             }
                         }
-                        //Console.WriteLine("view count: " + view.Count);
                     }
                 }
                 catch (Exception e) {
@@ -88,23 +85,18 @@ namespace Server {
                 bool isChanged = false;
                 if (oldView.Count != view.Count) isChanged = true;
                 
-                foreach (string bla in view) {
-                    //Console.WriteLine("-> " + bla);
-                    if (!oldView.Contains(bla)) {
+                foreach (string el in view) {
+                    if (!oldView.Contains(el)) {
                         isChanged = true;
                     }
                 }
                 if (isChanged) {
-                    Console.WriteLine("view changed!!!");
+                    Console.WriteLine("View changed");
                 }
             }
         }
 
         public List<string> getView() {
-            //Console.WriteLine("view request - count: " + view.Count());
-            foreach (string bla in view) {
-                //Console.WriteLine("-->" + bla);
-            }
             return view;
         }
 
@@ -115,47 +107,41 @@ namespace Server {
             }
             WaitHandle[] handles = new WaitHandle[view.Count-1];
             IAsyncResult[] asyncResults = new IAsyncResult[view.Count-1];
-            try {
-                int i = 0;
-                List<TupleClass> result = new List<TupleClass>();
-                foreach (string url in view) {
-                    if (url == _url)
-                        continue;
-                    ServerService remoteObject = (ServerService)serverRemoteObjects[url];
-                    askUpdateDelegate askUpdateDel = new askUpdateDelegate(remoteObject.askUpdate);
-                    IAsyncResult ar = askUpdateDel.BeginInvoke(null, null);
-                    asyncResults[i] = ar;
-                    handles[i] = ar.AsyncWaitHandle;
-                    i++;
-                }
-                if (!WaitHandle.WaitAll(handles, 3000)) {
-                    return updateTS(); //TODO
-                }
-                List<TupleClass> localRes = new List<TupleClass>();
-                for (i = 0; i < view.Count-1; i++) {
-                    try {
-                        IAsyncResult asyncResult = asyncResults[i];
-                        askUpdateDelegate askUpdateDel = (askUpdateDelegate)((AsyncResult)asyncResult).AsyncDelegate;
-                        localRes = askUpdateDel.EndInvoke(asyncResult);
-                    }
-                    catch (SocketException e) {
-                    }
-                    if (i == 0) {
-                        result = localRes;
-                    }
-                    else {
-                        if (!compareList(result, localRes)) {
-                            Thread.Sleep(300);//if the servers we asked are not the same, we need to wait for them to sync
-                            return updateTS();
-                        }
-                    }
-                }
-                return result;
+            int i = 0;
+            List<TupleClass> result = new List<TupleClass>();
+            foreach (string url in view) {
+                if (url == _url)
+                    continue;
+                ServerService remoteObject = (ServerService)serverRemoteObjects[url];
+                askUpdateDelegate askUpdateDel = new askUpdateDelegate(remoteObject.askUpdate);
+                IAsyncResult ar = askUpdateDel.BeginInvoke(null, null);
+                asyncResults[i] = ar;
+                handles[i] = ar.AsyncWaitHandle;
+                i++;
             }
-            catch (Exception e) {
-                Console.WriteLine(e.StackTrace);
-                return null;
+            if (!WaitHandle.WaitAll(handles, 3000)) {
+                return updateTS(); //TODO
             }
+            List<TupleClass> localRes = new List<TupleClass>();
+            for (i = 0; i < view.Count-1; i++) {
+                try {
+                    IAsyncResult asyncResult = asyncResults[i];
+                    askUpdateDelegate askUpdateDel = (askUpdateDelegate)((AsyncResult)asyncResult).AsyncDelegate;
+                    localRes = askUpdateDel.EndInvoke(asyncResult);
+                }
+                catch (SocketException e) {
+                }
+                if (i == 0) {
+                    result = localRes;
+                }
+                else {
+                    if (!compareList(result, localRes)) {
+                        Thread.Sleep(300);//If servers do not agree with the tuple space, we need to let them sync
+                        return updateTS();
+                    }
+                }
+            }
+            return result;
         }
 
         private bool compareList(List<TupleClass> l1, List<TupleClass> l2) {
@@ -181,6 +167,18 @@ namespace Server {
             numServers = serverRemoteObjects.Count();
         }
 
+        public List<string> inactiveServers() {
+            List<string> res = new List<string>();
+            foreach (KeyValuePair<string, IServerService> entry in serverRemoteObjects) {
+                res.Add(entry.Key);
+            }
+            foreach (string url in view) {
+                if (res.Contains(url)) {
+                    res.Remove(url);
+                }
+            }
+            return res;
+        }
        
     }
 }
