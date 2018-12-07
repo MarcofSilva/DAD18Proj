@@ -118,10 +118,11 @@ namespace Server{
             //Console.WriteLine("initial read " + tupleContainer.Count + " container");
             Regex capital = new Regex(@"[A-Z]");
             List<TupleClass> allTuples = new List<TupleClass>();
+            if (toTakeSubset.ContainsKey(clientURL))
+            {
+                toTakeSubset.Remove(clientURL);
+            }
             lock (toTakeSubset) { //Prevent a take to search for tuples when another take is already doing it
-                if (toTakeSubset.ContainsKey(clientURL)) {
-                    toTakeSubset.Remove(clientURL);
-                }
                 //Console.WriteLine("totakesubset -> ");
                 foreach (List<TupleClass> list in toTakeSubset.Values) {
                     foreach (var y in list) {
