@@ -109,5 +109,9 @@ namespace Server
             _server.checkFrozen(); //TODO put  in normal XL
             return _server.viewRequest();
         }
+
+        public void releaseLocks(string clientUrl) {
+            _server.releaseLocks(clientUrl);
+        }
     }
 }
