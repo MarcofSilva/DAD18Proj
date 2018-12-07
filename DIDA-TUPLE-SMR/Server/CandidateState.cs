@@ -20,13 +20,23 @@ using ExceptionLibrary;
 namespace Server {
     public class CandidateState : RaftState {
         private System.Timers.Timer electionTimeout;
+        private System.Timers.Timer pulseVote;
         private int wait;
         private Random rnd = new Random(Guid.NewGuid().GetHashCode());
         private bool timerThreadBlock = false;
         private readonly Object vote_heartbeat_Lock = new object();
-
+        private Dictionary<string, bool> votemap = new Dictionary<string, bool>();
+        
+        private int votes = 1;
         public CandidateState(Server server, int term) : base(server, term) {
             SetTimer();
+            _term++;
+            foreach(string url in _server.fd.getViewNormal()) {
+                if (url == _url) {
+                    continue;
+                }
+                votemap.Add(url, false);
+            }
         }
 
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
@@ -113,34 +123,53 @@ namespace Server {
         public delegate bool voteDelegate(int term, string leaderUrl);
 
         public void requestVote() {
-            Console.WriteLine("request_vote --t " + Thread.CurrentThread.ManagedThreadId);
+            //Console.WriteLine("request_vote --t " + Thread.CurrentThread.ManagedThreadId);
             if (timerThreadBlock) {
                 return;
             }
-            _term++;
-            Console.WriteLine("Started election in term " + _term);
-            int votes = 1;
+            //Console.WriteLine("pulsed vote");
+
             if (_server.fd.changed()) {
                 _view = _server.fd.getView();
                 _numServers = _view.Count();
-                foreach (string url in _view) {
-                    Console.WriteLine(url);
+                Console.WriteLine("ATUALIZOU A VIEW");
+                foreach(string url in _view) {
+                    if (!votemap.ContainsKey(url)) {
+                        votemap.Add(url, false);
+                    }
+                }
+                foreach(KeyValuePair<string, bool> entry in votemap) {
+                    if (!_view.Contains(entry.Key)) {
+                        votemap.Remove(entry.Key);
+                    }
                 }
             }
-            Console.WriteLine("after view change");
-            WaitHandle[] handles = new WaitHandle[_numServers-1];
-            IAsyncResult[] asyncResults = new IAsyncResult[_numServers-1];
+
+            Console.WriteLine("after view change THERE ARE SERVERS: " + _numServers);
+
+            int howmany = 0;
+            foreach (KeyValuePair<string, bool> entry in votemap) {
+                if (!entry.Value) {
+                    howmany++;
+                }
+            }
+            Console.WriteLine("requesting vote to howmany: " + howmany);
+
+            WaitHandle[] handles = new WaitHandle[howmany];
+            IAsyncResult[] asyncResults = new IAsyncResult[howmany];
+            string[] requestId = new string[howmany];
             try {
                 int i = 0;
-                foreach (string url in _view) {
-                    if (url == _url) {
+                foreach (KeyValuePair<string, bool> entry in votemap) {
+                    if (entry.Value) {
                         continue;
                     }
-                    ServerService remoteObject = (ServerService)_serverRemoteObjects[url];
+                    ServerService remoteObject = (ServerService)_serverRemoteObjects[entry.Key];
                     voteDelegate voteDel = new voteDelegate(remoteObject.vote);
                     IAsyncResult ar = voteDel.BeginInvoke(_term, _url, null, null);
                     asyncResults[i] = ar;
                     handles[i] = ar.AsyncWaitHandle;
+                    requestId[i] = entry.Key;
                     i++;
                 }
                 if (!WaitHandle.WaitAll(handles, 4000)) {//TODO
@@ -148,10 +177,12 @@ namespace Server {
                     requestVote();
                 }
                 else {
-                    for (i = 0; i < _numServers-1; i++) {
+                    for (i = 0; i < howmany ; i++) {
                         IAsyncResult asyncResult = asyncResults[i];
                         voteDelegate voteDel = (voteDelegate)((AsyncResult)asyncResult).AsyncDelegate;
                         bool response = voteDel.EndInvoke(asyncResult);
+                        votemap.Remove(requestId[i]);
+                        votemap.Add(requestId[i],true);
                         if (response) {
                             votes++;
                         } 
@@ -167,11 +198,10 @@ namespace Server {
                     }
                     else {
                         Console.WriteLine("Finished elections without sucess");
+                        pulseVote.Interval = 1000;
                     }
                 }
-                wait = rnd.Next(1000, 1200);
-                electionTimeout.Interval = wait;
-                electionTimeout.Enabled = true;
+
             }
             catch (SocketException) {
                 //TODO
@@ -188,13 +218,45 @@ namespace Server {
             electionTimeout.Start();
         }
         private void SetTimer() {
-            wait = rnd.Next(1500, 3000);
+            wait = rnd.Next(500, 800);
             //Console.WriteLine("Election timeout: " + wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
             electionTimeout.AutoReset = false;
-            electionTimeout.Enabled = false;
+            electionTimeout.Enabled = true;
+
+            pulseVote = new System.Timers.Timer(100);
+            pulseVote.Elapsed += pulseVoteEvent;
+            pulseVote.AutoReset = false;
+            pulseVote.Enabled = true;
         }
+
+        private void pulseVoteEvent(Object source, ElapsedEventArgs e) {
+            requestVote();
+        }
+
+        private void OnTimedEvent(Object source, ElapsedEventArgs e) {
+            Console.WriteLine("INCREMNETOU NOVA ELEICAO");
+            _term++;
+            votemap = new Dictionary<string, bool>();
+            foreach (string url in _server.fd.getViewNormal()) {
+                if(url == _url) {
+                    continue;
+                }
+                votemap.Add(url, false);
+            }
+            votes = 1;
+            lock (vote_heartbeat_Lock) {
+                Console.WriteLine("timeevent in Candidate->>" + timerThreadBlock);
+                if (!timerThreadBlock) {
+                    requestVote();
+                }
+                else {
+                    timerThreadBlock = false;
+                }
+            }
+        }
+
         public override bool vote(int term, string candidateID) {
             lock (vote_heartbeat_Lock)
             {
@@ -225,28 +287,18 @@ namespace Server {
             }
             return false;
         }
-        private void OnTimedEvent(Object source, ElapsedEventArgs e) {
-            lock (vote_heartbeat_Lock)
-            {
-                Console.WriteLine("timeevent in Candidate->>" + timerThreadBlock);
-                if (!timerThreadBlock)
-                {
-                    requestVote();
-                }
-                else
-                {
-                    timerThreadBlock = false;
-                }
-            }
-        }
+        
         public override void ping() {
             Console.WriteLine("Candidate State pinged");
         }
         public override void stopClock() {
+            Console.WriteLine("stoped clocks");
             electionTimeout.Stop();
             electionTimeout.Dispose();
+            pulseVote.Stop();
+            pulseVote.Dispose();
         }
-        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+        public override TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
             throw new ElectionException("Election going on, try later");
         }
         public override TupleClass take(TupleClass tuple, string clientUrl, long nonce) {

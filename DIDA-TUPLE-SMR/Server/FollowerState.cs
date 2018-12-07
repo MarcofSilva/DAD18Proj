@@ -26,6 +26,8 @@ namespace Server {
         private bool voted = false;
         private readonly Object vote_heartbeat_Lock = new object();
 
+        //private Dictionary<string, bool> voteMap = new Dictionary<string, bool>();
+
         private bool timerThreadBlock = false;
 
         public FollowerState(Server server, int term) : base(server, term) {
@@ -36,7 +38,7 @@ namespace Server {
         public override EntryResponse appendEntry(EntryPacket entryPacket, int term, string leaderID) {
             lock (vote_heartbeat_Lock)
             {
-                Console.WriteLine("heartbeat");
+                //Console.WriteLine("heartbeat");
                 if (term < _term)
                 {
                     //o pedido que recebi e de um lider que ficou para tras
@@ -161,7 +163,7 @@ namespace Server {
         }
         private void SetTimer() {
             //TODO
-            wait = rnd.Next(1500, 3000);//usually entre 150 300
+            wait = rnd.Next(300, 700);//usually entre 150 300
             Console.WriteLine(wait);
             electionTimeout = new System.Timers.Timer(wait);
             electionTimeout.Elapsed += OnTimedEvent;
@@ -208,7 +210,7 @@ namespace Server {
             _leaderRemote = _serverRemoteObjects[url];
             
         }
-        public override List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+        public override TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
             try {
                 Console.WriteLine("Read in follower");
                 return _leaderRemote.read(tuple, clientUrl, nonce);

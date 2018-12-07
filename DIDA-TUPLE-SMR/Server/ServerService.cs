@@ -47,18 +47,18 @@ namespace Server
             }
         }
 
-        public List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce) {
+        public TupleClass read(TupleClass tuple, string clientUrl, long nonce) {
             //TODO
             _server.checkFrozen();
             try {
-                List<TupleClass> responseTuple = new List<TupleClass>();
+                TupleClass responseTuple = new TupleClass();
                 if (validRequest(clientUrl, nonce)) {
                     int r = random.Next(_min_delay, _max_delay);
                     Thread.Sleep(r);
                     responseTuple = _server.read(tuple, clientUrl, nonce);
                     return responseTuple;
                 }
-                return new List<TupleClass>();
+                return responseTuple;
             }
             catch (ElectionException e) {
                 throw e;

@@ -41,7 +41,7 @@ namespace Server {
 
         public abstract bool vote(int term, string candidateID);
 
-        public abstract List<TupleClass> read(TupleClass tuple, string clientUrl, long nonce);
+        public abstract TupleClass read(TupleClass tuple, string clientUrl, long nonce);
 
         public abstract TupleClass take(TupleClass tuple, string clientUrl, long nonce);
 

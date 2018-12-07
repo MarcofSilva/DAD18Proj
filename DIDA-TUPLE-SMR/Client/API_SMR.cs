@@ -45,9 +45,13 @@ namespace Client {
         public override TupleClass read(TupleClass tuple) {
             checkFrozen();
             try {
-                List<TupleClass> res = serverRemoteObject.read(tuple, url, nonce);
+                TupleClass res = serverRemoteObject.read(tuple, url, nonce);
                 nonce++;
-                return res[0];
+                if(res.tuple.Count == 0) {
+                    Thread.Sleep(500);
+                    return read(tuple);
+                }
+                return res;
             }
             catch (ElectionException) {
                 Thread.Sleep(500);
@@ -64,6 +68,10 @@ namespace Client {
             try {
                 TupleClass res = serverRemoteObject.take(tuple, url, nonce);
                 nonce++;
+                if (res.tuple.Count == 0) {
+                    Thread.Sleep(500);
+                    return take(tuple);
+                }
                 return res;
             }
             catch (ElectionException) {
