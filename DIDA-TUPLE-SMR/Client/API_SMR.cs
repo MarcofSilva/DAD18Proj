@@ -29,57 +29,65 @@ namespace Client {
 
         public override void write(TupleClass tuple) {
             checkFrozen();
-            _view = getView(_view);
+            
             try {
                 _view[0].write(tuple,url, nonce);
                 nonce++;
             }
             catch (ElectionException) {
                 Thread.Sleep(500);
+                _view = getView(_view);
                 write(tuple);
             }
             catch (SocketException) {
+                _view = getView(_view);
                 write(tuple);
             }
         }
         public override TupleClass read(TupleClass tuple) {
             checkFrozen();
-            _view = getView(_view);
+            
             try {
                 TupleClass res = _view[0].read(tuple, url, nonce);
                 nonce++;
                 if(res.tuple.Count == 0) {
                     Thread.Sleep(500);
+                    _view = getView(_view);
                     return read(tuple);
                 }
                 return res;
             }
             catch (ElectionException) {
                 Thread.Sleep(500);
+                _view = getView(_view);
                 return read(tuple);
             }
             catch (SocketException) {
+                _view = getView(_view);
                 return read(tuple);
             }
         }
 
         public override TupleClass take(TupleClass tuple) {
             checkFrozen();
-            _view = getView(_view);
+            
             try {
                 TupleClass res = _view[0].take(tuple, url, nonce);
                 nonce++;
                 if (res.tuple.Count == 0) {
                     Thread.Sleep(500);
+                    _view = getView(_view);
                     return take(tuple);
                 }
                 return res;
             }
             catch (ElectionException) {
                 Thread.Sleep(500);
+                _view = getView(_view);
                 return take(tuple);
             }
             catch (SocketException) {
+                _view = getView(_view);
                 return take(tuple);
             }
         }

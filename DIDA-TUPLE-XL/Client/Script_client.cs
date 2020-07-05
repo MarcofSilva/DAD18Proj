@@ -62,6 +62,11 @@ namespace Client {
         private void executeScript(string scriptName) {
             StreamReader reader = null;
 
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+
+
             try {
                 reader = File.OpenText("../../../Client/bin/debug/" + scriptName);
             }
@@ -94,6 +99,12 @@ namespace Client {
                 }
             }
             reader.Close();
+
+
+            watch.Stop();
+            var elapsedTime = watch.ElapsedMilliseconds;
+            Console.WriteLine("Elapsed time: " + elapsedTime);
+
         }
 
         static void Main(string[] args) {
@@ -103,6 +114,7 @@ namespace Client {
             }
             else {
                 client = new Script_Client(args[0]);
+
                 client.executeScript(args[1]);
                 Console.WriteLine(args[1]);
             }

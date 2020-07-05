@@ -39,7 +39,6 @@ namespace Client {
 
         public override void Write(TupleClass tuple) {
             checkFrozen();
-            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -49,6 +48,7 @@ namespace Client {
                     handles[i] = ar.AsyncWaitHandle;
                 }
                 if (!WaitHandle.WaitAll(handles, 1000)) {
+                    setView();
                     Write(tuple);
                 }
                 else {
@@ -57,13 +57,13 @@ namespace Client {
             }
             catch (SocketException) {
                 Console.WriteLine("Error in write. Trying again...");
+                setView();
                 Write(tuple);
             }
         }
 
         public override TupleClass Read(TupleClass tuple) {
             checkFrozen();
-            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             try {
@@ -77,6 +77,7 @@ namespace Client {
                 int indxAsync = WaitHandle.WaitAny(handles, 1000);
                 if (indxAsync == WaitHandle.WaitTimeout) {
                     Thread.Sleep(200);
+                    setView();
                     return Read(tuple);
                 }
                 else {//TODO se o retorno for nulo temos de ir ver outra resposta
@@ -89,13 +90,13 @@ namespace Client {
             }
             catch (SocketException) {
                 Console.WriteLine("Error in read. Trying again...");
+                setView();
                 return Read(tuple);
             }
         }
 
         public override TupleClass Take(TupleClass tuple) {
             checkFrozen();
-            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             //Console.WriteLine("----->DEBUG_API_XL: numservers " + numServers);
@@ -113,6 +114,7 @@ namespace Client {
                 if (!allcompleted) {
                     Console.WriteLine("Timed out");
                     Thread.Sleep(200);
+                    setView();
                     return Take(tuple);
                 }
                 else {
@@ -128,6 +130,7 @@ namespace Client {
                     if (nAccepts != numServers && nAccepts > numServers / 2) {
                         //Majority of accepts
                         Thread.Sleep(200);
+                        setView();
                         return Take(tuple);
                     }
                     else if (nAccepts <= numServers / 2 && numServers != 1) {
@@ -140,6 +143,7 @@ namespace Client {
                             handles[i] = ar.AsyncWaitHandle;
                         }
                         Thread.Sleep(200);
+                        setView();
                         return Take(tuple);
                     }
                     else {
@@ -155,6 +159,7 @@ namespace Client {
                                 if (response.Count == 0) {
                                     //In case where intersection of all takeRead responses is empty
                                     Thread.Sleep(200);
+                                    setView();
                                     return Take(tuple);
                                 }
                             }
@@ -170,12 +175,13 @@ namespace Client {
             }
             catch (SocketException) {
                 Console.WriteLine("Error in take. Trying again...");
+                setView();
                 return Take(tuple);
             }
         }
 
         private void takeRemove(TupleClass tupleToDelete) {
-            setView();
+            
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
 
@@ -187,6 +193,7 @@ namespace Client {
                 handles[i] = ar.AsyncWaitHandle;
             }
             if (!WaitHandle.WaitAll(handles, 1000)) {
+                setView();
                 takeRemove(tupleToDelete);
             }
         }

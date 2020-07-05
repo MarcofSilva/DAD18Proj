@@ -60,6 +60,13 @@ namespace Client {
         }
 
         private void executeScript(string scriptName) {
+
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+
+
+
             StreamReader reader = null;
 
             try {
@@ -94,6 +101,14 @@ namespace Client {
                 }
             }
             reader.Close();
+
+
+            watch.Stop();
+            var elapsedTime = watch.ElapsedMilliseconds;
+            Console.WriteLine("Elapsed time: " + elapsedTime);
+
+
+
         }
 
         static void Main(string[] args) {

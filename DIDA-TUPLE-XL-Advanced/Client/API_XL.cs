@@ -39,7 +39,6 @@ namespace Client {
 
         public override void Write(TupleClass tuple) {
             checkFrozen();
-            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             try {
                 for (int i = 0; i < numServers; i++) {
@@ -58,6 +57,7 @@ namespace Client {
                 }
                 if (ntimeouts > numServers / 2) {
                     //Majority of timeouts
+                    setView();
                     Write(tuple);
                 }
                 else {
@@ -66,13 +66,13 @@ namespace Client {
             }
             catch (SocketException) {
                 Console.WriteLine("Error in write. Trying again...");
+                setView();
                 Write(tuple);
             }
         }
 
         public override TupleClass Read(TupleClass tuple) {
             checkFrozen();
-            setView();
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             try {
@@ -86,6 +86,7 @@ namespace Client {
                 int indxAsync = WaitHandle.WaitAny(handles, 1000);
                 if (indxAsync == WaitHandle.WaitTimeout) {
                     Thread.Sleep(200);
+                    setView();
                     return Read(tuple);
                 }
                 else {//TODO se o retorno for nulo temos de ir ver outra resposta
@@ -98,13 +99,14 @@ namespace Client {
             }
             catch (SocketException) {
                 Console.WriteLine("Error in read. Trying again...");
+                setView();
                 return Read(tuple);
             }
         }
 
         public override TupleClass Take(TupleClass tuple) {
             checkFrozen();
-            setView();
+            
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
             int nAccepts = 0;
@@ -129,6 +131,7 @@ namespace Client {
                 if (ntimeouts.Sum() > numServers / 2) {
                     //Majority of timeouts
                     Thread.Sleep(200);
+                    setView();
                     return Take(tuple);
                 }
                 else {
@@ -146,6 +149,7 @@ namespace Client {
                     if (nAccepts != realServers && nAccepts > realServers / 2) {
                         //Majority of accepts
                         Thread.Sleep(200);
+                        setView();
                         return Take(tuple);
                     }
                     else if (nAccepts <= realServers / 2 && realServers != 1) {
@@ -158,6 +162,7 @@ namespace Client {
                             handles[i] = ar.AsyncWaitHandle;
                         }
                         Thread.Sleep(200);
+                        setView();
                         return Take(tuple);
                     }
                     else {
@@ -187,12 +192,13 @@ namespace Client {
             }
             catch (SocketException) {
                 Console.WriteLine("Error in take. Trying again...");
+                setView();
                 return Take(tuple);
             }
         }
 
         private void takeRemove(TupleClass tupleToDelete) {
-            setView();
+            
             WaitHandle[] handles = new WaitHandle[numServers];
             IAsyncResult[] asyncResults = new IAsyncResult[numServers];
 
@@ -212,6 +218,7 @@ namespace Client {
                 }
             }
             if (ntimeouts > numServers / 2) {
+                setView();
                 takeRemove(tupleToDelete);
             }
         }
